@@ -1,0 +1,2 @@
+service.name = gatekeeper-compose-email-frontend
+service.text = This is your new service
