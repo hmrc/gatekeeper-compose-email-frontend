@@ -1,4 +1,4 @@
-/*
+@*
  * Copyright 2021 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,18 +12,20 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- */
+ *@
 
-package uk.gov.hmrc.gatekeepercomposeemailfrontend.config
+@import config.AppConfig
+@import uk.gov.hmrc.hmrcfrontend.views.html.helpers.HmrcLayout
+@import views.html.helper.CSPNonce
 
-import javax.inject.{Inject, Singleton}
-import play.api.Configuration
+@this(
+        appConfig: AppConfig,
+        hmrcLayout: HmrcLayout
+)
+@(pageTitle: Option[String] = None)(contentBlock: Html)(implicit request: Request[_], messages: Messages)
 
-@Singleton
-class AppConfig @Inject()
-  (
-    config: Configuration
-  ) {
-  val welshLanguageSupportEnabled: Boolean = config.getOptional[Boolean]("features.welsh-language-support").getOrElse(false)
-
-}
+@hmrcLayout(
+    pageTitle = pageTitle,
+    nonce = CSPNonce.get,
+    isWelshTranslationAvailable = appConfig.welshLanguageSupportEnabled
+)(contentBlock)

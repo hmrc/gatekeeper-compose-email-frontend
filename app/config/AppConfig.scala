@@ -14,20 +14,16 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.gatekeepercomposeemailfrontend.config
+package config
 
 import javax.inject.{Inject, Singleton}
-
-import play.api.i18n.MessagesApi
-import play.api.mvc.Request
-import play.twirl.api.Html
-import uk.gov.hmrc.play.bootstrap.frontend.http.FrontendErrorHandler
-import uk.gov.hmrc.gatekeepercomposeemailfrontend.views.html.ErrorTemplate
+import play.api.Configuration
 
 @Singleton
-class ErrorHandler @Inject()(errorTemplate: ErrorTemplate, val messagesApi: MessagesApi)
-    extends FrontendErrorHandler {
+class AppConfig @Inject()
+  (
+    config: Configuration
+  ) {
+  val welshLanguageSupportEnabled: Boolean = config.getOptional[Boolean]("features.welsh-language-support").getOrElse(false)
 
-  override def standardErrorTemplate(pageTitle: String, heading: String, message: String)(implicit request: Request[_]): Html =
-    errorTemplate(pageTitle, heading, message)
 }
