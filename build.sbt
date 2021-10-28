@@ -40,7 +40,7 @@ lazy val microservice =  (project in file("."))
   .settings(SilencerSettings(): _*)
   .settings(
     targetJvm := "jvm-1.8",
-    scalaVersion := "2.12.13",
+    scalaVersion := "2.12.12",
     name:= appName,
     libraryDependencies ++= AppDependencies(),
     retrieveManaged := true,
