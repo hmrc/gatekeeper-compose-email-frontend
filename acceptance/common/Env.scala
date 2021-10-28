@@ -17,9 +17,8 @@
 package common
 
 import java.net.URL
-
 import org.openqa.selenium.chrome.{ChromeDriver, ChromeOptions}
-import org.openqa.selenium.firefox.{FirefoxDriver, FirefoxProfile}
+import org.openqa.selenium.firefox.{FirefoxDriver, FirefoxOptions, FirefoxProfile}
 import org.openqa.selenium.remote.{DesiredCapabilities, RemoteWebDriver}
 import org.openqa.selenium.{Dimension, WebDriver}
 
@@ -64,7 +63,9 @@ trait Env {
   def createFirefoxDriver(): WebDriver = {
     val profile = new FirefoxProfile
     profile.setAcceptUntrustedCertificates(true)
-    new FirefoxDriver(profile)
+    val firefoxOptions: FirefoxOptions = new FirefoxOptions
+    firefoxOptions.setProfile(profile)
+    new FirefoxDriver(firefoxOptions)
   }
 
   def shutdown = Try(driver.quit())
