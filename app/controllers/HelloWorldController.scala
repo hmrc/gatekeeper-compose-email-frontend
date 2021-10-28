@@ -16,9 +16,11 @@
 
 package controllers
 
+import play.api.i18n.I18nSupport
 import views.html.HelloWorldPage
 import uk.gov.hmrc.play.bootstrap.frontend.controller.FrontendController
 import play.api.mvc.{Action, AnyContent, MessagesControllerComponents}
+
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.Future
 
@@ -26,7 +28,8 @@ import scala.concurrent.Future
 class HelloWorldController @Inject()(
   mcc: MessagesControllerComponents,
   helloWorldPage: HelloWorldPage)
-    extends FrontendController(mcc) {
+    extends FrontendController(mcc)
+      with I18nSupport {
 
   val helloWorld: Action[AnyContent] = Action.async { implicit request =>
     Future.successful(Ok(helloWorldPage()))
