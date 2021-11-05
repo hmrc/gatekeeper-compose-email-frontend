@@ -14,17 +14,21 @@
  * limitations under the License.
  */
 
-package config
+package controllers
 
-import javax.inject.{Inject, Singleton}
-import play.api.Configuration
+import play.api.data.Form
+import play.api.data.Forms.{mapping, nonEmptyText}
 
-@Singleton
-class AppConfig @Inject()
-  (
-    config: Configuration
-  ) {
-  val welshLanguageSupportEnabled: Boolean = config.getOptional[Boolean]("features.welsh-language-support").getOrElse(false)
 
-  def title = "HMRC API Gatekeeper"
+case class ComposeEmailForm(emailRecipient: String, emailSubject: String, emailBody: String) {}
+
+object ComposeEmailForm {
+
+   val form:Form[ComposeEmailForm] = Form(
+    mapping(
+      "emailRecipient" -> nonEmptyText,
+      "emailSubject" -> nonEmptyText,
+      "emailBody" -> nonEmptyText
+    )(ComposeEmailForm.apply)(ComposeEmailForm.unapply)
+  )
 }

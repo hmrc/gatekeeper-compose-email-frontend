@@ -1,2 +1,2 @@
-service.name = gatekeeper-compose-email-frontend
+service.name = HMRC API Gatekeeper
 service.text = This is your new service

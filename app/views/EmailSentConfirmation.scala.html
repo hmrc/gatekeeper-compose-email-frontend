@@ -1,4 +1,4 @@
-/*
+@*
  * Copyright 2021 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,19 +12,21 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- */
+ *@
 
-package config
+@import config.AppConfig
+@this(layout: Layout, applicationConfig: AppConfig)
 
-import javax.inject.{Inject, Singleton}
-import play.api.Configuration
+@(/*composeEmailForm: ComposeEmailForm*/)(implicit request: Request[_], messages: Messages)
 
-@Singleton
-class AppConfig @Inject()
-  (
-    config: Configuration
-  ) {
-  val welshLanguageSupportEnabled: Boolean = config.getOptional[Boolean]("features.welsh-language-support").getOrElse(false)
+@layout(pageTitle = Some(s"${applicationConfig.title} - Email Sent")) {
+    <h1 class="govuk-heading-xl">Email sent!</h1>
+    <p class="govuk-body">@{"HMRC API Gatekeeper"}</p>
+ <div>
+ @helper.CSRF.formField
 
-  def title = "HMRC API Gatekeeper"
-}
+ </div>
+
+
+ }
+
