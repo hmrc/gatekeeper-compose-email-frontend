@@ -14,24 +14,15 @@
  * limitations under the License.
  */
 
-package config
+package common
 
-import javax.inject.{Inject, Singleton}
-import play.api.Configuration
-import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
+import org.mockito.{ArgumentMatchersSugar, MockitoSugar}
+import org.scalatest.{Matchers, OptionValues, WordSpec}
+import org.scalatestplus.play.WsScalaTestClient
+import play.api.test.{DefaultAwaitTimeout, FutureAwaits}
 
+abstract class HmrcSpec extends WordSpec with Matchers with OptionValues with WsScalaTestClient with MockitoSugar with ArgumentMatchersSugar
 
-@Singleton
-class AppConfig @Inject()(config: Configuration)
-  extends ServicesConfig(config)
-    with EmailConnectorConfig
-{
-  val welshLanguageSupportEnabled: Boolean = config.getOptional[Boolean]("features.welsh-language-support").getOrElse(false)
-  val emailBaseUrl =  baseUrl("email")
-  val emailSubject =  getString("emailSubject")
-}
-
-trait EmailConnectorConfig {
-  val emailBaseUrl: String
-  val emailSubject: String
+abstract class AsyncHmrcSpec
+  extends HmrcSpec with DefaultAwaitTimeout with FutureAwaits {
 }

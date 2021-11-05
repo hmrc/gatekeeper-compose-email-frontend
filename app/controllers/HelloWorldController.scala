@@ -16,22 +16,27 @@
 
 package controllers
 
+import config.AppConfig
+import connectors.EmailConnector
 import play.api.i18n.I18nSupport
 import views.html.HelloWorldPage
 import uk.gov.hmrc.play.bootstrap.frontend.controller.FrontendController
 import play.api.mvc.{Action, AnyContent, MessagesControllerComponents}
 
 import javax.inject.{Inject, Singleton}
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
 class HelloWorldController @Inject()(
   mcc: MessagesControllerComponents,
-  helloWorldPage: HelloWorldPage)
-    extends FrontendController(mcc)
-      with I18nSupport {
+  emailConnector: EmailConnector,
+  helloWorldPage: HelloWorldPage
+  )(implicit val appConfig: AppConfig, val ec: ExecutionContext)
+    extends FrontendController(mcc) with I18nSupport {
 
   val helloWorld: Action[AnyContent] = Action.async { implicit request =>
+    val emailTo: String = "test.user@digital.hmrc.gov.uk"
+    emailConnector.sendEmail(emailTo)
     Future.successful(Ok(helloWorldPage()))
   }
 
