@@ -81,9 +81,12 @@ class EmailConnectorSpec extends AsyncHmrcSpec with BeforeAndAfterEach with Befo
   }
   
   "emailConnector" should {
-
+    val parameters: Map[String, String] = Map("subject" -> s"$subject",
+      "fromAddress" -> "gateKeeper",
+      "body" -> "Body to be used in the email template",
+      "service" -> "gatekeeper")
     "send gatekeeper email" in new Setup with WorkingHttp {
-      await(underTest.sendEmail(emailId))
+      await(underTest.sendEmail(emailId, parameters))
 
       wireMockVerify(1, postRequestedFor(
         urlEqualTo(emailServicePath))
@@ -93,7 +96,10 @@ class EmailConnectorSpec extends AsyncHmrcSpec with BeforeAndAfterEach with Befo
               |  "to": ["$emailId"],
               |  "templateId": "apiDeveloperChangedPasswordConfirmation",
               |  "parameters": {
-              |    "subject": "$subject"
+              |    "subject": "$subject",
+              |    "fromAddress": "gateKeeper",
+              |    "body": "Body to be used in the email template",
+              |    "service": "gatekeeper"
               |  },
               |  "force": false,
               |  "auditData": {}
@@ -103,7 +109,7 @@ class EmailConnectorSpec extends AsyncHmrcSpec with BeforeAndAfterEach with Befo
 
     "fail to send gatekeeper email" in new Setup with FailingHttp {
       intercept[UpstreamErrorResponse] {
-        await(underTest.sendEmail(emailId))
+        await(underTest.sendEmail(emailId, parameters))
       }
     }
   }

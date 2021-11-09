@@ -27,16 +27,20 @@ import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
-class HelloWorldController @Inject()(
+class GatekeeperComposeEmailController @Inject()(
   mcc: MessagesControllerComponents,
   emailConnector: EmailConnector,
   helloWorldPage: HelloWorldPage
   )(implicit val appConfig: AppConfig, val ec: ExecutionContext)
     extends FrontendController(mcc) with I18nSupport {
 
-  val helloWorld: Action[AnyContent] = Action.async { implicit request =>
+  val sendEmail: Action[AnyContent] = Action.async { implicit request =>
     val emailTo: String = "test.user@digital.hmrc.gov.uk"
-    emailConnector.sendEmail(emailTo)
+    val params: Map[String, String] = Map("subject" -> appConfig.emailSubject,
+                                          "fromAddress" -> "gateKeeper",
+                                          "body" -> "Body to be used in the email template",
+                                          "service" -> "gatekeeper")
+    emailConnector.sendEmail(emailTo, params)
     Future.successful(Ok(helloWorldPage()))
   }
 

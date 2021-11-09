@@ -36,9 +36,9 @@ class EmailConnector @Inject()(http: HttpClient, config: EmailConnectorConfig)(i
   val api = API("email")
   lazy val serviceUrl = config.emailBaseUrl
 
-  def sendEmail(emailTo: String)(implicit hc: HeaderCarrier): Future[Unit] = {
+  def sendEmail(emailTo: String, params: Map[String, String])(implicit hc: HeaderCarrier): Future[Unit] = {
     logger.info(s"*****sendEmailTo*********:$emailTo")
-    post(createEmailRequest(emailTo, config.emailSubject))
+    post(createEmailRequest(emailTo, params))
   }
 
   private def post(request: SendEmailRequest)(implicit hc: HeaderCarrier) = {
