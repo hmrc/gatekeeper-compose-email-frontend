@@ -21,6 +21,7 @@ object AppDependencies {
     "uk.gov.hmrc"       %%  "emailaddress"                  % "3.4.0",
     "uk.gov.hmrc"       %% "play-frontend-hmrc"             % "1.22.0-play-28",
     "uk.gov.hmrc.mongo" %% "hmrc-mongo-play-28"             % "0.55.0",
+    "uk.gov.hmrc"       %%  "http-metrics"                  % "2.3.0-play-28",
     "commons-net"       %   "commons-net"                   % "3.6",
     "org.slf4j"         %   "slf4j-api"                     % slf4jVersion,
     "org.slf4j"         %   "jcl-over-slf4j"                % slf4jVersion,

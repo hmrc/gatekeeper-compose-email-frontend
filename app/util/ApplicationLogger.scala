@@ -14,24 +14,10 @@
  * limitations under the License.
  */
 
-package config
+package util
 
-import javax.inject.{Inject, Singleton}
-import play.api.Configuration
-import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
+import play.api.Logger
 
-
-@Singleton
-class AppConfig @Inject()(config: Configuration)
-  extends ServicesConfig(config)
-    with EmailConnectorConfig
-{
-  val welshLanguageSupportEnabled: Boolean = config.getOptional[Boolean]("features.welsh-language-support").getOrElse(false)
-  val emailBaseUrl =  baseUrl("email")
-  val emailSubject =  getString("emailSubject")
-}
-
-trait EmailConnectorConfig {
-  val emailBaseUrl: String
-  val emailSubject: String
+trait ApplicationLogger {
+  val logger = Logger("application")
 }

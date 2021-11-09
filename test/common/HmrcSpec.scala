@@ -14,25 +14,15 @@
  * limitations under the License.
  */
 
-package controllers
+package common
 
-import play.api.i18n.I18nSupport
-import views.html.HelloWorldPage
-import uk.gov.hmrc.play.bootstrap.frontend.controller.FrontendController
-import play.api.mvc.{Action, AnyContent, MessagesControllerComponents}
+import org.mockito.{ArgumentMatchersSugar, MockitoSugar}
+import org.scalatest.{Matchers, OptionValues, WordSpec}
+import org.scalatestplus.play.WsScalaTestClient
+import play.api.test.{DefaultAwaitTimeout, FutureAwaits}
 
-import javax.inject.{Inject, Singleton}
-import scala.concurrent.Future
+abstract class HmrcSpec extends WordSpec with Matchers with OptionValues with WsScalaTestClient with MockitoSugar with ArgumentMatchersSugar
 
-@Singleton
-class HelloWorldController @Inject()(
-  mcc: MessagesControllerComponents,
-  helloWorldPage: HelloWorldPage)
-    extends FrontendController(mcc)
-      with I18nSupport {
-
-  val helloWorld: Action[AnyContent] = Action.async { implicit request =>
-    Future.successful(Ok(helloWorldPage()))
-  }
-
+abstract class AsyncHmrcSpec
+  extends HmrcSpec with DefaultAwaitTimeout with FutureAwaits {
 }
