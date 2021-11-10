@@ -19,7 +19,6 @@ package connectors
 import config.EmailConnectorConfig
 import models.SendEmailRequest
 import models.SendEmailRequest.createEmailRequest
-import play.api.Logger
 import uk.gov.hmrc.http.{HeaderCarrier, HttpClient}
 import uk.gov.hmrc.play.http.metrics.common.API
 import uk.gov.hmrc.http.HttpReads.Implicits._

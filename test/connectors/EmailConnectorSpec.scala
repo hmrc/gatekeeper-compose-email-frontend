@@ -94,7 +94,7 @@ class EmailConnectorSpec extends AsyncHmrcSpec with BeforeAndAfterEach with Befo
           s"""
               |{
               |  "to": ["$emailId"],
-              |  "templateId": "apiDeveloperChangedPasswordConfirmation",
+              |  "templateId": "gatekeeper",
               |  "parameters": {
               |    "subject": "$subject",
               |    "fromAddress": "gateKeeper",
