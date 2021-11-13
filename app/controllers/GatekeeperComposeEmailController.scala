@@ -17,7 +17,7 @@
 package controllers
 
 import config.AppConfig
-import connectors.EmailConnector
+import connectors.{EmailConnector, GatekeeperEmailConnector}
 import play.api.i18n.I18nSupport
 import views.html.HelloWorldPage
 import uk.gov.hmrc.play.bootstrap.frontend.controller.FrontendController
@@ -29,7 +29,7 @@ import scala.concurrent.{ExecutionContext, Future}
 @Singleton
 class GatekeeperComposeEmailController @Inject()(
   mcc: MessagesControllerComponents,
-  emailConnector: EmailConnector,
+  emailConnector: GatekeeperEmailConnector,
   helloWorldPage: HelloWorldPage
   )(implicit val appConfig: AppConfig, val ec: ExecutionContext)
     extends FrontendController(mcc) with I18nSupport {
@@ -40,6 +40,7 @@ class GatekeeperComposeEmailController @Inject()(
                                           "fromAddress" -> "gateKeeper",
                                           "body" -> "Body to be used in the email template",
                                           "service" -> "gatekeeper")
+
     emailConnector.sendEmail(emailTo, params)
     Future.successful(Ok(helloWorldPage()))
   }
