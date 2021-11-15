@@ -17,7 +17,7 @@
 package controllers
 
 import config.AppConfig
-import connectors.{EmailConnector, GatekeeperEmailConnector}
+import connectors.GatekeeperEmailConnector
 import play.api.i18n.I18nSupport
 import views.html.HelloWorldPage
 import uk.gov.hmrc.play.bootstrap.frontend.controller.FrontendController
