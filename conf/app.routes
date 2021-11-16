@@ -5,4 +5,5 @@ GET        /                        controllers.HelloWorldController.helloWorld
 GET        /email                   controllers.ComposeEmailController.email
 GET        /sent-email              controllers.ComposeEmailController.sentEmailConfirmation
 POST       /email                   controllers.ComposeEmailController.sendEmail
+GET        /                        controllers.GatekeeperComposeEmailController.sendEmail
 GET        /assets/*file            controllers.Assets.versioned(path = "/public", file: Asset)

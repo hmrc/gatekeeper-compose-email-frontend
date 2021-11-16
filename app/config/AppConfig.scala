@@ -18,13 +18,22 @@ package config
 
 import javax.inject.{Inject, Singleton}
 import play.api.Configuration
+import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
+
 
 @Singleton
-class AppConfig @Inject()
-  (
-    config: Configuration
-  ) {
+class AppConfig @Inject()(config: Configuration)
+  extends ServicesConfig(config)
+    with EmailConnectorConfig
+{
   val welshLanguageSupportEnabled: Boolean = config.getOptional[Boolean]("features.welsh-language-support").getOrElse(false)
 
   def title = "HMRC API Gatekeeper"
+  val emailBaseUrl =  baseUrl("gatekeeper-email")
+  val emailSubject =  getString("emailSubject")
+}
+
+trait EmailConnectorConfig {
+  val emailBaseUrl: String
+  val emailSubject: String
 }

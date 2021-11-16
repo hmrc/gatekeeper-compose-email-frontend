@@ -1,3 +1,5 @@
+#!/usr/bin/python
+
 import os, urllib, json
 import requests
 from sys import argv

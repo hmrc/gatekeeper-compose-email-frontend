@@ -37,18 +37,18 @@ class ComposeEmailControllerSpec extends AnyWordSpec with Matchers with GuiceOne
       )
       .build()
 
-  private val fakeRequest = FakeRequest("GET", "/").withCSRFToken
+  private val fakeGetRequest = FakeRequest("GET", "/email").withCSRFToken
 
   private val controller = app.injector.instanceOf[ComposeEmailController]
 
-  "GET /" should {
+  "GET /email" should {
     "return 200" in {
-      val result = controller.email(fakeRequest)
+      val result = controller.email(fakeGetRequest)
       status(result) shouldBe Status.OK
     }
 
     "return HTML" in {
-      val result = controller.email(fakeRequest)
+      val result = controller.email(fakeGetRequest)
       contentType(result) shouldBe Some("text/html")
       charset(result)     shouldBe Some("utf-8")
     }
