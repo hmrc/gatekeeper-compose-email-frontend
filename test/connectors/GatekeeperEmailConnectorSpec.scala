@@ -67,7 +67,7 @@ class GatekeeperEmailConnectorSpec extends AsyncHmrcSpec with BeforeAndAfterEach
 
     implicit val hc = HeaderCarrier()
 
-    lazy val underTest = new EmailConnector(httpClient, fakeEmailConnectorConfig)
+    lazy val underTest = new GatekeeperEmailConnector(httpClient, fakeEmailConnectorConfig)
   }
 
   trait WorkingHttp {
