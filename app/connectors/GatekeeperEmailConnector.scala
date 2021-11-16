@@ -19,20 +19,20 @@ package connectors
 import config.EmailConnectorConfig
 import models.SendEmailRequest
 import models.SendEmailRequest.createEmailRequest
+import uk.gov.hmrc.http.HttpReads.Implicits._
 import uk.gov.hmrc.http.{HeaderCarrier, HttpClient}
 import uk.gov.hmrc.play.http.metrics.common.API
-import uk.gov.hmrc.http.HttpReads.Implicits._
 import util.ApplicationLogger
 
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
-class EmailConnector @Inject()(http: HttpClient, config: EmailConnectorConfig)(implicit ec: ExecutionContext)
+class GatekeeperEmailConnector @Inject()(http: HttpClient, config: EmailConnectorConfig)(implicit ec: ExecutionContext)
   extends CommonResponseHandlers
   with ApplicationLogger {
 
-  val api = API("email")
+  val api = API("gatekeeper-email")
   lazy val serviceUrl = config.emailBaseUrl
 
   def sendEmail(emailTo: String, params: Map[String, String])(implicit hc: HeaderCarrier): Future[Unit] = {
