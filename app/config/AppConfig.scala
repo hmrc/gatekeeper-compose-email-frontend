@@ -27,6 +27,8 @@ class AppConfig @Inject()(config: Configuration)
     with EmailConnectorConfig
 {
   val welshLanguageSupportEnabled: Boolean = config.getOptional[Boolean]("features.welsh-language-support").getOrElse(false)
+
+  def title = "HMRC API Gatekeeper"
   val emailBaseUrl =  baseUrl("gatekeeper-email")
   val emailSubject =  getString("emailSubject")
 }
