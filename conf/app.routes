@@ -1,7 +1,6 @@
 # microservice specific routes
 
 ->         /hmrc-frontend           hmrcfrontend.Routes
-GET        /                        controllers.HelloWorldController.helloWorld
 GET        /email                   controllers.ComposeEmailController.email
 GET        /sent-email              controllers.ComposeEmailController.sentEmailConfirmation
 POST       /email                   controllers.ComposeEmailController.sendEmail

@@ -17,7 +17,6 @@
 import config.{AppConfig, EmailConnectorConfig}
 import play.api.inject.Binding
 import play.api.{Configuration, Environment}
-import uk.gov.hmrc.crypto.CompositeSymmetricCrypto
 
 /**
   * This class is a Guice module that tells Guice how to bind several
