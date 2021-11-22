@@ -17,6 +17,7 @@
 package controllers
 
 import config.AppConfig
+import controllers.ComposeEmailForm.form
 import javax.inject.{Inject, Singleton}
 import play.api.Logging
 import play.api.data.Form
@@ -35,7 +36,8 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
   extends FrontendController(mcc) with I18nSupport with Logging {
 
   def email: Action[AnyContent] = Action.async { implicit request =>
-    Future.successful(Ok(composeEmail()))
+        Future.successful(Ok(composeEmail(form.fill(ComposeEmailForm("","","")))))
+
   }
 
   def sentEmailConfirmation: Action[AnyContent] = Action.async { implicit request =>
@@ -51,7 +53,7 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
 
       def handleInvalidForm(formWithErrors: Form[ComposeEmailForm]) = {
         logger.warn(s"Error in form: ${formWithErrors.errors}")
-        Future.successful(BadRequest(composeEmail()))
+        Future.successful(BadRequest(composeEmail(formWithErrors)))
       }
 
       ComposeEmailForm.form.bindFromRequest.fold(handleInvalidForm(_), handleValidForm(_))
