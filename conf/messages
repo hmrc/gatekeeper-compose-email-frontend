@@ -1,2 +1,5 @@
 service.name = HMRC API Gatekeeper
 service.text = This is your new service
+email.recipient.required = Provide an email recipient
+email.subject.required = Provide an email subject
+email.body.required = Provide an email body

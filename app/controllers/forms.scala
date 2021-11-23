@@ -17,18 +17,18 @@
 package controllers
 
 import play.api.data.Form
-import play.api.data.Forms.{mapping, nonEmptyText}
+import play.api.data.Forms.{mapping, text}
 
 
 case class ComposeEmailForm(emailRecipient: String, emailSubject: String, emailBody: String) {}
 
 object ComposeEmailForm {
 
-   val form:Form[ComposeEmailForm] = Form(
+  val form: Form[ComposeEmailForm] = Form(
     mapping(
-      "emailRecipient" -> nonEmptyText,
-      "emailSubject" -> nonEmptyText,
-      "emailBody" -> nonEmptyText
+      "emailRecipient" -> text.verifying("email.recipient.required", _.nonEmpty),
+      "emailSubject" -> text.verifying("email.subject.required", _.nonEmpty),
+      "emailBody" -> text.verifying("email.body.required", _.nonEmpty)
     )(ComposeEmailForm.apply)(ComposeEmailForm.unapply)
   )
 }
