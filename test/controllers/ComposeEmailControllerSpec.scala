@@ -23,12 +23,9 @@ import play.api.Application
 import play.api.Play.materializer
 import play.api.http.Status
 import play.api.inject.guice.GuiceApplicationBuilder
-import play.api.mvc.Headers
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
 import play.api.test.CSRFTokenHelper._
-
-
 
 class ComposeEmailControllerSpec extends AnyWordSpec with Matchers with GuiceOneAppPerSuite  {
   override def fakeApplication(): Application =

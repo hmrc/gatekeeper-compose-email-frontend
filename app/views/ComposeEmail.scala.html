@@ -15,43 +15,52 @@
  *@
 
 @import config.AppConfig
+@import include._
 @this(layout: Layout, applicationConfig: AppConfig)
 
-@()(implicit request: Request[_], messages: Messages)
+@(form: Form[ComposeEmailForm])(implicit request: Request[_], messages: Messages)
 
 @layout(pageTitle = Some(s"${applicationConfig.title} - Compose Email")) {
+  @errorSummary(form)
+
   <h1 class="govuk-heading-xl">Compose email</h1>
   @helper.form(routes.ComposeEmailController.sendEmail()) {
     @helper.CSRF.formField
-      <div class="govuk-form-group">
+      <div class="govuk-form-group @if(form.errors("emailRecipient").nonEmpty) {govuk-form-group--error}">
         <h1 class="govuk-label-wrapper"><label class="govuk-label govuk-label--l" for="email-recipient">
           Email recipient
         </label>
         </h1>
-        <input class="govuk-input" id="email-recipient" name="emailRecipient" type="text" placeholder="muriel.heslop@@porpoisespit.com.au">
+        @fieldError(form.errors, "emailRecipient")
+        <input class="govuk-input" id="emailRecipient" name="emailRecipient" type="text"
+        placeholder="muriel.heslop@@porpoisespit.com.au" value="@form.data.getOrElse("emailRecipient", "")">
       </div>
 
-      <div class="govuk-form-group">
+      <div class="govuk-form-group @if(form.errors("emailSubject").nonEmpty) {govuk-form-group--error}">
         <h1 class="govuk-label-wrapper"><label class="govuk-label govuk-label--l" for="email-subject">
           Email subject
         </label>
         </h1>
-        <input class="govuk-input" id="email-subject" name="emailSubject" type="text" placeholder="What it's about">
+        @fieldError(form.errors, "emailSubject")
+        <input class="govuk-input" id="emailSubject" name="emailSubject" type="text" placeholder="What it's about"
+        value="@form.data.getOrElse("emailSubject", "")">
       </div>
 
-      <div class="govuk-form-group">
+      <div class="govuk-form-group @if(form.errors("emailBody").nonEmpty) {govuk-form-group--error}">
         <h1 class="govuk-label-wrapper"><label class="govuk-label govuk-label--l" for="email-body">
           Email body
         </label>
         </h1>
+        @fieldError(form.errors, "emailBody")
         <div id="email-body-hint" class="govuk-hint">
           Supports some markdown: this, that, and the other
         </div>
-        <textarea class="govuk-textarea" id="email-body" name="emailBody" rows="5" aria-describedby="email-body-hint"></textarea>
+        <textarea class="govuk-textarea" id="emailBody" name="emailBody" rows="5"
+        aria-describedby="email-body-hint">@form.data.getOrElse("emailBody", "")</textarea>
       </div>
 
       <button class="govuk-button" data-module="govuk-button">
-        Preview email
+        Send email
       </button>
 
     }
