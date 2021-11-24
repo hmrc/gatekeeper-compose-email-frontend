@@ -18,6 +18,8 @@ package controllers
 
 import config.AppConfig
 import controllers.ComposeEmailForm.form
+import connectors.GatekeeperEmailConnector
+
 import javax.inject.{Inject, Singleton}
 import play.api.Logging
 import play.api.data.Form
@@ -31,6 +33,7 @@ import scala.concurrent.{ExecutionContext, Future}
 @Singleton
 class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
                                        composeEmail: ComposeEmail,
+                                       emailConnector: GatekeeperEmailConnector,
                                        sentEmail: EmailSentConfirmation
                                       )(implicit val appConfig: AppConfig, val ec: ExecutionContext)
   extends FrontendController(mcc) with I18nSupport with Logging {
@@ -48,6 +51,11 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
     implicit request => {
       def handleValidForm(form: ComposeEmailForm) = {
         logger.info(s"Body is ${form.emailBody}, toAddress is ${form.emailRecipient}, subject is ${form.emailSubject}")
+        val params: Map[String, String] = Map("subject" -> form.emailSubject,
+          "fromAddress" -> "gateKeeper",
+          "body" -> form.emailBody,
+          "service" -> "gatekeeper")
+        emailConnector.sendEmail(form.emailRecipient, params)
         Future.successful(Redirect(routes.ComposeEmailController.sentEmailConfirmation()))
       }
 
@@ -55,7 +63,6 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
         logger.warn(s"Error in form: ${formWithErrors.errors}")
         Future.successful(BadRequest(composeEmail(formWithErrors)))
       }
-
       ComposeEmailForm.form.bindFromRequest.fold(handleInvalidForm(_), handleValidForm(_))
     }
   }
