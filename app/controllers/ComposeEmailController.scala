@@ -55,7 +55,7 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
           "fromAddress" -> "gateKeeper",
           "body" -> form.emailBody,
           "service" -> "gatekeeper")
-        emailConnector.sendEmail(form.emailRecipient, params)
+        emailConnector.sendEmail(form)
         Future.successful(Redirect(routes.ComposeEmailController.sentEmailConfirmation()))
       }
 

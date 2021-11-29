@@ -16,11 +16,14 @@
 
 package models
 
+import controllers.ComposeEmailForm
 import play.api.libs.json.Json
+
+case class EmailData(emailRecipient: String, emailSubject: String, emailBody: String)
 
 case class SendEmailRequest(to: List[String],
                             templateId: String,
-                            parameters: Map[String, String],
+                            emailData: EmailData,
                             force: Boolean = false,
                             auditData: Map[String, String] = Map.empty,
                             eventUrl: Option[String] = None)
@@ -28,12 +31,12 @@ case class SendEmailRequest(to: List[String],
 object SendEmailRequest {
   implicit val sendEmailRequestFmt = Json.format[SendEmailRequest]
 
-  def createEmailRequest(emailAddress: String, parameters: Map[String, String]) = {
+  def createEmailRequest(composeEmailForm: ComposeEmailForm) = {
 
     SendEmailRequest(
-      to = List(emailAddress),
-      templateId = "gatekeeper", //"gatekeeperEmailRequestTemplateId",
-      parameters
+      to = List(composeEmailForm.emailRecipient),
+      templateId = "gatekeeper",
+      EmailData(composeEmailForm.emailRecipient, composeEmailForm.emailSubject, composeEmailForm.emailBody)
     )
   }
 
