@@ -17,6 +17,7 @@
 package connectors
 
 import config.EmailConnectorConfig
+import controllers.ComposeEmailForm
 import models.SendEmailRequest
 import models.SendEmailRequest.createEmailRequest
 import uk.gov.hmrc.http.HttpReads.Implicits._
@@ -35,9 +36,9 @@ class GatekeeperEmailConnector @Inject()(http: HttpClient, config: EmailConnecto
   val api = API("gatekeeper-email")
   lazy val serviceUrl = config.emailBaseUrl
 
-  def sendEmail(emailTo: String, params: Map[String, String])(implicit hc: HeaderCarrier): Future[Unit] = {
-    logger.info(s"*****sendEmailTo*********:$emailTo")
-    post(createEmailRequest(emailTo, params))
+  def sendEmail(composeEmailForm: ComposeEmailForm)(implicit hc: HeaderCarrier): Future[Unit] = {
+    logger.info(s"*****sendEmailTo*********:$composeEmailForm")
+    post(createEmailRequest(composeEmailForm))
   }
 
   private def post(request: SendEmailRequest)(implicit hc: HeaderCarrier) = {
