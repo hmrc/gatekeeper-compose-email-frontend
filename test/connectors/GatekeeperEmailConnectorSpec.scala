@@ -22,6 +22,7 @@ import com.github.tomakehurst.wiremock.client.WireMock.{verify => wireMockVerify
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration._
 import common.AsyncHmrcSpec
 import config.EmailConnectorConfig
+import controllers.ComposeEmailForm
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.http.Status.OK
@@ -56,7 +57,8 @@ class GatekeeperEmailConnectorSpec extends AsyncHmrcSpec with BeforeAndAfterEach
   val emailId = "email@example.com"
   val subject = "Email subject"
   val emailServicePath = "/gatekeeper-email"
-   
+  val emailBody = "Body to be used in the email template"
+
   trait Setup {
     val httpClient = app.injector.instanceOf[HttpClient]
     
@@ -68,6 +70,8 @@ class GatekeeperEmailConnectorSpec extends AsyncHmrcSpec with BeforeAndAfterEach
     implicit val hc = HeaderCarrier()
 
     lazy val underTest = new GatekeeperEmailConnector(httpClient, fakeEmailConnectorConfig)
+    val composeEmailForm: ComposeEmailForm = ComposeEmailForm(emailId, subject, emailBody)
+
   }
 
   trait WorkingHttp {
@@ -81,12 +85,9 @@ class GatekeeperEmailConnectorSpec extends AsyncHmrcSpec with BeforeAndAfterEach
   }
   
   "emailConnector" should {
-    val parameters: Map[String, String] = Map("subject" -> s"$subject",
-      "fromAddress" -> "gateKeeper",
-      "body" -> "Body to be used in the email template",
-      "service" -> "gatekeeper")
+
     "send gatekeeper email" in new Setup with WorkingHttp {
-      await(underTest.sendEmail(emailId, parameters))
+      await(underTest.sendEmail(composeEmailForm))
 
       wireMockVerify(1, postRequestedFor(
         urlEqualTo(emailServicePath))
@@ -95,11 +96,10 @@ class GatekeeperEmailConnectorSpec extends AsyncHmrcSpec with BeforeAndAfterEach
               |{
               |  "to": ["$emailId"],
               |  "templateId": "gatekeeper",
-              |  "parameters": {
-              |    "subject": "$subject",
-              |    "fromAddress": "gateKeeper",
-              |    "body": "Body to be used in the email template",
-              |    "service": "gatekeeper"
+              |  "emailData": {
+              |    "emailRecipient": "$emailId",
+              |    "emailSubject": "$subject",
+              |    "emailBody": "$emailBody",
               |  },
               |  "force": false,
               |  "auditData": {}
@@ -109,7 +109,7 @@ class GatekeeperEmailConnectorSpec extends AsyncHmrcSpec with BeforeAndAfterEach
 
     "fail to send gatekeeper email" in new Setup with FailingHttp {
       intercept[UpstreamErrorResponse] {
-        await(underTest.sendEmail(emailId, parameters))
+        await(underTest.sendEmail(composeEmailForm))
       }
     }
   }
