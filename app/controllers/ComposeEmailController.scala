@@ -51,10 +51,6 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
     implicit request => {
       def handleValidForm(form: ComposeEmailForm) = {
         logger.info(s"Body is ${form.emailBody}, toAddress is ${form.emailRecipient}, subject is ${form.emailSubject}")
-        val params: Map[String, String] = Map("subject" -> form.emailSubject,
-          "fromAddress" -> "gateKeeper",
-          "body" -> form.emailBody,
-          "service" -> "gatekeeper")
         emailConnector.sendEmail(form)
         Future.successful(Redirect(routes.ComposeEmailController.sentEmailConfirmation()))
       }

@@ -29,6 +29,7 @@ case class SendEmailRequest(to: List[String],
                             eventUrl: Option[String] = None)
 
 object SendEmailRequest {
+  implicit val emailDataFmt = Json.format[EmailData]
   implicit val sendEmailRequestFmt = Json.format[SendEmailRequest]
 
   def createEmailRequest(composeEmailForm: ComposeEmailForm) = {
