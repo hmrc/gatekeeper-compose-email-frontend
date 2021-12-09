@@ -54,14 +54,14 @@ class GatekeeperEmailConnectorSpec extends AsyncHmrcSpec with BeforeAndAfterEach
   }
 
   val gatekeeperLink = "http://some.url"
-  val emailId = "email@example.com"
+  val emailAddress = "email@example.com"
   val subject = "Email subject"
   val emailServicePath = "/gatekeeper-email"
   val emailBody = "Body to be used in the email template"
 
   trait Setup {
     val httpClient = app.injector.instanceOf[HttpClient]
-    
+
     val fakeEmailConnectorConfig = new EmailConnectorConfig {
       val emailBaseUrl = wireMockUrl
       override val emailSubject: String = subject
@@ -70,7 +70,7 @@ class GatekeeperEmailConnectorSpec extends AsyncHmrcSpec with BeforeAndAfterEach
     implicit val hc = HeaderCarrier()
 
     lazy val underTest = new GatekeeperEmailConnector(httpClient, fakeEmailConnectorConfig)
-    val composeEmailForm: ComposeEmailForm = ComposeEmailForm(emailId, subject, emailBody)
+    val composeEmailForm: ComposeEmailForm = ComposeEmailForm(emailAddress, subject, emailBody)
 
   }
 
@@ -83,7 +83,7 @@ class GatekeeperEmailConnectorSpec extends AsyncHmrcSpec with BeforeAndAfterEach
       self: Setup =>
     stubFor(post(urlEqualTo(emailServicePath)).willReturn(aResponse().withStatus(404)))
   }
-  
+
   "emailConnector" should {
 
     "send gatekeeper email" in new Setup with WorkingHttp {
@@ -94,10 +94,10 @@ class GatekeeperEmailConnectorSpec extends AsyncHmrcSpec with BeforeAndAfterEach
         .withRequestBody(equalToJson(
           s"""
               |{
-              |  "to": ["$emailId"],
+              |  "to": ["$emailAddress"],
               |  "templateId": "gatekeeper",
               |  "emailData": {
-              |    "emailRecipient": "$emailId",
+              |    "emailRecipient": "$emailAddress",
               |    "emailSubject": "$subject",
               |    "emailBody": "$emailBody",
               |  },
