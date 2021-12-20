@@ -25,9 +25,10 @@ import play.api.mvc.MessagesControllerComponents
 import uk.gov.hmrc.http.HeaderCarrier
 import views.html.{ComposeEmail, EmailSentConfirmation}
 
+import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
 
-class ComposeEmailService(mcc: MessagesControllerComponents,
+class ComposeEmailService @Inject()(mcc: MessagesControllerComponents,
                           composeEmail: ComposeEmail,
                           emailConnector: GatekeeperEmailConnector,
                           sentEmail: EmailSentConfirmation)
