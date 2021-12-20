@@ -1,4 +1,4 @@
-/*
+@*
  * Copyright 2021 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,19 +12,15 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- */
+ *@
 
-package common
+@import config.AppConfig
 
-import org.mockito.{ArgumentMatchersSugar, MockitoSugar}
-import org.scalatest.OptionValues
-import org.scalatest.wordspec.AnyWordSpec
-import org.scalatest.matchers.should.Matchers
-import org.scalatestplus.play.WsScalaTestClient
-import play.api.test.{DefaultAwaitTimeout, FutureAwaits}
+@this(main: MainView, applicationConfig: AppConfig)
 
-abstract class HmrcSpec extends AnyWordSpec with Matchers with OptionValues with WsScalaTestClient with MockitoSugar with ArgumentMatchersSugar
+@()(implicit request : Request[_], messagesProvider: MessagesProvider)
 
-abstract class AsyncHmrcSpec
-  extends HmrcSpec with DefaultAwaitTimeout with FutureAwaits {
+@main(title = "Forbidden") {
+  <h1>You do not have permission to access Gatekeeper</h1>
+  <h2>Contact your administrator for access</h2>
 }

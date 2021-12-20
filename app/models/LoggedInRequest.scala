@@ -14,17 +14,9 @@
  * limitations under the License.
  */
 
-package common
+package models
 
-import org.mockito.{ArgumentMatchersSugar, MockitoSugar}
-import org.scalatest.OptionValues
-import org.scalatest.wordspec.AnyWordSpec
-import org.scalatest.matchers.should.Matchers
-import org.scalatestplus.play.WsScalaTestClient
-import play.api.test.{DefaultAwaitTimeout, FutureAwaits}
+import play.api.mvc.{Request, WrappedRequest}
+import uk.gov.hmrc.auth.core.Enrolments
 
-abstract class HmrcSpec extends AnyWordSpec with Matchers with OptionValues with WsScalaTestClient with MockitoSugar with ArgumentMatchersSugar
-
-abstract class AsyncHmrcSpec
-  extends HmrcSpec with DefaultAwaitTimeout with FutureAwaits {
-}
+case class LoggedInRequest[A](name: Option[String], authorisedEnrolments: Enrolments, request: Request[A]) extends WrappedRequest(request)

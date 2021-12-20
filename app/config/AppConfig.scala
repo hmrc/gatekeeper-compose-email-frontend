@@ -16,21 +16,50 @@
 
 package config
 
+import com.google.inject.ImplementedBy
 import javax.inject.{Inject, Singleton}
 import play.api.Configuration
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 
+@ImplementedBy(classOf[AppConfigImpl])
+trait AppConfig {
+  def appName: String
+  def assetsPrefix: String
+  def title: String
+
+  def gatekeeperSuccessUrl: String
+  def strideLoginUrl: String
+
+  def authBaseUrl: String
+  def adminRole: String
+  def superUserRole: String
+  def userRole: String
+  def welshLanguageSupportEnabled: Boolean
+}
 
 @Singleton
-class AppConfig @Inject()(config: Configuration)
-  extends ServicesConfig(config)
-    with EmailConnectorConfig
-{
-  val welshLanguageSupportEnabled: Boolean = config.getOptional[Boolean]("features.welsh-language-support").getOrElse(false)
+class AppConfigImpl @Inject()(config: Configuration)
+  extends ServicesConfig(config) with AppConfig with EmailConnectorConfig {
+  val welshLanguageSupportEnabled = config.getOptional[Boolean]("features.welsh-language-support").getOrElse(false)
 
-  def title = "HMRC API Gatekeeper"
+  val appName = "HMRC API Gatekeeper"
+  val assetsPrefix = getString("assets.url") + getString("assets.version")
+  val title = "HMRC API Gatekeeper"
   val emailBaseUrl =  baseUrl("gatekeeper-email")
   val emailSubject =  getString("emailSubject")
+
+
+  override def gatekeeperSuccessUrl: String = getString("api-gatekeeper-email-success-url")
+
+  override def strideLoginUrl: String = s"${baseUrl("stride-auth-frontend")}/stride/sign-in"
+
+  val authBaseUrl = baseUrl("auth")
+
+  override def adminRole: String = getString("roles.admin")
+
+  override def superUserRole: String = getString("roles.super-user")
+
+  override def userRole: String =  getString("roles.user")
 }
 
 trait EmailConnectorConfig {

@@ -1,4 +1,4 @@
-/*
+@*
  * Copyright 2021 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,19 +12,17 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- */
+ *@
 
-package common
+@import models.NavLink
+@(navLinks: Seq[NavLink], anchorClass: Option[String] = None)
 
-import org.mockito.{ArgumentMatchersSugar, MockitoSugar}
-import org.scalatest.OptionValues
-import org.scalatest.wordspec.AnyWordSpec
-import org.scalatest.matchers.should.Matchers
-import org.scalatestplus.play.WsScalaTestClient
-import play.api.test.{DefaultAwaitTimeout, FutureAwaits}
-
-abstract class HmrcSpec extends AnyWordSpec with Matchers with OptionValues with WsScalaTestClient with MockitoSugar with ArgumentMatchersSugar
-
-abstract class AsyncHmrcSpec
-  extends HmrcSpec with DefaultAwaitTimeout with FutureAwaits {
+@for(link <- navLinks) {
+<li @if(link == navLinks.last) {class="hard--right"}>
+   @if(link.href.isDefined) {
+      <a class="align--middle inline-block @anchorClass.getOrElse("")" href="@{link.href}">@{link.label}</a>
+   } else {
+      <span class="align--middle inline-block">@{link.label}</span>
+   }
+</li>
 }

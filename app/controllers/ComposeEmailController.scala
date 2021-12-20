@@ -18,15 +18,16 @@ package controllers
 
 import config.AppConfig
 import controllers.ComposeEmailForm.form
-import connectors.GatekeeperEmailConnector
-
+import connectors.{AuthConnector, GatekeeperEmailConnector}
 import javax.inject.{Inject, Singleton}
+import models.GatekeeperRole
 import play.api.Logging
 import play.api.data.Form
 import play.api.i18n.I18nSupport
-import play.api.mvc.{Action, AnyContent, MessagesControllerComponents}
+import play.api.mvc.{Action, AnyContent, MessagesControllerComponents, Result}
 import uk.gov.hmrc.play.bootstrap.frontend.controller.FrontendController
-import views.html.{ComposeEmail, EmailSentConfirmation}
+import views.html.{ComposeEmail, EmailSentConfirmation, ForbiddenView}
+import util.GatekeeperAuthWrapper
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -34,32 +35,35 @@ import scala.concurrent.{ExecutionContext, Future}
 class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
                                        composeEmail: ComposeEmail,
                                        emailConnector: GatekeeperEmailConnector,
-                                       sentEmail: EmailSentConfirmation
+                                       sentEmail: EmailSentConfirmation,
+                                       val forbiddenView: ForbiddenView,
+                                       override val authConnector: AuthConnector
                                       )(implicit val appConfig: AppConfig, val ec: ExecutionContext)
-  extends FrontendController(mcc) with I18nSupport with Logging {
+  extends FrontendController(mcc) with I18nSupport with GatekeeperAuthWrapper with Logging {
 
-  def email: Action[AnyContent] = Action.async { implicit request =>
-        Future.successful(Ok(composeEmail(form.fill(ComposeEmailForm("","","")))))
-
+  def email: Action[AnyContent] = requiresAtLeast(GatekeeperRole.USER) {
+    implicit request => Future.successful(Ok(composeEmail(form.fill(ComposeEmailForm("","","")))))
   }
 
-  def sentEmailConfirmation: Action[AnyContent] = Action.async { implicit request =>
-    Future.successful(Ok(sentEmail()))
+  def sentEmailConfirmation: Action[AnyContent] = requiresAtLeast(GatekeeperRole.USER) {
+    implicit request => Future.successful(Ok(sentEmail()))
   }
 
-  def sendEmail(): Action[AnyContent] = Action.async {
-    implicit request => {
-      def handleValidForm(form: ComposeEmailForm) = {
-        logger.info(s"Body is ${form.emailBody}, toAddress is ${form.emailRecipient}, subject is ${form.emailSubject}")
-        emailConnector.sendEmail(form)
-        Future.successful(Redirect(routes.ComposeEmailController.sentEmailConfirmation()))
-      }
+  def sendEmail(): Action[AnyContent] = requiresAtLeast(GatekeeperRole.USER) {
+      implicit request => {
+        def handleValidForm(form: ComposeEmailForm): Future[Result] = {
+          logger.info(s"Body is ${form.emailBody}, toAddress is ${form.emailRecipient}, subject is ${form.emailSubject}")
+          println("Connector in controller is " + emailConnector)
+          emailConnector.sendEmail(form)
+          Future.successful(Redirect(routes.ComposeEmailController.sentEmailConfirmation()))
+        }
 
-      def handleInvalidForm(formWithErrors: Form[ComposeEmailForm]) = {
-        logger.warn(s"Error in form: ${formWithErrors.errors}")
-        Future.successful(BadRequest(composeEmail(formWithErrors)))
+        def handleInvalidForm(formWithErrors: Form[ComposeEmailForm]): Future[Result] = {
+          logger.warn(s"Error in form: ${formWithErrors.errors}")
+          Future.successful(BadRequest(composeEmail(formWithErrors)))
+        }
+
+        ComposeEmailForm.form.bindFromRequest.fold(handleInvalidForm(_), handleValidForm(_))
       }
-      ComposeEmailForm.form.bindFromRequest.fold(handleInvalidForm(_), handleValidForm(_))
     }
-  }
 }

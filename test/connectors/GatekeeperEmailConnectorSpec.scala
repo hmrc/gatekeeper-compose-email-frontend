@@ -25,7 +25,7 @@ import config.EmailConnectorConfig
 import controllers.ComposeEmailForm
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
-import play.api.http.Status.OK
+import play.api.http.Status.{OK, NOT_FOUND}
 import uk.gov.hmrc.http.{HeaderCarrier, HttpClient, UpstreamErrorResponse}
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -81,7 +81,7 @@ class GatekeeperEmailConnectorSpec extends AsyncHmrcSpec with BeforeAndAfterEach
 
   trait FailingHttp {
       self: Setup =>
-    stubFor(post(urlEqualTo(emailServicePath)).willReturn(aResponse().withStatus(404)))
+    stubFor(post(urlEqualTo(emailServicePath)).willReturn(aResponse().withStatus(NOT_FOUND)))
   }
   
   "emailConnector" should {
