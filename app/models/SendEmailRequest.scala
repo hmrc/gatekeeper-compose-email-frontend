@@ -42,3 +42,10 @@ object SendEmailRequest {
   }
 
 }
+
+sealed trait EmailHttpResponse {
+  def code: Int
+  def body: String
+}
+case class EmailSuccessHttpResponse(code: Int, body: String) extends EmailHttpResponse
+case class EmailFailedHttpResponse(code: Int, body: String) extends EmailHttpResponse

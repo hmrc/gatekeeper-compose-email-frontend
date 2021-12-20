@@ -19,24 +19,28 @@ package controllers
 import config.AppConfig
 import controllers.ComposeEmailForm.form
 import connectors.GatekeeperEmailConnector
-
+import models.{EmailFailedHttpResponse, EmailSuccessHttpResponse}
+import models.JsonFormatters._
 import javax.inject.{Inject, Singleton}
 import play.api.Logging
 import play.api.data.Form
 import play.api.i18n.I18nSupport
 import play.api.mvc.{Action, AnyContent, MessagesControllerComponents}
+import services.ComposeEmailService
 import uk.gov.hmrc.play.bootstrap.frontend.controller.FrontendController
-import views.html.{ComposeEmail, EmailSentConfirmation}
+import views.html.{ComposeEmail, EmailSentConfirmation, ErrorTemplate}
+import utils.ErrorHelper
 
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
 class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
                                        composeEmail: ComposeEmail,
-                                       emailConnector: GatekeeperEmailConnector,
+                                       emailService: ComposeEmailService,
+                                       override val errorTemplate: ErrorTemplate,
                                        sentEmail: EmailSentConfirmation
                                       )(implicit val appConfig: AppConfig, val ec: ExecutionContext)
-  extends FrontendController(mcc) with I18nSupport with Logging {
+  extends FrontendController(mcc) with I18nSupport with ErrorHelper with Logging {
 
   def email: Action[AnyContent] = Action.async { implicit request =>
         Future.successful(Ok(composeEmail(form.fill(ComposeEmailForm("","","")))))
@@ -51,7 +55,12 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
     implicit request => {
       def handleValidForm(form: ComposeEmailForm) = {
         logger.info(s"Body is ${form.emailBody}, toAddress is ${form.emailRecipient}, subject is ${form.emailSubject}")
-        emailConnector.sendEmail(form)
+        emailService.sendEmail(form) map { response =>
+          response match {
+            case EmailSuccessHttpResponse(code, body) => sentEmailConfirmation()
+            case EmailFailedHttpResponse(code, body) => technicalDifficulties
+          }
+        }
         Future.successful(Redirect(routes.ComposeEmailController.sentEmailConfirmation()))
       }
 

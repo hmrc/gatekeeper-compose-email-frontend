@@ -14,26 +14,11 @@
  * limitations under the License.
  */
 
-package connectors
+package models
 
-import config.EmailConnectorConfig
-import controllers.ComposeEmailForm
-import models.{EmailFailedHttpResponse, EmailHttpResponse, EmailSuccessHttpResponse, SendEmailRequest}
-import models.SendEmailRequest.createEmailRequest
-import play.api.libs.json.{JsError, JsObject, JsResult, JsString, JsValue, Json, OFormat, Reads, Writes}
-import play.api.mvc._
-import uk.gov.hmrc.http.HttpReads.Implicits._
-import uk.gov.hmrc.http.{HeaderCarrier, HttpClient, UpstreamErrorResponse}
-import uk.gov.hmrc.play.http.metrics.common.API
-import utils.ApplicationLogger
+import play.api.libs.json.{Format, JsError, JsObject, JsResult, JsString, JsValue, Json, OFormat, Reads, Writes}
 
-import javax.inject.{Inject, Singleton}
-import scala.concurrent.{ExecutionContext, Future}
-
-@Singleton
-class GatekeeperEmailConnector @Inject()(http: HttpClient, config: EmailConnectorConfig)(implicit ec: ExecutionContext)
-  extends CommonResponseHandlers
-  with ApplicationLogger {
+object JsonFormatters {
   implicit val httpSuccessResponseFormat: OFormat[EmailSuccessHttpResponse] = Json.format[EmailSuccessHttpResponse]
   implicit val httpFailedResponseFormat: OFormat[EmailFailedHttpResponse] = Json.format[EmailFailedHttpResponse]
   implicit val readHttpStatus: Reads[EmailHttpResponse] = new Reads[EmailHttpResponse] {
@@ -55,21 +40,6 @@ class GatekeeperEmailConnector @Inject()(http: HttpClient, config: EmailConnecto
       }
     }
   }
-  implicit val httpResponseFormat: OFormat[EmailHttpResponse] = Json.format[EmailHttpResponse]
-
-  val api = API("gatekeeper-email")
-  lazy val serviceUrl = config.emailBaseUrl
-
-  def sendEmail(composeEmailForm: ComposeEmailForm)(implicit hc: HeaderCarrier): Future[EmailHttpResponse] = {
-    post(createEmailRequest(composeEmailForm))
-  }
-
-  private def post(request: SendEmailRequest)(implicit hc: HeaderCarrier) = {
-    http.POST[SendEmailRequest, Either[UpstreamErrorResponse, EmailHttpResponse]](s"$serviceUrl/gatekeeper-email", request)
-    .map(resp => resp match {
-      case Right(_) => resp.right.get
-      case Left(err) => throw err
-    })
-  }
-
+  //case f : UploadedFailedWithErrors => uploadedFailed.writes(f) ++ Json.obj("_type" -> "uploadedFailed")
+  implicit val httpResponseFormat: Format[EmailHttpResponse] = Format(readHttpStatus,writeHttpStatus)
 }
