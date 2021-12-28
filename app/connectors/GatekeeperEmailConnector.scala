@@ -60,12 +60,12 @@ class GatekeeperEmailConnector @Inject()(http: HttpClient, config: EmailConnecto
   val api = API("gatekeeper-email")
   lazy val serviceUrl = config.emailBaseUrl
 
-  def sendEmail(composeEmailForm: ComposeEmailForm)(implicit hc: HeaderCarrier): Future[EmailHttpResponse] = {
+  def sendEmail(composeEmailForm: ComposeEmailForm)(implicit hc: HeaderCarrier): Future[Int] = {
     post(createEmailRequest(composeEmailForm))
   }
 
   private def post(request: SendEmailRequest)(implicit hc: HeaderCarrier) = {
-    http.POST[SendEmailRequest, Either[UpstreamErrorResponse, EmailHttpResponse]](s"$serviceUrl/gatekeeper-email", request)
+    http.POST[SendEmailRequest, Either[UpstreamErrorResponse, Int]](s"$serviceUrl/gatekeeper-email", request)
     .map(resp => resp match {
       case Right(_) => resp.right.get
       case Left(err) => throw err

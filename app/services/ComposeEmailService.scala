@@ -26,7 +26,8 @@ import uk.gov.hmrc.http.HeaderCarrier
 import views.html.{ComposeEmail, EmailSentConfirmation}
 
 import javax.inject.Inject
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.duration.Duration
+import scala.concurrent.{Await, ExecutionContext, Future}
 
 class ComposeEmailService @Inject()(mcc: MessagesControllerComponents,
                           composeEmail: ComposeEmail,
@@ -34,8 +35,9 @@ class ComposeEmailService @Inject()(mcc: MessagesControllerComponents,
                           sentEmail: EmailSentConfirmation)
                          (implicit val appConfig: AppConfig, val ec: ExecutionContext){
 
-  def sendEmail(composeEmailForm: ComposeEmailForm)(implicit hc: HeaderCarrier): Future[EmailHttpResponse] = {
-    emailConnector.sendEmail(composeEmailForm)
+  def sendEmail(composeEmailForm: ComposeEmailForm)(implicit hc: HeaderCarrier): Future[Int] = {
+    val result = emailConnector.sendEmail(composeEmailForm)
+    result
   }
 
 }
