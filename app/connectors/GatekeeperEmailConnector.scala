@@ -34,28 +34,6 @@ import scala.concurrent.{ExecutionContext, Future}
 class GatekeeperEmailConnector @Inject()(http: HttpClient, config: EmailConnectorConfig)(implicit ec: ExecutionContext)
   extends CommonResponseHandlers
   with ApplicationLogger {
-  implicit val httpSuccessResponseFormat: OFormat[EmailSuccessHttpResponse] = Json.format[EmailSuccessHttpResponse]
-  implicit val httpFailedResponseFormat: OFormat[EmailFailedHttpResponse] = Json.format[EmailFailedHttpResponse]
-  implicit val readHttpStatus: Reads[EmailHttpResponse] = new Reads[EmailHttpResponse] {
-    override def reads(json: JsValue): JsResult[EmailHttpResponse] = {
-      val jsObject = json.asInstanceOf[JsObject]
-      jsObject.value.get("_type") match {
-        case Some(JsString("EmailSuccessHttpResponse")) => Json.fromJson[EmailSuccessHttpResponse](jsObject)(httpSuccessResponseFormat)
-        case Some(JsString("EmailFailedHttpResponse")) => Json.fromJson[EmailFailedHttpResponse](jsObject)(httpFailedResponseFormat)
-        case Some(value) => JsError(s"Unexpected value of _type: $value")
-        case None => JsError("Missing _type field")
-      }
-    }
-  }
-  val writeHttpStatus: Writes[EmailHttpResponse] = new Writes[EmailHttpResponse] {
-    override def writes(p: EmailHttpResponse): JsObject = {
-      p match {
-        case s : EmailSuccessHttpResponse => httpSuccessResponseFormat.writes(s) ++ Json.obj("_type" -> "EmailSuccessHttpResponse")
-        case f : EmailFailedHttpResponse =>  httpFailedResponseFormat.writes(f) ++ Json.obj("_type" -> "EmailFailedHttpResponse")
-      }
-    }
-  }
-  implicit val httpResponseFormat: OFormat[EmailHttpResponse] = Json.format[EmailHttpResponse]
 
   val api = API("gatekeeper-email")
   lazy val serviceUrl = config.emailBaseUrl

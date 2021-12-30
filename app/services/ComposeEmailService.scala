@@ -29,11 +29,8 @@ import javax.inject.Inject
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, ExecutionContext, Future}
 
-class ComposeEmailService @Inject()(mcc: MessagesControllerComponents,
-                          composeEmail: ComposeEmail,
-                          emailConnector: GatekeeperEmailConnector,
-                          sentEmail: EmailSentConfirmation)
-                         (implicit val appConfig: AppConfig, val ec: ExecutionContext){
+class ComposeEmailService @Inject()(emailConnector: GatekeeperEmailConnector)
+                         (implicit val ec: ExecutionContext){
 
   def sendEmail(composeEmailForm: ComposeEmailForm)(implicit hc: HeaderCarrier): Future[Int] = {
     val result = emailConnector.sendEmail(composeEmailForm)

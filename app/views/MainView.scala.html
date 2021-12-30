@@ -17,8 +17,7 @@
 @import play.twirl.api.HtmlFormat
 
 @this()
-@(title: String, mainContentHeader: Html = HtmlFormat.empty)(mainContent: Html)(implicit messagesProvider: MessagesProvider)
+@(title: String, heading: String, message: String)(mainContent: Html)(implicit messagesProvider: MessagesProvider)
 
-(pageTitle = "GateKeeper Email") {
-@mainContentHeader
-}
+<h1>@heading</h1>
+<p>@message</p>

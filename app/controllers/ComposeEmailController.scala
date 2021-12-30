@@ -26,7 +26,8 @@ import play.api.i18n.I18nSupport
 import play.api.mvc.{Action, AnyContent, MessagesControllerComponents}
 import services.ComposeEmailService
 import uk.gov.hmrc.play.bootstrap.frontend.controller.FrontendController
-import views.html.{ComposeEmail, EmailSentConfirmation, EmailSentFailed}
+import utils.ErrorHelper
+import views.html.{ComposeEmail, EmailSentConfirmation, EmailSentFailed, ErrorTemplate}
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -35,9 +36,9 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
                                        composeEmail: ComposeEmail,
                                        emailService: ComposeEmailService,
                                        sentEmail: EmailSentConfirmation,
-                                       emailFailed: EmailSentFailed
-                                      )(implicit val appConfig: AppConfig, val ec: ExecutionContext)
-  extends FrontendController(mcc) with I18nSupport with Logging {
+                                       override val errorTemplate: ErrorTemplate)
+                                      (implicit val ec: ExecutionContext)
+  extends FrontendController(mcc) with ErrorHelper with I18nSupport with Logging {
 
   def email: Action[AnyContent] = Action.async { implicit request =>
         Future.successful(Ok(composeEmail(form.fill(ComposeEmailForm("","","")))))
@@ -54,7 +55,10 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
         logger.info(s"Body is ${form.emailBody}, toAddress is ${form.emailRecipient}, subject is ${form.emailSubject}")
         emailService.sendEmail(form) map { _ match {
             case ACCEPTED  => Redirect(routes.ComposeEmailController.sentEmailConfirmation())
-            case _ => Ok(emailFailed())
+            case _ => {
+              println("------> Before tech difficulties page")
+              technicalDifficulties
+            }
           }
         }
       }

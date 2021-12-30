@@ -16,6 +16,12 @@
 
 package controllers
 
+import config.AppConfig
+import connectors.GatekeeperEmailConnector
+import org.mockito.Mockito.when
+import org.mockito.MockitoSugar.mock
+import org.mockito.matchers.MacroBasedMatchers
+import org.mockito.{ArgumentMatchersSugar, MockitoSugar}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
@@ -23,26 +29,61 @@ import play.api.Application
 import play.api.Play.materializer
 import play.api.http.Status
 import play.api.inject.guice.GuiceApplicationBuilder
-import play.api.test.FakeRequest
+import play.api.test.{FakeRequest, Helpers}
 import play.api.test.Helpers._
 import play.api.test.CSRFTokenHelper._
+import play.test.Helpers.fakeApplication
+import services.ComposeEmailService
+import uk.gov.hmrc.http.HeaderCarrier
+import views.html.{ComposeEmail, EmailSentConfirmation, ErrorTemplate}
 
-class ComposeEmailControllerSpec extends AnyWordSpec with Matchers with GuiceOneAppPerSuite  {
-  override def fakeApplication(): Application =
-    new GuiceApplicationBuilder()
-      .configure(
-        "metrics.jvm"     -> false,
-        "metrics.enabled" -> false
-      )
-      .build()
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future.successful
+import org.mockito.Mockito._
 
-  private val fakeGetRequest = FakeRequest("GET", "/email").withCSRFToken
-  private val fakeConfirmationGetRequest = FakeRequest("GET", "/sent-email").withCSRFToken
+import scala.concurrent.Future
 
-  private val controller = app.injector.instanceOf[ComposeEmailController]
+
+class ComposeEmailControllerSpec extends AnyWordSpec with Matchers with GuiceOneAppPerSuite with MockitoSugar with ArgumentMatchersSugar {
+
+    implicit val hc: HeaderCarrier = HeaderCarrier()
+    override def fakeApplication(): Application =
+      new GuiceApplicationBuilder()
+        .configure(
+          "metrics.jvm"     -> false,
+          "metrics.enabled" -> false
+        )
+        .build()
+    class NewEmailService extends ComposeEmailService(mock[GatekeeperEmailConnector]) {
+
+    override def sendEmail(composeEmailForm: ComposeEmailForm)(implicit hc: HeaderCarrier): Future[Int] = {
+      println("------------>>>>>>>>>> in faked sendEmail")
+      Future.successful(202)
+    }
+
+    }
+    val fakeGetRequest = FakeRequest("GET", "/email").withCSRFToken
+    val fakeConfirmationGetRequest = FakeRequest("GET", "/sent-email").withCSRFToken
+    val mockEmailService: ComposeEmailService = new NewEmailService
+    val composeEmailForm: ComposeEmailForm = ComposeEmailForm("fsadfas%40adfas.com", "dfasd", "asdfasf")
+//    when(mockEmailService.sendEmail(*))
+//      .thenReturn(successful(OK))
+   val errorTemplate: ErrorTemplate = fakeApplication.injector.instanceOf[ErrorTemplate]
+   val composeEmail: ComposeEmail = fakeApplication.injector.instanceOf[ComposeEmail]
+   val emailSentConfirmation: EmailSentConfirmation = fakeApplication.injector.instanceOf[EmailSentConfirmation]
+   val controller = new ComposeEmailController(Helpers.stubMessagesControllerComponents(),
+       composeEmail,
+       mockEmailService,
+       emailSentConfirmation,
+       errorTemplate)
+
+
+
+
+
 
   "GET /email" should {
-    "return 200" in {
+    "return 200" in  {
       val result = controller.email(fakeGetRequest)
       status(result) shouldBe Status.OK
     }
@@ -69,6 +110,7 @@ class ComposeEmailControllerSpec extends AnyWordSpec with Matchers with GuiceOne
 
   "POST /email" should {
     "send an email upon receiving a valid form submission" in {
+
       val fakeRequest = FakeRequest("POST", "/email")
         .withFormUrlEncodedBody("emailRecipient"->"fsadfas%40adfas.com", "emailSubject"->"dfasd", "emailBody"->"asdfasf")
         .withCSRFToken

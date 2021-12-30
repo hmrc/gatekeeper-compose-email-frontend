@@ -26,7 +26,7 @@ trait ErrorHelper {
 
   def technicalDifficulties(implicit request: Request[_], messagesProvider: Messages) : Result = {
     InternalServerError(errorTemplate("Technical difficulties", "Technical difficulties",
-      "Sorry, we’re experiencing technical difficulties"))
+      "Sorry, we are experiencing technical difficulties"))
   }
 
   def notFound(errors: String)(implicit request: Request[_], messagesProvider: Messages) : Result = {
