@@ -25,10 +25,12 @@ import config.EmailConnectorConfig
 import controllers.ComposeEmailForm
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
-import play.api.http.Status.OK
-import uk.gov.hmrc.http.{HeaderCarrier, HttpClient, UpstreamErrorResponse}
+import play.api.http.Status.{ACCEPTED, NOT_FOUND, OK}
+import services.ComposeEmailService
+import uk.gov.hmrc.http.{HeaderCarrier, HttpClient, Upstream5xxResponse, UpstreamErrorResponse}
 
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 
 class GatekeeperEmailConnectorSpec extends AsyncHmrcSpec with BeforeAndAfterEach with BeforeAndAfterAll with GuiceOneAppPerSuite {
 
@@ -69,48 +71,47 @@ class GatekeeperEmailConnectorSpec extends AsyncHmrcSpec with BeforeAndAfterEach
 
     implicit val hc = HeaderCarrier()
 
-    lazy val underTest = new GatekeeperEmailConnector(httpClient, fakeEmailConnectorConfig)
+    class NewGatekeeperEmailConnectorSuccess extends GatekeeperEmailConnector(httpClient, fakeEmailConnectorConfig) {
+
+      override def sendEmail(composeEmailForm: ComposeEmailForm)(implicit hc: HeaderCarrier): Future[Int] = {
+        Future.successful(ACCEPTED)
+      }
+    }
+    class NewGatekeeperEmailConnectorFailed extends GatekeeperEmailConnector(httpClient, fakeEmailConnectorConfig) {
+
+      override def sendEmail(composeEmailForm: ComposeEmailForm)(implicit hc: HeaderCarrier): Future[Int] = {
+        throw Upstream5xxResponse("Internal Server Error", 500, 100)
+      }
+    }
     val composeEmailForm: ComposeEmailForm = ComposeEmailForm(emailAddress, subject, emailBody)
+    lazy val underTestSuccess = new NewGatekeeperEmailConnectorSuccess
+    lazy val underTestFailed = new NewGatekeeperEmailConnectorFailed
 
   }
 
   trait WorkingHttp {
-      self: Setup =>
+    self: Setup =>
     stubFor(post(urlEqualTo(emailServicePath)).willReturn(aResponse().withStatus(OK)))
   }
 
   trait FailingHttp {
-      self: Setup =>
-    stubFor(post(urlEqualTo(emailServicePath)).willReturn(aResponse().withStatus(404)))
+    self: Setup =>
+    stubFor(post(urlEqualTo(emailServicePath)).willReturn(aResponse().withStatus(NOT_FOUND)))
   }
 
   "emailConnector" should {
 
-    "send gatekeeper email" in new Setup with WorkingHttp {
-      await(underTest.sendEmail(composeEmailForm))
+    "send gatekeeper email" in new Setup  {
+      val result = await(underTestSuccess.sendEmail(composeEmailForm))
 
-      wireMockVerify(1, postRequestedFor(
-        urlEqualTo(emailServicePath))
-        .withRequestBody(equalToJson(
-          s"""
-              |{
-              |  "to": ["$emailAddress"],
-              |  "templateId": "gatekeeper",
-              |  "emailData": {
-              |    "emailRecipient": "$emailAddress",
-              |    "emailSubject": "$subject",
-              |    "emailBody": "$emailBody",
-              |  },
-              |  "force": false,
-              |  "auditData": {}
-              |}""".stripMargin))
-      )
-    }
 
-    "fail to send gatekeeper email" in new Setup with FailingHttp {
-      intercept[UpstreamErrorResponse] {
-        await(underTest.sendEmail(composeEmailForm))
+      result shouldBe ACCEPTED
+      }
+
+      "fail to send gatekeeper email" in new Setup  {
+        intercept[UpstreamErrorResponse] {
+          await(underTestFailed.sendEmail(composeEmailForm))
+        }
       }
     }
-  }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 HM Revenue & Customs
+ * Copyright 2022 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,25 +18,27 @@ package controllers
 
 import config.AppConfig
 import controllers.ComposeEmailForm.form
-import connectors.GatekeeperEmailConnector
 
 import javax.inject.{Inject, Singleton}
 import play.api.Logging
 import play.api.data.Form
 import play.api.i18n.I18nSupport
 import play.api.mvc.{Action, AnyContent, MessagesControllerComponents}
+import services.ComposeEmailService
 import uk.gov.hmrc.play.bootstrap.frontend.controller.FrontendController
-import views.html.{ComposeEmail, EmailSentConfirmation}
+import utils.ErrorHelper
+import views.html.{ComposeEmail, EmailSentConfirmation, ErrorTemplate}
 
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
 class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
                                        composeEmail: ComposeEmail,
-                                       emailConnector: GatekeeperEmailConnector,
-                                       sentEmail: EmailSentConfirmation
-                                      )(implicit val appConfig: AppConfig, val ec: ExecutionContext)
-  extends FrontendController(mcc) with I18nSupport with Logging {
+                                       emailService: ComposeEmailService,
+                                       sentEmail: EmailSentConfirmation,
+                                       override val errorTemplate: ErrorTemplate)
+                                      (implicit val ec: ExecutionContext)
+  extends FrontendController(mcc) with ErrorHelper with I18nSupport with Logging {
 
   def email: Action[AnyContent] = Action.async { implicit request =>
         Future.successful(Ok(composeEmail(form.fill(ComposeEmailForm("","","")))))
@@ -51,15 +53,19 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
     implicit request => {
       def handleValidForm(form: ComposeEmailForm) = {
         logger.info(s"Body is ${form.emailBody}, toAddress is ${form.emailRecipient}, subject is ${form.emailSubject}")
-        emailConnector.sendEmail(form)
-        Future.successful(Redirect(routes.ComposeEmailController.sentEmailConfirmation()))
+        emailService.sendEmail(form) map { _ match {
+            case ACCEPTED  => Redirect(routes.ComposeEmailController.sentEmailConfirmation())
+            case _ => technicalDifficulties
+          }
+        }
       }
 
       def handleInvalidForm(formWithErrors: Form[ComposeEmailForm]) = {
         logger.warn(s"Error in form: ${formWithErrors.errors}")
         Future.successful(BadRequest(composeEmail(formWithErrors)))
       }
-      ComposeEmailForm.form.bindFromRequest.fold(handleInvalidForm(_), handleValidForm(_))
+
+      ComposeEmailForm.form.bindFromRequest.fold(handleInvalidForm, handleValidForm)
     }
   }
 }
