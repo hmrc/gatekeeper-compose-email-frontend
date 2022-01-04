@@ -14,20 +14,11 @@
  * limitations under the License.
  */
 
-package config
+package services
 
-import javax.inject.{Inject, Singleton}
+case class UpscanFileReference(reference: String)
 
-import play.api.i18n.MessagesApi
-import play.api.mvc.Request
-import play.twirl.api.Html
-import uk.gov.hmrc.play.bootstrap.frontend.http.FrontendErrorHandler
-import views.html.ErrorTemplate
-
-@Singleton
-class ErrorHandler @Inject()(errorTemplate: ErrorTemplate, val messagesApi: MessagesApi)
-    extends FrontendErrorHandler {
-
-  override def standardErrorTemplate(pageTitle: String, heading: String, message: String)(implicit request: Request[_]): Html =
-    errorTemplate(pageTitle, heading, message)
-}
+case class UpscanInitiateResponse(
+  fileReference: UpscanFileReference,
+  postTarget: String,
+  formFields: Map[String, String])

@@ -14,20 +14,19 @@
  * limitations under the License.
  */
 
-package config
+package util
 
-import javax.inject.{Inject, Singleton}
+import play.api.libs.Files.TemporaryFile
+import play.api.mvc.MultipartFormData.FilePart
 
-import play.api.i18n.MessagesApi
-import play.api.mvc.Request
-import play.twirl.api.Html
-import uk.gov.hmrc.play.bootstrap.frontend.http.FrontendErrorHandler
-import views.html.ErrorTemplate
+object MultipartFormDataSummaries {
+  def summariseDataParts(dataParts: Map[String, Seq[String]]): String =
+    dataParts.map { case (key, values) =>
+      s"""$key=${values.mkString("[", ",", "]")}"""
+    }.mkString("{", ",", "}")
 
-@Singleton
-class ErrorHandler @Inject()(errorTemplate: ErrorTemplate, val messagesApi: MessagesApi)
-    extends FrontendErrorHandler {
-
-  override def standardErrorTemplate(pageTitle: String, heading: String, message: String)(implicit request: Request[_]): Html =
-    errorTemplate(pageTitle, heading, message)
+  def summariseFileParts(fileParts: Seq[FilePart[TemporaryFile]]): String =
+    fileParts.map { fp =>
+      s"FilePart(key=${fp.key}, filename=${fp.filename}, contentType=${fp.contentType}, fileSize=${fp.fileSize}"
+    }.mkString("[", ",", "]")
 }

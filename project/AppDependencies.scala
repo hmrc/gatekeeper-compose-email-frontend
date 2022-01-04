@@ -31,7 +31,9 @@ object AppDependencies {
     "ch.qos.logback"    %   "logback-core"                  % logbackVersion,
     "com.typesafe.play" %%  "play-json"                     % "2.8.1",
     "com.typesafe.play" %%  "play-json-joda"                % "2.8.1",
-    "org.typelevel"     %%  "cats-core"                     % "2.3.1"
+    "org.typelevel"     %%  "cats-core"                     % "2.3.1",
+    "org.apache.httpcomponents" % "httpclient"                 % "4.5.13"
+
   )
 
   lazy val testScopes = Seq(Test.name, IntegrationTest.name, "acceptance").mkString(",")

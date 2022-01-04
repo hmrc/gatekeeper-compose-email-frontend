@@ -1,5 +1,5 @@
 @*
- * Copyright 2021 HM Revenue & Customs
+ * Copyright 2022 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,15 +16,17 @@
 
 @import config.AppConfig
 @import include._
-@this(layout: Layout, applicationConfig: AppConfig)
+@import services._
 
-@(form: Form[ComposeEmailForm])(implicit request: Request[_], messages: Messages)
+@this(layout: Layout, appConfig: AppConfig)
 
-@layout(pageTitle = Some(s"${applicationConfig.title} - Compose Email")) {
+@(upscanInitiateResponse : UpscanInitiateResponse, form: Form[ComposeEmailForm])(implicit request: Request[_], messages: Messages)
+
+@layout(pageTitle = Some(s"${appConfig.title} - Compose Email")) {
   @errorSummary(form)
 
   <h1 class="govuk-heading-xl">Compose email</h1>
-  @helper.form(routes.ComposeEmailController.sendEmail()) {
+  @helper.form(routes.ComposeEmailController.upload, Symbol("enctype") -> "multipart/form-data") {
     @helper.CSRF.formField
       <div class="govuk-form-group @if(form.errors("emailRecipient").nonEmpty) {govuk-form-group--error}">
         <h1 class="govuk-label-wrapper"><label class="govuk-label govuk-label--l" for="email-recipient">
@@ -59,9 +61,26 @@
         aria-describedby="email-body-hint">@form.data.getOrElse("emailBody", "")</textarea>
       </div>
 
-      <button class="govuk-button" data-module="govuk-button">
-        Send email
-      </button>
+        @for(field <- upscanInitiateResponse.formFields) {
+        <input type="hidden" name="@field._1" value="@field._2"/>
+        }
+        <input type="hidden" name="upscan-url" value="@upscanInitiateResponse.postTarget" />
 
+        <div class="govuk-form-group govuk-!-margin-top-6">
+            <label class="govuk-label" for="email-attachments">
+                Attach a file
+            </label>
+            <input class="govuk-file-upload"
+                   id="email-attachments"
+                   name="file"
+                   type="file"
+                   accept=".pdf,.doc,.docx,.xlsx,.xls,.png,.jpeg,.jpg,.txt">
+        </div>
+
+        <div class="govuk-button-group">
+            <button class="govuk-button" data-module="govuk-button">
+                Save email
+            </button>
+        </div>
     }
   }

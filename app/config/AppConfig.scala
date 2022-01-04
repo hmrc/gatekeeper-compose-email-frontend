@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 HM Revenue & Customs
+ * Copyright 2022 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,8 +29,15 @@ class AppConfig @Inject()(config: Configuration)
   val welshLanguageSupportEnabled: Boolean = config.getOptional[Boolean]("features.welsh-language-support").getOrElse(false)
 
   def title = "HMRC API Gatekeeper"
+  lazy val initiateUrl              = baseUrl("upscan-initiate") + "/upscan/initiate"
+  lazy val initiateV2Url            = baseUrl("upscan-initiate") + "/upscan/v2/initiate"
+  lazy val uploadRedirectTargetBase = getString("upload-redirect-target-base")
+  lazy val callbackEndpointTarget   = getString("upscan.callback-endpoint")
   val emailBaseUrl =  baseUrl("gatekeeper-email")
   val emailSubject =  getString("emailSubject")
+  val maxFileSize = getString("file-formats.max-file-size-mb")
+  val approvedFileExtensions = getString("file-formats.approved-file-extensions")
+  val approvedFileTypes = getString("file-formats.approved-file-types")
 }
 
 trait EmailConnectorConfig {
