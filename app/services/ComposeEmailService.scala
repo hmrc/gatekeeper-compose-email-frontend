@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 HM Revenue & Customs
+ * Copyright 2022 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,25 +16,18 @@
 
 package services
 
-import config.AppConfig
 import connectors.GatekeeperEmailConnector
 import controllers.ComposeEmailForm
-import models.EmailHttpResponse
-import models.SendEmailRequest.createEmailRequest
-import play.api.mvc.MessagesControllerComponents
 import uk.gov.hmrc.http.HeaderCarrier
-import views.html.{ComposeEmail, EmailSentConfirmation}
 
 import javax.inject.Inject
-import scala.concurrent.duration.Duration
-import scala.concurrent.{Await, ExecutionContext, Future}
+import scala.concurrent.{ExecutionContext, Future}
 
 class ComposeEmailService @Inject()(emailConnector: GatekeeperEmailConnector)
                          (implicit val ec: ExecutionContext){
 
   def sendEmail(composeEmailForm: ComposeEmailForm)(implicit hc: HeaderCarrier): Future[Int] = {
-    val result = emailConnector.sendEmail(composeEmailForm)
-    result
+    emailConnector.sendEmail(composeEmailForm)
   }
 
 }

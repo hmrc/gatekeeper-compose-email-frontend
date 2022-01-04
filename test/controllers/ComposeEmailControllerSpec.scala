@@ -57,8 +57,7 @@ class ComposeEmailControllerSpec extends AnyWordSpec with Matchers with GuiceOne
     class NewEmailService extends ComposeEmailService(mock[GatekeeperEmailConnector]) {
 
     override def sendEmail(composeEmailForm: ComposeEmailForm)(implicit hc: HeaderCarrier): Future[Int] = {
-      println("------------>>>>>>>>>> in faked sendEmail")
-      Future.successful(202)
+      Future.successful(ACCEPTED)
     }
 
     }
@@ -66,8 +65,6 @@ class ComposeEmailControllerSpec extends AnyWordSpec with Matchers with GuiceOne
     val fakeConfirmationGetRequest = FakeRequest("GET", "/sent-email").withCSRFToken
     val mockEmailService: ComposeEmailService = new NewEmailService
     val composeEmailForm: ComposeEmailForm = ComposeEmailForm("fsadfas%40adfas.com", "dfasd", "asdfasf")
-//    when(mockEmailService.sendEmail(*))
-//      .thenReturn(successful(OK))
    val errorTemplate: ErrorTemplate = fakeApplication.injector.instanceOf[ErrorTemplate]
    val composeEmail: ComposeEmail = fakeApplication.injector.instanceOf[ComposeEmail]
    val emailSentConfirmation: EmailSentConfirmation = fakeApplication.injector.instanceOf[EmailSentConfirmation]

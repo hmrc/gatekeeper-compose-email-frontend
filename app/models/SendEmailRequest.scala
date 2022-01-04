@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 HM Revenue & Customs
+ * Copyright 2022 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,10 +42,3 @@ object SendEmailRequest {
   }
 
 }
-
-sealed trait EmailHttpResponse {
-  def code: Int
-  def body: String
-}
-case class EmailSuccessHttpResponse(code: Int, body: String) extends EmailHttpResponse
-case class EmailFailedHttpResponse(code: Int, body: String) extends EmailHttpResponse

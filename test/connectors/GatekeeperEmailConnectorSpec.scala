@@ -25,7 +25,7 @@ import config.EmailConnectorConfig
 import controllers.ComposeEmailForm
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
-import play.api.http.Status.{ACCEPTED, OK}
+import play.api.http.Status.{ACCEPTED, NOT_FOUND, OK}
 import services.ComposeEmailService
 import uk.gov.hmrc.http.{HeaderCarrier, HttpClient, Upstream5xxResponse, UpstreamErrorResponse}
 
@@ -71,23 +71,21 @@ class GatekeeperEmailConnectorSpec extends AsyncHmrcSpec with BeforeAndAfterEach
 
     implicit val hc = HeaderCarrier()
 
-    class NewGatekeeperEmailConnector extends GatekeeperEmailConnector(httpClient, fakeEmailConnectorConfig) {
+    class NewGatekeeperEmailConnectorSuccess extends GatekeeperEmailConnector(httpClient, fakeEmailConnectorConfig) {
 
       override def sendEmail(composeEmailForm: ComposeEmailForm)(implicit hc: HeaderCarrier): Future[Int] = {
-        println("------------>>>>>>>>>> in faked sendEmail in NewGatekeeperEmailConnector")
-        Future.successful(202)
+        Future.successful(ACCEPTED)
       }
     }
-    class NewGatekeeperEmailConnector2 extends GatekeeperEmailConnector(httpClient, fakeEmailConnectorConfig) {
+    class NewGatekeeperEmailConnectorFailed extends GatekeeperEmailConnector(httpClient, fakeEmailConnectorConfig) {
 
       override def sendEmail(composeEmailForm: ComposeEmailForm)(implicit hc: HeaderCarrier): Future[Int] = {
-        println("------------>>>>>>>>>> in faked sendEmail in NewGatekeeperEmailConnector")
         throw Upstream5xxResponse("Internal Server Error", 500, 100)
       }
     }
     val composeEmailForm: ComposeEmailForm = ComposeEmailForm(emailAddress, subject, emailBody)
-    lazy val underTest = new NewGatekeeperEmailConnector
-    lazy val underTest2 = new NewGatekeeperEmailConnector2
+    lazy val underTestSuccess = new NewGatekeeperEmailConnectorSuccess
+    lazy val underTestFailed = new NewGatekeeperEmailConnectorFailed
 
   }
 
@@ -98,39 +96,21 @@ class GatekeeperEmailConnectorSpec extends AsyncHmrcSpec with BeforeAndAfterEach
 
   trait FailingHttp {
     self: Setup =>
-    stubFor(post(urlEqualTo(emailServicePath)).willReturn(aResponse().withStatus(404)))
+    stubFor(post(urlEqualTo(emailServicePath)).willReturn(aResponse().withStatus(NOT_FOUND)))
   }
 
   "emailConnector" should {
 
     "send gatekeeper email" in new Setup  {
-      val result = await(underTest.sendEmail(composeEmailForm))
+      val result = await(underTestSuccess.sendEmail(composeEmailForm))
 
-        println(s"********** $result")
 
-//        wireMockVerify(1, postRequestedFor(
-//          urlEqualTo(emailServicePath))
-//          .withRequestBody(equalToJson(
-//            s"""
-//               |{
-//               |  "to": ["$emailAddress"],
-//               |  "templateId": "gatekeeper",
-//               |  "emailData": {
-//               |    "emailRecipient": "$emailAddress",
-//               |    "emailSubject": "$subject",
-//               |    "emailBody": "$emailBody",
-//               |  },
-//               |  "force": false,
-//               |  "auditData": {}
-//               |}""".stripMargin))
-//        )
       result shouldBe ACCEPTED
       }
 
       "fail to send gatekeeper email" in new Setup  {
-
         intercept[UpstreamErrorResponse] {
-          await(underTest2.sendEmail(composeEmailForm))
+          await(underTestFailed.sendEmail(composeEmailForm))
         }
       }
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 HM Revenue & Customs
+ * Copyright 2022 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,10 +18,8 @@ package connectors
 
 import config.EmailConnectorConfig
 import controllers.ComposeEmailForm
-import models.{EmailFailedHttpResponse, EmailHttpResponse, EmailSuccessHttpResponse, SendEmailRequest}
+import models.SendEmailRequest
 import models.SendEmailRequest.createEmailRequest
-import play.api.libs.json.{JsError, JsObject, JsResult, JsString, JsValue, Json, OFormat, Reads, Writes}
-import play.api.mvc._
 import uk.gov.hmrc.http.HttpReads.Implicits._
 import uk.gov.hmrc.http.{HeaderCarrier, HttpClient, UpstreamErrorResponse}
 import uk.gov.hmrc.play.http.metrics.common.API

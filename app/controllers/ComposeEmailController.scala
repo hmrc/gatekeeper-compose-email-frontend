@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 HM Revenue & Customs
+ * Copyright 2022 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,7 +27,7 @@ import play.api.mvc.{Action, AnyContent, MessagesControllerComponents}
 import services.ComposeEmailService
 import uk.gov.hmrc.play.bootstrap.frontend.controller.FrontendController
 import utils.ErrorHelper
-import views.html.{ComposeEmail, EmailSentConfirmation, EmailSentFailed, ErrorTemplate}
+import views.html.{ComposeEmail, EmailSentConfirmation, ErrorTemplate}
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -55,10 +55,7 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
         logger.info(s"Body is ${form.emailBody}, toAddress is ${form.emailRecipient}, subject is ${form.emailSubject}")
         emailService.sendEmail(form) map { _ match {
             case ACCEPTED  => Redirect(routes.ComposeEmailController.sentEmailConfirmation())
-            case _ => {
-              println("------> Before tech difficulties page")
-              technicalDifficulties
-            }
+            case _ => technicalDifficulties
           }
         }
       }
