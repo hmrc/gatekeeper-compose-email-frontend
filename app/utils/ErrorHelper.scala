@@ -28,12 +28,4 @@ trait ErrorHelper {
     InternalServerError(errorTemplate("Technical difficulties", "Technical difficulties",
       "Sorry, we are experiencing technical difficulties"))
   }
-
-  def notFound(errors: String)(implicit request: Request[_], messagesProvider: Messages) : Result = {
-    NotFound(errorTemplate("Not found", "404 - Not found", errors))
-  }
-
-  def badRequest(errors: String)(implicit request: Request[_], messagesProvider: Messages) : Result = {
-    BadRequest(errorTemplate("Bad request", "400 - Bad request", errors))
-  }
 }

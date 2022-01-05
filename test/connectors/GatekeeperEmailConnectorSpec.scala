@@ -23,11 +23,13 @@ import com.github.tomakehurst.wiremock.core.WireMockConfiguration._
 import common.AsyncHmrcSpec
 import config.EmailConnectorConfig
 import controllers.ComposeEmailForm
+import models.SendEmailRequest
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
-import play.api.http.Status.{ACCEPTED, NOT_FOUND, OK}
+import play.api.http.Status.{ACCEPTED, INTERNAL_SERVER_ERROR, NOT_FOUND, OK}
 import services.ComposeEmailService
 import uk.gov.hmrc.http.{HeaderCarrier, HttpClient, Upstream5xxResponse, UpstreamErrorResponse}
+import models.SendEmailRequest.createEmailRequest
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -70,20 +72,22 @@ class GatekeeperEmailConnectorSpec extends AsyncHmrcSpec with BeforeAndAfterEach
     }
 
     implicit val hc = HeaderCarrier()
+    val composeEmailForm: ComposeEmailForm = ComposeEmailForm(emailAddress, subject, emailBody)
+    val sendEmailRequest = SendEmailRequest.createEmailRequest(composeEmailForm)
 
     class NewGatekeeperEmailConnectorSuccess extends GatekeeperEmailConnector(httpClient, fakeEmailConnectorConfig) {
 
-      override def sendEmail(composeEmailForm: ComposeEmailForm)(implicit hc: HeaderCarrier): Future[Int] = {
-        Future.successful(ACCEPTED)
+      override def doPost(sendEmailRequest: SendEmailRequest)(implicit hc: HeaderCarrier): Future[Either[UpstreamErrorResponse, Int]]  = {
+        Future.successful(Right(ACCEPTED))
       }
     }
     class NewGatekeeperEmailConnectorFailed extends GatekeeperEmailConnector(httpClient, fakeEmailConnectorConfig) {
 
-      override def sendEmail(composeEmailForm: ComposeEmailForm)(implicit hc: HeaderCarrier): Future[Int] = {
-        throw Upstream5xxResponse("Internal Server Error", 500, 100)
+
+      override def doPost(sendEmailRequest: SendEmailRequest)(implicit hc: HeaderCarrier): Future[Either[UpstreamErrorResponse, Int]]  = {
+        Future.successful(Left(Upstream5xxResponse("Internal Server Error", INTERNAL_SERVER_ERROR, INTERNAL_SERVER_ERROR)))
       }
     }
-    val composeEmailForm: ComposeEmailForm = ComposeEmailForm(emailAddress, subject, emailBody)
     lazy val underTestSuccess = new NewGatekeeperEmailConnectorSuccess
     lazy val underTestFailed = new NewGatekeeperEmailConnectorFailed
 
