@@ -18,10 +18,11 @@ package connectors
 
 import config.EmailConnectorConfig
 import controllers.ComposeEmailForm
-import models.SendEmailRequest
+import models.{OutgoingEmail, SendEmailRequest}
 import models.SendEmailRequest.createEmailRequest
+import play.api.libs.json.JsValue
 import uk.gov.hmrc.http.HttpReads.Implicits._
-import uk.gov.hmrc.http.{HeaderCarrier, HttpClient}
+import uk.gov.hmrc.http.{HeaderCarrier, HttpClient, UpstreamErrorResponse}
 import uk.gov.hmrc.play.http.metrics.common.API
 import util.ApplicationLogger
 
@@ -36,12 +37,15 @@ class GatekeeperEmailConnector @Inject()(http: HttpClient, config: EmailConnecto
   val api = API("gatekeeper-email")
   lazy val serviceUrl = config.emailBaseUrl
 
-  def sendEmail(composeEmailForm: ComposeEmailForm)(implicit hc: HeaderCarrier): Future[Unit] = {
+  def sendEmail(composeEmailForm: ComposeEmailForm)(implicit hc: HeaderCarrier): Future[OutgoingEmail] = {
     post(createEmailRequest(composeEmailForm))
   }
 
   private def post(request: SendEmailRequest)(implicit hc: HeaderCarrier) = {
-    http.POST[SendEmailRequest, ErrorOrUnit](s"$serviceUrl/gatekeeper-email", request)
-    .map(throwOrUnit)
+    http.POST[SendEmailRequest, Either[UpstreamErrorResponse, OutgoingEmail]](s"$serviceUrl/gatekeeper-email", request)
+      .map {
+        case resp@Right(_) => resp.right.get
+        case Left(err) => throw err
+      }
   }
 }

@@ -20,13 +20,13 @@ import akka.stream.IOResult
 import akka.stream.scaladsl.{FileIO, Source}
 import akka.util.ByteString
 import config.AppConfig
-import controllers.ComposeEmailForm.form
 import connectors.{GatekeeperEmailConnector, UpscanInitiateConnector}
 import controllers.UploadProxyController.ErrorResponseHandler.{MessageField, asErrorResult, errorResponse, fieldName, proxyErrorResponse}
 import controllers.UploadProxyController.MultipartFormExtractor.{extractKey, extractSingletonFormValue}
 import controllers.UploadProxyController.TemporaryFilePart.partitionTrys
 import controllers.UploadProxyController.{ErrorAction, ErrorResponseHandler, MultipartFormExtractor, TemporaryFilePart, asTuples}
-import models.UploadId
+import models.{OutgoingEmail, UploadId}
+import org.apache.commons.io.Charsets
 import play.api.http.Status
 import play.api.libs.ws.{WSClient, WSResponse}
 import play.api.mvc.MultipartFormData.DataPart
@@ -43,19 +43,21 @@ import play.api.libs.json.Json
 import services.{UpscanFileReference, UpscanInitiateResponse}
 import uk.gov.hmrc.play.bootstrap.frontend.controller.FrontendController
 import util.MultipartFormDataSummaries.{summariseDataParts, summariseFileParts}
-import views.html.{ComposeEmail, EmailSentConfirmation}
+import views.html.{ComposeEmail, EmailPreview, EmailSentConfirmation}
 import org.apache.http.client.utils.URIBuilder
 import play.api.mvc.MultipartFormData.FilePart
 
 import java.net.URI
 import java.nio.charset.StandardCharsets.UTF_8
 import java.nio.file.Path
+import java.util.Base64
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 
 @Singleton
 class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
                                        composeEmail: ComposeEmail,
+                                       emailPreview: EmailPreview,
                                        emailConnector: GatekeeperEmailConnector,
                                        upscanInitiateConnector: UpscanInitiateConnector,
                                        sentEmail: EmailSentConfirmation,
@@ -69,16 +71,10 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
     val errorRedirectUrl   = appConfig.uploadRedirectTargetBase + "/gatekeeper-compose-email-frontend/error"
     for {
       upscanInitiateResponse <- upscanInitiateConnector.initiateV2(Some(successRedirectUrl), Some(errorRedirectUrl))
-    } yield Ok(composeEmail(upscanInitiateResponse, form.fill(ComposeEmailForm("","",""))))
-
-//    Future.successful(Ok(composeEmail(form.fill(ComposeEmailForm("","","")))))
+    } yield Ok(composeEmail(upscanInitiateResponse, controllers.ComposeEmailForm.form.fill(ComposeEmailForm("","",""))))
   }
 
   def sentEmailConfirmation: Action[AnyContent] = Action.async { implicit request =>
-    Future.successful(Ok(sentEmail()))
-  }
-
-  def attachFiles(): Action[AnyContent] = Action.async { implicit request =>
     Future.successful(Ok(sentEmail()))
   }
 
@@ -103,15 +99,22 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
     val body = request.body
     logger.info(
       s"Upload form contains dataParts=${summariseDataParts(body.dataParts)} and fileParts=${summariseFileParts(body.files)}")
-    postEmail(body)
-//    if(body.files.isEmpty) {
-////       return MultipartFormExtractor.extractKey(body).map { key =>
-////         Future.successful(
-////           ErrorResponseHandler.okResponse(ErrorAction(None, key), "No Error")
-////         )
-////       }
-//      Future.successful(Ok(sentEmail()))
-//    } else {
+    val outgoingEmail: Future[OutgoingEmail] = postEmail(body)
+    if(body.files.isEmpty) {
+       MultipartFormExtractor.extractKey(body).map { key =>
+         Future.successful(
+           ErrorResponseHandler.okResponse(ErrorAction(None, key), "No Error")
+         )
+       }
+      def base64Decode(result: String): String =
+        new String(Base64.getDecoder.decode(result), Charsets.UTF_8)
+
+      outgoingEmail.map {  email =>
+        logger.info(s"***EMAIL HTML LOG*** ${email.htmlEmailBody}")
+        Ok(emailPreview(base64Decode(email.markdownEmailBody), controllers.EmailPreviewForm.form.fill(EmailPreviewForm("","",""))))
+      }
+
+    } else {
       MultipartFormExtractor
         .extractErrorAction(body)
         .fold(
@@ -155,7 +158,7 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
             futResult
           }
         )
-//    }
+    }
   }
 
   private def postEmail(multipartFormData: MultipartFormData[TemporaryFile])(implicit request: RequestHeader) = {
