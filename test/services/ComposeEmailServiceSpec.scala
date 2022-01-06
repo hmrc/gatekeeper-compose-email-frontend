@@ -25,9 +25,10 @@ import org.mongodb.scala.bson.{BsonNumber, BsonValue}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
-import play.api.http.Status.{ACCEPTED, BAD_REQUEST, OK}
+import play.api.http.Status.{ACCEPTED, BAD_REQUEST, INTERNAL_SERVER_ERROR, OK}
 import play.api.test.Helpers.{await, defaultAwaitTimeout}
-import uk.gov.hmrc.http.HeaderCarrier
+import uk.gov.hmrc.http.UpstreamErrorResponse.unapply
+import uk.gov.hmrc.http.{HeaderCarrier, Upstream5xxResponse, UpstreamErrorResponse}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -47,19 +48,20 @@ class ComposeEmailServiceSpec extends AnyWordSpec with Matchers with GuiceOneApp
     when(gatekeeperEmailConnectorMock.sendEmail(form))
       .thenReturn(successful((ACCEPTED)))
     when(gatekeeperEmailConnectorMock.sendEmail(invalidform))
-      .thenReturn(successful((BAD_REQUEST)))
+      .thenThrow(Upstream5xxResponse("Internal Server Error", INTERNAL_SERVER_ERROR, INTERNAL_SERVER_ERROR))
   }
 
   "sendEmail" should {
 
-    "return accepted on correct payload" in new Setup {
+    "return accepted on succesfully submitted request to email service" in new Setup {
       val httpCode = await(underTest.sendEmail(form))
       httpCode shouldBe ACCEPTED
     }
 
-    "return Bad Request on incorrect payload" in new Setup {
-      val httpCode = await(underTest.sendEmail(invalidform))
-      httpCode shouldBe BAD_REQUEST
+    "throws exception when reqyest fails to submit to email service" in new Setup {
+      intercept[UpstreamErrorResponse] {
+        await(underTest.sendEmail(invalidform))
+      }
     }
   }
 
