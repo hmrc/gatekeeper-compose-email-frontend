@@ -30,8 +30,7 @@ import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
 class GatekeeperEmailConnector @Inject()(http: HttpClient, config: EmailConnectorConfig)(implicit ec: ExecutionContext)
-  extends CommonResponseHandlers
-  with ApplicationLogger {
+  extends ApplicationLogger {
 
   val api = API("gatekeeper-email")
   lazy val serviceUrl = config.emailBaseUrl
@@ -40,12 +39,16 @@ class GatekeeperEmailConnector @Inject()(http: HttpClient, config: EmailConnecto
     post(createEmailRequest(composeEmailForm))
   }
 
-  private def post(request: SendEmailRequest)(implicit hc: HeaderCarrier) = {
-    http.POST[SendEmailRequest, Either[UpstreamErrorResponse, Int]](s"$serviceUrl/gatekeeper-email", request)
+  def post(request: SendEmailRequest)(implicit hc: HeaderCarrier) = {
+    doPost(request)
     .map(resp => resp match {
       case Right(_) => resp.right.get
       case Left(err) => throw err
     })
+  }
+
+  def doPost(request: SendEmailRequest)(implicit hc: HeaderCarrier): Future[Either[UpstreamErrorResponse, Int]] = {
+    http.POST[SendEmailRequest, Either[UpstreamErrorResponse, Int]](s"$serviceUrl/gatekeeper-email", request)
   }
 
 }
