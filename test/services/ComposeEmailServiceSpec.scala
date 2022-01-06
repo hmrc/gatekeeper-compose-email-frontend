@@ -40,14 +40,14 @@ class ComposeEmailServiceSpec extends AnyWordSpec with Matchers with GuiceOneApp
   trait Setup {
     implicit val hc: HeaderCarrier = HeaderCarrier()
     val form = ComposeEmailForm("a@b.com", "subject of email", "email body")
-    val invalidform = ComposeEmailForm("a@b", "", "")
+    val form2 = ComposeEmailForm("a@b", "subject", "body")
 
     val gatekeeperEmailConnectorMock: GatekeeperEmailConnector = mock[GatekeeperEmailConnector]
     val underTest = new ComposeEmailService(gatekeeperEmailConnectorMock)
 
     when(gatekeeperEmailConnectorMock.sendEmail(form))
       .thenReturn(successful((ACCEPTED)))
-    when(gatekeeperEmailConnectorMock.sendEmail(invalidform))
+    when(gatekeeperEmailConnectorMock.sendEmail(form2))
       .thenThrow(Upstream5xxResponse("Internal Server Error", INTERNAL_SERVER_ERROR, INTERNAL_SERVER_ERROR))
   }
 
@@ -60,7 +60,7 @@ class ComposeEmailServiceSpec extends AnyWordSpec with Matchers with GuiceOneApp
 
     "throws exception when reqyest fails to submit to email service" in new Setup {
       intercept[UpstreamErrorResponse] {
-        await(underTest.sendEmail(invalidform))
+        await(underTest.sendEmail(form2))
       }
     }
   }
