@@ -34,9 +34,13 @@
             </label>
             </h1>
             @fieldError(form.errors, "subject")
-            <input class="govuk-input" emailRecipient id="emailRecipient" name="emailRecipient"
-                   placeholder="muriel.heslop@@porpoisespit.com.au" type="text" value="@form.data.getOrElse("", "")">
+            <label class="govuk-label govuk-label--l"  id="emailSubject" name="emailSubject"
+                   placeholder="muriel.heslop@@porpoisespit.com.au">  @form.data.getOrElse("emailSubject", "")
+            </label>
         </div>
+
+        <input type="hidden" name="emailId" value="@form.data.getOrElse("emailId", "")" />
+        <input type="hidden" name="emailSubject" value="@form.data.getOrElse("emailSubject", "")" />
 
         <h1 class="govuk-label-wrapper"><label class="govuk-label govuk-label--l">
             Email preview
@@ -49,7 +53,7 @@
 
         <div class="govuk-button-group">
             <button class="govuk-button" data-module="govuk-button">
-                Save email
+                Send email
             </button>
         </div>
     }

@@ -81,9 +81,9 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
   def sendEmail(): Action[AnyContent] = Action.async {
     implicit request => {
       def handleValidForm(form: ComposeEmailForm) = {
-        logger.info(s"ComposeEmailForm: ${form}")
+        logger.info(s"ComposeEmailForm: $form")
         logger.info(s"Body is ${form.emailBody}, toAddress is ${form.emailRecipient}, subject is ${form.emailSubject}")
-        emailConnector.sendEmail(form)
+        emailConnector.saveEmail(form)
         Future.successful(Redirect(routes.ComposeEmailController.sentEmailConfirmation()))
       }
 
@@ -111,7 +111,7 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
 
       outgoingEmail.map {  email =>
         logger.info(s"***EMAIL HTML LOG*** ${email.htmlEmailBody}")
-        Ok(emailPreview(base64Decode(email.markdownEmailBody), controllers.EmailPreviewForm.form.fill(EmailPreviewForm("","",""))))
+        Ok(emailPreview(base64Decode(email.markdownEmailBody), controllers.EmailPreviewForm.form.fill(EmailPreviewForm(email.emailId, email.subject))))
       }
 
     } else {
@@ -163,7 +163,7 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
 
   private def postEmail(multipartFormData: MultipartFormData[TemporaryFile])(implicit request: RequestHeader) = {
     val emailForm: ComposeEmailForm = MultipartFormExtractor.extractComposeEmailForm(multipartFormData)
-    emailConnector.sendEmail(emailForm)
+    emailConnector.saveEmail(emailForm)
   }
 
   private def dataParts(dataPart: Map[String, Seq[String]]): List[DataPart] =

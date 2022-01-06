@@ -18,7 +18,7 @@ package models
 
 import play.api.libs.json.{Json, OFormat}
 
-case class OutgoingEmail(recepientTitle: String, recepients: List[String], attachmentLink: Option[String],
+case class OutgoingEmail(emailId: String, recepientTitle: String, recepients: List[String], attachmentLink: Option[String],
                          markdownEmailBody: String, htmlEmailBody: String, subject: String,
                          composedBy: String, approvedBy: Option[String])
 

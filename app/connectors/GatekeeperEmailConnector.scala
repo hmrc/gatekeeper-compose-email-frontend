@@ -17,7 +17,7 @@
 package connectors
 
 import config.EmailConnectorConfig
-import controllers.ComposeEmailForm
+import controllers.{ComposeEmailForm, EmailPreviewForm}
 import models.{OutgoingEmail, SendEmailRequest}
 import models.SendEmailRequest.createEmailRequest
 import play.api.libs.json.JsValue
@@ -37,15 +37,20 @@ class GatekeeperEmailConnector @Inject()(http: HttpClient, config: EmailConnecto
   val api = API("gatekeeper-email")
   lazy val serviceUrl = config.emailBaseUrl
 
-  def sendEmail(composeEmailForm: ComposeEmailForm)(implicit hc: HeaderCarrier): Future[OutgoingEmail] = {
+  def saveEmail(composeEmailForm: ComposeEmailForm)(implicit hc: HeaderCarrier): Future[OutgoingEmail] = {
     post(createEmailRequest(composeEmailForm))
   }
 
+  def sendEmail(emailPreviewForm: EmailPreviewForm)(implicit hc: HeaderCarrier): Future[OutgoingEmail] = {
+    http.POSTEmpty[OutgoingEmail](s"$serviceUrl/gatekeeper-email/send-email/${emailPreviewForm.emailId}")
+  }
+
   private def post(request: SendEmailRequest)(implicit hc: HeaderCarrier) = {
-    http.POST[SendEmailRequest, Either[UpstreamErrorResponse, OutgoingEmail]](s"$serviceUrl/gatekeeper-email", request)
+    http.POST[SendEmailRequest, Either[UpstreamErrorResponse, OutgoingEmail]](s"$serviceUrl/gatekeeper-email/save-email", request)
       .map {
         case resp@Right(_) => resp.right.get
         case Left(err) => throw err
       }
   }
+
 }
