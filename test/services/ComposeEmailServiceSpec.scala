@@ -53,12 +53,12 @@ class ComposeEmailServiceSpec extends AnyWordSpec with Matchers with GuiceOneApp
 
   "sendEmail" should {
 
-    "return accepted on succesfully submitted request to email service" in new Setup {
+    "return accepted on successfully submitted request to email service" in new Setup {
       val httpCode = await(underTest.sendEmail(form))
       httpCode shouldBe ACCEPTED
     }
 
-    "throws exception when reqyest fails to submit to email service" in new Setup {
+    "throws exception when request fails to submit to email service" in new Setup {
       intercept[UpstreamErrorResponse] {
         await(underTest.sendEmail(form2))
       }
