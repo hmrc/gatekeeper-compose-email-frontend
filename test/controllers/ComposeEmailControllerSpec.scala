@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 HM Revenue & Customs
+ * Copyright 2022 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,6 +39,7 @@ class ComposeEmailControllerSpec extends ControllerBaseSpec with Matchers {
       emailSentConfirmationView, forbiddenView, mockAuthConnector)
     val csrfToken: (String, String) = "csrfToken" -> app.injector.instanceOf[TokenProvider].generateToken
 
+    val notLoggedInRequest = FakeRequest("GET", "/email").withCSRFToken
     val loggedInRequest = FakeRequest("GET", "/email").withSession(csrfToken, authToken, userToken).withCSRFToken
     val fakeConfirmationGetRequest = FakeRequest("GET", "/sent-email").withSession(csrfToken, authToken, userToken).withCSRFToken
     val fakePostFormRequest = FakeRequest("POST", "/email").withSession(csrfToken, authToken, userToken).withCSRFToken
@@ -48,8 +49,24 @@ class ComposeEmailControllerSpec extends ControllerBaseSpec with Matchers {
     "return 200" in new Setup {
       givenTheGKUserIsAuthorisedAndIsANormalUser()
       val result = controller.email()(loggedInRequest)
-      verifyAuthConnectorCalledForUser
       status(result) shouldBe Status.OK
+      verifyAuthConnectorCalledForUser
+      verifyZeroInteractions(mockGatekeeperEmailConnector)
+    }
+
+    "redirect to login page for a user that is not authenticated" in new Setup {
+      givenFailedLogin()
+      val result = controller.email()(notLoggedInRequest)
+      verifyAuthConnectorCalledForUser
+      status(result) shouldBe Status.SEE_OTHER
+      verifyZeroInteractions(mockGatekeeperEmailConnector)
+    }
+
+    "deny user with incorrect privileges" in new Setup {
+      givenTheGKUserHasInsufficientEnrolments()
+      val result = controller.email()(notLoggedInRequest)
+      verifyAuthConnectorCalledForUser
+      status(result) shouldBe Status.FORBIDDEN
       verifyZeroInteractions(mockGatekeeperEmailConnector)
     }
 

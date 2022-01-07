@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 HM Revenue & Customs
+ * Copyright 2022 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,13 +28,13 @@ object GatekeeperRole extends Enumeration {
   val USER,SUPERUSER,ADMIN = Value
 }
 
-case class BearerToken(authToken: String, expiry: DateTime) {
+/*case class BearerToken(authToken: String, expiry: DateTime) {
   override val toString = authToken
 }
 
 object BearerToken {
   implicit val format = Json.format[BearerToken]
-}
+}*/
 
 object GatekeeperSessionKeys {
   val LoggedInUser = "LoggedInUser"
@@ -92,14 +92,14 @@ sealed trait ResendVerificationSuccessful
 
 case object ResendVerificationSuccessful extends ResendVerificationSuccessful
 
-object UpliftAction extends Enumeration {
+/*object UpliftAction extends Enumeration {
   type UpliftAction = Value
   val APPROVE, REJECT = Value
 
   def from(action: String): Option[Value] = UpliftAction.values.find(e => e.toString == action.toUpperCase)
 
   implicit val format = Json.formatEnum(UpliftAction)
-}
+}*/
 
 case class SubmissionDetails(submitterName: String, submitterEmail: String, submittedOn: DateTime)
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 HM Revenue & Customs
+ * Copyright 2022 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,7 +33,7 @@ trait AuthConnectorMock {
 
   val mockAuthConnector = mock[AuthConnector]
 
-    def givenAUnsuccessfulLogin(): Unit = {
+    def givenFailedLogin(): Unit = {
     when(mockAuthConnector.authorise(*, *)(*, *)).thenReturn(failed(new InvalidBearerToken))
   }
 

@@ -1,5 +1,5 @@
 @*
- * Copyright 2021 HM Revenue & Customs
+ * Copyright 2022 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,18 +15,19 @@
  *@
 
 @import config.AppConfig
+@import include._
+
 @this(layout: Layout, applicationConfig: AppConfig)
 
-@(/*composeEmailForm: ComposeEmailForm*/)(implicit request: Request[_], messages: Messages)
+@()(implicit request: Request[_], messages: Messages, applicationConfig: AppConfig)
 
-@layout(pageTitle = Some(s"${applicationConfig.title} - Email Sent")) {
-    <h1 class="govuk-heading-xl">Email sent!</h1>
-    <p class="govuk-body">@{"HMRC API Gatekeeper"}</p>
- <div>
+@layout(pageTitle = Some(s"${applicationConfig.title} - Email Sent")){
+<h1 class="govuk-heading-xl">Email sent!</h1>
+<p class="govuk-body">@{"HMRC API Gatekeeper"}</p>
+<div>
  @helper.CSRF.formField
 
- </div>
+</div>
 
 
- }
-
+        }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 HM Revenue & Customs
+ * Copyright 2022 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,14 +16,14 @@
 
 package models
 
-import models.ApiStatus.ApiStatus
+//import models.ApiStatus.ApiStatus
 //import models.SubscriptionFields._
 import play.api.libs.json.Json
 
 import scala.util.Random
 import java.net.URLEncoder.encode
 
-case class ApiContext(value: String) extends AnyVal {
+/*case class ApiContext(value: String) extends AnyVal {
   def urlEncode = encode(value, "UTF-8")
 }
 
@@ -33,8 +33,8 @@ object ApiContext {
   }
 
   def random = ApiContext(Random.alphanumeric.take(10).mkString)
-}
-
+}*/
+/*
 case class ApiVersion(value: String) extends AnyVal {
   def urlEncode = encode(value, "UTF-8")
 }
@@ -45,23 +45,9 @@ object ApiVersion {
   }
 
   def random = ApiVersion(Random.nextDouble().toString)
-}
-
-/*case class ApiDefinition(serviceName: String,
-                         serviceBaseUrl: String,
-                         name: String,
-                         description: String,
-                         context: ApiContext,
-                         versions: List[ApiVersionDefinition],
-                         requiresTrust: Option[Boolean],
-                         categories: Option[List[APICategory]]) {
-
-  def descendingVersion(v1: VersionSubscription, v2: VersionSubscription) = {
-    v1.version.version.value.toDouble > v2.version.version.value.toDouble
-  }
 }*/
 
-case class APICategory(value: String) extends AnyVal
+/*case class APICategory(value: String) extends AnyVal
 object APICategory{
   implicit val formatApiCategory = Json.valueFormat[APICategory]
 }
@@ -74,11 +60,11 @@ case class APICategoryDetails(category: String, name: String){
 object APICategoryDetails{
   implicit val formatApiCategory = Json.format[APICategoryDetails]
 }
-/*case class VersionSubscription(version: ApiVersionDefinition,
+case class VersionSubscription(version: ApiVersionDefinition,
                                subscribed: Boolean,
                                fields: SubscriptionFieldsWrapper)*/
 
-case class ApiVersionDefinition(version: ApiVersion, status: ApiStatus, access: Option[ApiAccess] = None) {
+/*case class ApiVersionDefinition(version: ApiVersion, status: ApiStatus, access: Option[ApiAccess] = None) {
   val displayedStatus = ApiStatus.displayedStatus(status)
 
   val accessType = access.map(_.`type`).getOrElse(APIAccessType.PUBLIC)
@@ -97,26 +83,26 @@ object ApiStatus extends Enumeration {
     case ApiStatus.DEPRECATED => "Deprecated"
     case ApiStatus.RETIRED => "Retired"
   }
-}
+}*/
 
-case class ApiAccess(`type`: APIAccessType.Value, isTrial : Option[Boolean] = None)
+/*case class ApiAccess(`type`: APIAccessType.Value, isTrial : Option[Boolean] = None)
 
 object APIAccessType extends Enumeration {
   type APIAccessType = Value
   val PRIVATE, PUBLIC = Value
-}
+}*/
 
-case class ApiIdentifier(context: ApiContext, version: ApiVersion)
+/*case class ApiIdentifier(context: ApiContext, version: ApiVersion)
 object ApiIdentifier {
   def random() = ApiIdentifier(ApiContext.random, ApiVersion.random)
-}
+}*/
 
 class FetchApiDefinitionsFailed extends Throwable
 class FetchApiCategoriesFailed extends Throwable
 
-case class VersionSummary(name: String, status: ApiStatus, apiIdentifier: ApiIdentifier)
+//case class VersionSummary(name: String, status: ApiStatus, apiIdentifier: ApiIdentifier)
 
-case class SubscriptionResponse(apiIdentifier: ApiIdentifier, applications: List[String])
+//case class SubscriptionResponse(apiIdentifier: ApiIdentifier, applications: List[String])
 
 /*case class Subscription(name: String,
                         serviceName: String,
@@ -125,14 +111,14 @@ case class SubscriptionResponse(apiIdentifier: ApiIdentifier, applications: List
   lazy val subscriptionNumberText = Subscription.subscriptionNumberLabel(versions)
 }*/
 
-case class SubscriptionWithoutFields(name: String,
+/*case class SubscriptionWithoutFields(name: String,
                                      serviceName: String,
                                      context: ApiContext,
                                      versions: List[VersionSubscriptionWithoutFields]) {
   lazy val subscriptionNumberText = SubscriptionWithoutFields.subscriptionNumberLabel(versions)
-}
+}*/
 
-case class VersionSubscriptionWithoutFields(version: ApiVersionDefinition, subscribed: Boolean)
+//case class VersionSubscriptionWithoutFields(version: ApiVersionDefinition, subscribed: Boolean)
 
 /*object Subscription {
   def subscriptionNumberLabel(versions: List[VersionSubscription]) = versions.count(_.subscribed) match {
@@ -141,9 +127,9 @@ case class VersionSubscriptionWithoutFields(version: ApiVersionDefinition, subsc
   }
 }*/
 
-object SubscriptionWithoutFields {
+/*object SubscriptionWithoutFields {
   def subscriptionNumberLabel(versions: List[VersionSubscriptionWithoutFields]) = versions.count(_.subscribed) match {
     case 1 => s"1 subscription"
     case number => s"$number subscriptions"
   }
-}
+}*/

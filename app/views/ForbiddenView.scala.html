@@ -1,5 +1,5 @@
 @*
- * Copyright 2021 HM Revenue & Customs
+ * Copyright 2022 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,11 +16,11 @@
 
 @import config.AppConfig
 
-@this(main: MainView, applicationConfig: AppConfig)
+@this(layout: Layout, applicationConfig: AppConfig)
 
 @()(implicit request : Request[_], messagesProvider: MessagesProvider)
 
-@main(title = "Forbidden") {
+@layout(pageTitle = Some("Forbidden")) {
   <h1>You do not have permission to access Gatekeeper</h1>
   <h2>Contact your administrator for access</h2>
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 HM Revenue & Customs
+ * Copyright 2022 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,6 +44,8 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
   def email: Action[AnyContent] = requiresAtLeast(GatekeeperRole.USER) {
     implicit request => Future.successful(Ok(composeEmail(form.fill(ComposeEmailForm("","","")))))
   }
+
+
 
   def sentEmailConfirmation: Action[AnyContent] = requiresAtLeast(GatekeeperRole.USER) {
     implicit request => Future.successful(Ok(sentEmail()))
