@@ -21,26 +21,33 @@ import controllers.ComposeEmailForm
 import models.SendEmailRequest
 import models.SendEmailRequest.createEmailRequest
 import uk.gov.hmrc.http.HttpReads.Implicits._
-import uk.gov.hmrc.http.{HeaderCarrier, HttpClient}
+import uk.gov.hmrc.http.{HeaderCarrier, HttpClient, UpstreamErrorResponse}
 import uk.gov.hmrc.play.http.metrics.common.API
-import util.ApplicationLogger
+import utils.ApplicationLogger
 
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
 class GatekeeperEmailConnector @Inject()(http: HttpClient, config: EmailConnectorConfig)(implicit ec: ExecutionContext)
-  extends CommonResponseHandlers
-  with ApplicationLogger {
+  extends ApplicationLogger {
 
   lazy val serviceUrl = config.emailBaseUrl
 
-  def sendEmail(composeEmailForm: ComposeEmailForm)(implicit hc: HeaderCarrier): Future[Unit] = {
+  def sendEmail(composeEmailForm: ComposeEmailForm)(implicit hc: HeaderCarrier): Future[Int] = {
     post(createEmailRequest(composeEmailForm))
   }
 
-  private def post(request: SendEmailRequest)(implicit hc: HeaderCarrier) = {
-    http.POST[SendEmailRequest, ErrorOrUnit](s"$serviceUrl/gatekeeper-email", request)
-    .map(throwOrUnit)
+  def post(request: SendEmailRequest)(implicit hc: HeaderCarrier) = {
+    doPost(request)
+    .map(resp => resp match {
+      case Right(_) => resp.right.get
+      case Left(err) => throw err
+    })
   }
+
+  def doPost(request: SendEmailRequest)(implicit hc: HeaderCarrier): Future[Either[UpstreamErrorResponse, Int]] = {
+    http.POST[SendEmailRequest, Either[UpstreamErrorResponse, Int]](s"$serviceUrl/gatekeeper-email", request)
+  }
+
 }

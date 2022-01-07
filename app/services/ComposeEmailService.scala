@@ -14,10 +14,20 @@
  * limitations under the License.
  */
 
-package util
+package services
 
-import play.api.Logger
+import connectors.GatekeeperEmailConnector
+import controllers.ComposeEmailForm
+import uk.gov.hmrc.http.HeaderCarrier
 
-trait ApplicationLogger {
-  val logger = Logger("application")
+import javax.inject.Inject
+import scala.concurrent.{ExecutionContext, Future}
+
+class ComposeEmailService @Inject()(emailConnector: GatekeeperEmailConnector)
+                         (implicit val ec: ExecutionContext){
+
+  def sendEmail(composeEmailForm: ComposeEmailForm)(implicit hc: HeaderCarrier): Future[Int] = {
+    emailConnector.sendEmail(composeEmailForm)
+  }
+
 }

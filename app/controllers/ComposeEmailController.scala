@@ -16,56 +16,62 @@
 
 package controllers
 
-import config.AppConfig
-import controllers.ComposeEmailForm.form
-import connectors.{AuthConnector, GatekeeperEmailConnector}
 import javax.inject.{Inject, Singleton}
-import models.GatekeeperRole
 import play.api.Logging
 import play.api.data.Form
 import play.api.i18n.I18nSupport
-import play.api.mvc.{Action, AnyContent, MessagesControllerComponents, Result}
-import uk.gov.hmrc.play.bootstrap.frontend.controller.FrontendController
-import views.html.{ComposeEmail, EmailSentConfirmation, ForbiddenView}
-import util.GatekeeperAuthWrapper
+import play.api.mvc.{Action, AnyContent, MessagesControllerComponents}
 
 import scala.concurrent.{ExecutionContext, Future}
+import config.AppConfig
+import connectors.AuthConnector
+import controllers.ComposeEmailForm.form
+import models.GatekeeperRole
+import services.ComposeEmailService
+import uk.gov.hmrc.play.bootstrap.frontend.controller.FrontendController
+import util.GatekeeperAuthWrapper
+import utils.ErrorHelper
+import views.html.{ComposeEmail, EmailSentConfirmation, ErrorTemplate, ForbiddenView}
 
 @Singleton
 class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
                                        composeEmail: ComposeEmail,
-                                       emailConnector: GatekeeperEmailConnector,
+                                       emailService: ComposeEmailService,
                                        sentEmail: EmailSentConfirmation,
-                                       val forbiddenView: ForbiddenView,
-                                       override val authConnector: AuthConnector
-                                      )(implicit val appConfig: AppConfig, val ec: ExecutionContext)
-  extends FrontendController(mcc) with I18nSupport with GatekeeperAuthWrapper with Logging {
+                                       override val forbiddenView: ForbiddenView,
+                                       override val authConnector: AuthConnector,
+                                       override val errorTemplate: ErrorTemplate)
+                                      (implicit  val appConfig: AppConfig, val ec: ExecutionContext)
+  extends FrontendController(mcc) with ErrorHelper with GatekeeperAuthWrapper with Logging {
 
-  def email: Action[AnyContent] = requiresAtLeast(GatekeeperRole.USER) {
-    implicit request => Future.successful(Ok(composeEmail(form.fill(ComposeEmailForm("","","")))))
+
+  def email: Action[AnyContent] = requiresAtLeast(GatekeeperRole.USER) { implicit request =>
+    Future.successful(Ok(composeEmail(form.fill(ComposeEmailForm("","","")))))
   }
-
 
 
   def sentEmailConfirmation: Action[AnyContent] = requiresAtLeast(GatekeeperRole.USER) {
     implicit request => Future.successful(Ok(sentEmail()))
   }
 
+
   def sendEmail(): Action[AnyContent] = requiresAtLeast(GatekeeperRole.USER) {
-      implicit request => {
-        def handleValidForm(form: ComposeEmailForm): Future[Result] = {
-          logger.info(s"Body is ${form.emailBody}, toAddress is ${form.emailRecipient}, subject is ${form.emailSubject}")
-          println("Connector in controller is " + emailConnector)
-          emailConnector.sendEmail(form)
-          Future.successful(Redirect(routes.ComposeEmailController.sentEmailConfirmation()))
+    implicit request => {
+      def handleValidForm(form: ComposeEmailForm) = {
+        logger.info(s"Body is ${form.emailBody}, toAddress is ${form.emailRecipient}, subject is ${form.emailSubject}")
+        emailService.sendEmail(form) map { _ match {
+            case ACCEPTED  => Redirect(routes.ComposeEmailController.sentEmailConfirmation())
+            case _ => technicalDifficulties
+          }
         }
-
-        def handleInvalidForm(formWithErrors: Form[ComposeEmailForm]): Future[Result] = {
-          logger.warn(s"Error in form: ${formWithErrors.errors}")
-          Future.successful(BadRequest(composeEmail(formWithErrors)))
-        }
-
-        ComposeEmailForm.form.bindFromRequest.fold(handleInvalidForm(_), handleValidForm(_))
       }
+
+      def handleInvalidForm(formWithErrors: Form[ComposeEmailForm]) = {
+        logger.warn(s"Error in form: ${formWithErrors.errors}")
+        Future.successful(BadRequest(composeEmail(formWithErrors)))
+      }
+
+      ComposeEmailForm.form.bindFromRequest.fold(handleInvalidForm(_), handleValidForm(_))
     }
+  }
 }
