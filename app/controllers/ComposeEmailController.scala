@@ -99,6 +99,9 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
     val body = request.body
     logger.info(
       s"Upload form contains dataParts=${summariseDataParts(body.dataParts)} and fileParts=${summariseFileParts(body.files)}")
+    def base64Decode(result: String): String =
+      new String(Base64.getDecoder.decode(result), Charsets.UTF_8)
+
     val outgoingEmail: Future[OutgoingEmail] = postEmail(body)
     if(body.files.isEmpty) {
        MultipartFormExtractor.extractKey(body).map { key =>
@@ -106,14 +109,9 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
            ErrorResponseHandler.okResponse(ErrorAction(None, key), "No Error")
          )
        }
-      def base64Decode(result: String): String =
-        new String(Base64.getDecoder.decode(result), Charsets.UTF_8)
-
-      outgoingEmail.map {  email =>
-        logger.info(s"***EMAIL HTML LOG*** ${email.htmlEmailBody}")
-        Ok(emailPreview(base64Decode(email.markdownEmailBody), controllers.EmailPreviewForm.form.fill(EmailPreviewForm(email.emailId, email.subject))))
-      }
-
+//      outgoingEmail.map {  email =>
+//        Ok(emailPreview(base64Decode(email.markdownEmailBody), controllers.EmailPreviewForm.form.fill(EmailPreviewForm(email.emailId, email.subject))))
+//      }
     } else {
       MultipartFormExtractor
         .extractErrorAction(body)
@@ -158,6 +156,9 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
             futResult
           }
         )
+    }
+    outgoingEmail.map {  email =>
+      Ok(emailPreview(base64Decode(email.markdownEmailBody), controllers.EmailPreviewForm.form.fill(EmailPreviewForm(email.emailId, email.subject))))
     }
   }
 
