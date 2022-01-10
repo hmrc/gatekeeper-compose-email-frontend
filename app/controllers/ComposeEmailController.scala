@@ -158,7 +158,7 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
         )
     }
     outgoingEmail.map {  email =>
-      Ok(emailPreview(base64Decode(email.markdownEmailBody), controllers.EmailPreviewForm.form.fill(EmailPreviewForm(email.emailId, email.subject))))
+      Ok(emailPreview(base64Decode(email.htmlEmailBody), controllers.EmailPreviewForm.form.fill(EmailPreviewForm(email.emailId, email.subject))))
     }
   }
 
