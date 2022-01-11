@@ -103,19 +103,19 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
     def base64Decode(result: String): String =
       new String(Base64.getDecoder.decode(result), Charsets.UTF_8)
 
-    var uploadInfo: Future[UploadInfo] = Future {UploadInfo(Reference(""), UploadedSuccessfully("", "", "", None))}
     val outgoingEmail: Future[OutgoingEmail] = postEmail(body)
     val keyEither: Either[Result, String] = MultipartFormExtractor.extractKey(body)
-    if(body.files.isEmpty) {
+    val r = if(body.files.isEmpty) {
        MultipartFormExtractor.extractKey(body).map { key =>
          Future.successful(
            ErrorResponseHandler.okResponse(ErrorAction(None, key), "No Error")
          )
        }
       outgoingEmail.map {  email =>
-        Ok(emailPreview(UploadedSuccessfully("", "", "", None), (email.markdownEmailBody), controllers.EmailPreviewForm.form.fill(EmailPreviewForm(email.emailId, email.subject))))
+        Ok(emailPreview(UploadedSuccessfully("", "", "", None), email.htmlEmailBody, controllers.EmailPreviewForm.form.fill(EmailPreviewForm(email.emailId, email.subject))))
       }
-    } else {
+    }
+    else {
       MultipartFormExtractor
         .extractErrorAction(body)
         .fold(
@@ -136,39 +136,28 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
                 Source(dataParts(body.dataParts) ++ fileAdoptionSuccesses.map(TemporaryFilePart.toUploadSource))
               val upscanUrl = MultipartFormExtractor.extractUpscanUrl(body).get
               proxyRequest(errorAction, uploadBody, upscanUrl)
-            } { errorMessage =>
+            }
+            { errorMessage =>
               Future.successful(errorResponse(errorAction, errorMessage))
             }
+
             logger.info("sleeping for 5 secs")
             Thread.sleep(5000)
-            futResult.onComplete { _ =>
+            val res = futResult.flatMap { _ =>
               logger.info("Executing proxyRequest future")
-              uploadInfo = for {
-                uploadInfo <- emailConnector.fetchFileuploadStatus(keyEither.getOrElse(""))
-//                                 Future {
-                  fileAdoptionResult = fileAdoptionSuccesses.foreach { filePart =>
-                    TemporaryFilePart
-                      .deleteFile(filePart)
-                      .fold(
-                        err =>
-                          logger
-                            .warn(s"Failed to delete TemporaryFile for Key [${errorAction.key}] at [${filePart.ref}]", err),
-                        didExist =>
-                          if (didExist)
-                            logger.debug(s"Deleted TemporaryFile for Key [${errorAction.key}] at [${filePart.ref}]")
-                      )
-                  }
-                } yield uploadInfo
+              val uploadInfo = emailConnector.fetchFileuploadStatus(keyEither.getOrElse(""))
+              val result =uploadInfo.flatMap { info =>
+                outgoingEmail.map { email =>
+                  Ok(emailPreview(info.status, base64Decode(email.htmlEmailBody), controllers.EmailPreviewForm.form.fill(EmailPreviewForm(email.emailId, email.subject))))
+                }
+              }
+              result
             }
-            futResult
+            res
           }
         )
     }
-      uploadInfo.flatMap { info =>
-        outgoingEmail.map { email =>
-          Ok(emailPreview(info.status, base64Decode(email.htmlEmailBody), controllers.EmailPreviewForm.form.fill(EmailPreviewForm(email.emailId, email.subject))))
-        }
-      }
+    r
   }
 
   private def postEmail(multipartFormData: MultipartFormData[TemporaryFile])(implicit request: RequestHeader) = {
