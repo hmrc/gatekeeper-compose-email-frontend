@@ -20,7 +20,7 @@
 
 @this(layout: Layout, appConfig: AppConfig)
 
-@(emailPreview: String, form: Form[EmailPreviewForm])(implicit request: Request[_], messages: Messages)
+@(status: UploadStatus, emailPreview: String, form: Form[EmailPreviewForm])(implicit request: Request[_], messages: Messages)
 
 @layout(pageTitle = Some(s"${appConfig.title} - Email preview")) {
 @errorSummary(form)
@@ -89,7 +89,26 @@
                         @Html(emailPreview)
                     </div>
                 </div>
+                @status match {
+                    case InProgress => { Waiting for the file to be scanned }
+                    case s : UploadedSuccessfully => { Upload of <b>@s.name</b> successful! }
+                    case Failed => { File has been rejected. }
+                }
 
+                @status match {
+                    case s : UploadedSuccessfully => {
+                    <div class="section">
+                        <a href="./hurry-next">
+                            <button class="button">Next</button>
+                        </a>
+                    </div>
+                    }
+                    case _ => {
+                    <div class="section">
+                        <button class="button" disabled="disabled">Next</button>
+                    </div>
+                    }
+                }
                 <br>
 
                 <div>

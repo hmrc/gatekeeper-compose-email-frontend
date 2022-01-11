@@ -18,7 +18,7 @@ package connectors
 
 import config.EmailConnectorConfig
 import controllers.{ComposeEmailForm, EmailPreviewForm}
-import models.{OutgoingEmail, SendEmailRequest}
+import models.{OutgoingEmail, SendEmailRequest, UploadInfo}
 import models.SendEmailRequest.createEmailRequest
 import play.api.libs.json.JsValue
 import uk.gov.hmrc.http.HttpReads.Implicits._
@@ -53,4 +53,8 @@ class GatekeeperEmailConnector @Inject()(http: HttpClient, config: EmailConnecto
       }
   }
 
+  def fetchFileuploadStatus(key: String)(implicit hc: HeaderCarrier) = {
+    val url = s"$serviceUrl/gatekeeperemail/fetchfileuploadstatus"
+    http.GET[UploadInfo](url, Seq(("key", key)))
+  }
 }

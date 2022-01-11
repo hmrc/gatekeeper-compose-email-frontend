@@ -25,7 +25,7 @@ import controllers.UploadProxyController.ErrorResponseHandler.{MessageField, asE
 import controllers.UploadProxyController.MultipartFormExtractor.{extractKey, extractSingletonFormValue}
 import controllers.UploadProxyController.TemporaryFilePart.partitionTrys
 import controllers.UploadProxyController.{ErrorAction, ErrorResponseHandler, MultipartFormExtractor, TemporaryFilePart, asTuples}
-import models.{OutgoingEmail, UploadId}
+import models.{OutgoingEmail, UploadInfo, UploadStatus, UploadedSuccessfully}
 import org.apache.commons.io.Charsets
 import play.api.http.Status
 import play.api.libs.ws.{WSClient, WSResponse}
@@ -52,6 +52,7 @@ import java.nio.charset.StandardCharsets.UTF_8
 import java.nio.file.Path
 import java.util.Base64
 import scala.concurrent.{ExecutionContext, Future}
+import scala.runtime.Nothing$
 import scala.util.{Failure, Success, Try}
 
 @Singleton
@@ -66,11 +67,11 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
   extends FrontendController(mcc) with I18nSupport with Logging {
 
   def email: Action[AnyContent] = Action.async { implicit request =>
-    val uploadId = UploadId.generate
+//    val uploadId = UploadId.generate
     val successRedirectUrl = appConfig.uploadRedirectTargetBase + "/gatekeeper-compose-email-frontend/success"
     val errorRedirectUrl   = appConfig.uploadRedirectTargetBase + "/gatekeeper-compose-email-frontend/error"
     for {
-      upscanInitiateResponse <- upscanInitiateConnector.initiateV2(Some(successRedirectUrl), Some(errorRedirectUrl))
+      upscanInitiateResponse <- upscanInitiateConnector.initiateV2(None, None) //Some(successRedirectUrl), Some(errorRedirectUrl))
     } yield Ok(composeEmail(upscanInitiateResponse, controllers.ComposeEmailForm.form.fill(ComposeEmailForm("","",""))))
   }
 
@@ -95,23 +96,25 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
     }
   }
 
-  def upload(): Action[MultipartFormData[TemporaryFile]] = Action.async(parse.multipartFormData) { implicit request =>
+  def upload(): Action[AnyContent] = Action.async(parse.multipartFormData) { implicit request =>
     val body = request.body
     logger.info(
       s"Upload form contains dataParts=${summariseDataParts(body.dataParts)} and fileParts=${summariseFileParts(body.files)}")
     def base64Decode(result: String): String =
       new String(Base64.getDecoder.decode(result), Charsets.UTF_8)
 
+//    var uploadInfo: Future[UploadInfo] = null
     val outgoingEmail: Future[OutgoingEmail] = postEmail(body)
+    val keyEither: Either[Result, String] = MultipartFormExtractor.extractKey(body)
     if(body.files.isEmpty) {
        MultipartFormExtractor.extractKey(body).map { key =>
          Future.successful(
            ErrorResponseHandler.okResponse(ErrorAction(None, key), "No Error")
          )
        }
-//      outgoingEmail.map {  email =>
-//        Ok(emailPreview(base64Decode(email.markdownEmailBody), controllers.EmailPreviewForm.form.fill(EmailPreviewForm(email.emailId, email.subject))))
-//      }
+      outgoingEmail.map {  email =>
+        Ok(emailPreview(UploadedSuccessfully("", "", "", None), (email.markdownEmailBody), controllers.EmailPreviewForm.form.fill(EmailPreviewForm(email.emailId, email.subject))))
+      }
     } else {
       MultipartFormExtractor
         .extractErrorAction(body)
@@ -136,20 +139,31 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
             } { errorMessage =>
               Future.successful(errorResponse(errorAction, errorMessage))
             }
-
+            logger.info("sleeping for 5 secs")
+            Thread.sleep(5000)
             futResult.onComplete { _ =>
-              Future {
-                fileAdoptionSuccesses.foreach { filePart =>
-                  TemporaryFilePart
-                    .deleteFile(filePart)
-                    .fold(
-                      err =>
-                        logger
-                          .warn(s"Failed to delete TemporaryFile for Key [${errorAction.key}] at [${filePart.ref}]", err),
-                      didExist =>
-                        if (didExist)
-                          logger.debug(s"Deleted TemporaryFile for Key [${errorAction.key}] at [${filePart.ref}]")
-                    )
+              logger.info("Executing proxyRequest future")
+              val uploadInfo = for {
+                uploadInfo <- emailConnector.fetchFileuploadStatus(keyEither.getOrElse(""))
+//                                 Future {
+                  fileAdoptionResult = fileAdoptionSuccesses.foreach { filePart =>
+                    TemporaryFilePart
+                      .deleteFile(filePart)
+                      .fold(
+                        err =>
+                          logger
+                            .warn(s"Failed to delete TemporaryFile for Key [${errorAction.key}] at [${filePart.ref}]", err),
+                        didExist =>
+                          if (didExist)
+                            logger.debug(s"Deleted TemporaryFile for Key [${errorAction.key}] at [${filePart.ref}]")
+                      )
+                  }
+                } yield uploadInfo
+//              }
+//              uploadInfo
+              uploadInfo.flatMap { info =>
+                outgoingEmail.map { email =>
+                  Ok(emailPreview(info.status, base64Decode(email.htmlEmailBody), controllers.EmailPreviewForm.form.fill(EmailPreviewForm(email.emailId, email.subject))))
                 }
               }
             }
@@ -157,9 +171,12 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
           }
         )
     }
-    outgoingEmail.map {  email =>
-      Ok(emailPreview(base64Decode(email.htmlEmailBody), controllers.EmailPreviewForm.form.fill(EmailPreviewForm(email.emailId, email.subject))))
-    }
+//    val status: UploadStatus =
+/*      uploadInfo.flatMap { info =>
+        outgoingEmail.map { email =>
+          Ok(emailPreview(info.status, base64Decode(email.htmlEmailBody), controllers.EmailPreviewForm.form.fill(EmailPreviewForm(email.emailId, email.subject))))
+        }
+      }*/
   }
 
   private def postEmail(multipartFormData: MultipartFormData[TemporaryFile])(implicit request: RequestHeader) = {
