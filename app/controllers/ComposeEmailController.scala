@@ -25,7 +25,7 @@ import controllers.UploadProxyController.ErrorResponseHandler.{MessageField, asE
 import controllers.UploadProxyController.MultipartFormExtractor.{extractKey, extractSingletonFormValue}
 import controllers.UploadProxyController.TemporaryFilePart.partitionTrys
 import controllers.UploadProxyController.{ErrorAction, ErrorResponseHandler, MultipartFormExtractor, TemporaryFilePart, asTuples}
-import models.{OutgoingEmail, UploadInfo, UploadStatus, UploadedSuccessfully}
+import models.{OutgoingEmail, Reference, UploadInfo, UploadStatus, UploadedSuccessfully}
 import org.apache.commons.io.Charsets
 import play.api.http.Status
 import play.api.libs.ws.{WSClient, WSResponse}
@@ -96,14 +96,14 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
     }
   }
 
-  def upload(): Action[AnyContent] = Action.async(parse.multipartFormData) { implicit request =>
+  def upload(): Action[MultipartFormData[TemporaryFile]] = Action.async(parse.multipartFormData) { implicit request =>
     val body = request.body
     logger.info(
       s"Upload form contains dataParts=${summariseDataParts(body.dataParts)} and fileParts=${summariseFileParts(body.files)}")
     def base64Decode(result: String): String =
       new String(Base64.getDecoder.decode(result), Charsets.UTF_8)
 
-//    var uploadInfo: Future[UploadInfo] = null
+    var uploadInfo: Future[UploadInfo] = Future {UploadInfo(Reference(""), UploadedSuccessfully("", "", "", None))}
     val outgoingEmail: Future[OutgoingEmail] = postEmail(body)
     val keyEither: Either[Result, String] = MultipartFormExtractor.extractKey(body)
     if(body.files.isEmpty) {
@@ -143,7 +143,7 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
             Thread.sleep(5000)
             futResult.onComplete { _ =>
               logger.info("Executing proxyRequest future")
-              val uploadInfo = for {
+              uploadInfo = for {
                 uploadInfo <- emailConnector.fetchFileuploadStatus(keyEither.getOrElse(""))
 //                                 Future {
                   fileAdoptionResult = fileAdoptionSuccesses.foreach { filePart =>
@@ -159,24 +159,16 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
                       )
                   }
                 } yield uploadInfo
-//              }
-//              uploadInfo
-              uploadInfo.flatMap { info =>
-                outgoingEmail.map { email =>
-                  Ok(emailPreview(info.status, base64Decode(email.htmlEmailBody), controllers.EmailPreviewForm.form.fill(EmailPreviewForm(email.emailId, email.subject))))
-                }
-              }
             }
             futResult
           }
         )
     }
-//    val status: UploadStatus =
-/*      uploadInfo.flatMap { info =>
+      uploadInfo.flatMap { info =>
         outgoingEmail.map { email =>
           Ok(emailPreview(info.status, base64Decode(email.htmlEmailBody), controllers.EmailPreviewForm.form.fill(EmailPreviewForm(email.emailId, email.subject))))
         }
-      }*/
+      }
   }
 
   private def postEmail(multipartFormData: MultipartFormData[TemporaryFile])(implicit request: RequestHeader) = {
