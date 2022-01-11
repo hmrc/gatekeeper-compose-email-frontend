@@ -91,7 +91,7 @@
                 </div>
                 @status match {
                     case InProgress => { Waiting for the file to be scanned }
-                    case s : UploadedSuccessfully => { Upload of <b>@s.name</b> successful! }
+                    case s : UploadedSuccessfully => { Upload of <b>@s.name</b> successful witn downloadUrl @s.downloadUrl  }
                     case Failed => { File has been rejected. }
                 }
 
