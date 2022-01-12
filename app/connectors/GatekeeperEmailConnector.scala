@@ -22,7 +22,6 @@ import models.SendEmailRequest
 import models.SendEmailRequest.createEmailRequest
 import uk.gov.hmrc.http.HttpReads.Implicits._
 import uk.gov.hmrc.http.{HeaderCarrier, HttpClient, UpstreamErrorResponse}
-import uk.gov.hmrc.play.http.metrics.common.API
 import utils.ApplicationLogger
 
 import javax.inject.{Inject, Singleton}
@@ -38,7 +37,7 @@ class GatekeeperEmailConnector @Inject()(http: HttpClient, config: EmailConnecto
     post(createEmailRequest(composeEmailForm))
   }
 
-  def post(request: SendEmailRequest)(implicit hc: HeaderCarrier) = {
+  private def post(request: SendEmailRequest)(implicit hc: HeaderCarrier): Future[Int] = {
     doPost(request)
     .map(resp => resp match {
       case Right(_) => resp.right.get
@@ -49,5 +48,4 @@ class GatekeeperEmailConnector @Inject()(http: HttpClient, config: EmailConnecto
   def doPost(request: SendEmailRequest)(implicit hc: HeaderCarrier): Future[Either[UpstreamErrorResponse, Int]] = {
     http.POST[SendEmailRequest, Either[UpstreamErrorResponse, Int]](s"$serviceUrl/gatekeeper-email", request)
   }
-
 }

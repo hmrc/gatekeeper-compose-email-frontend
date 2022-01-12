@@ -18,7 +18,7 @@ package utils
 
 import config.AppConfig
 import play.api.i18n.Messages
-import play.api.mvc.Results.{BadRequest, InternalServerError, NotFound}
+import play.api.mvc.Results.InternalServerError
 import play.api.mvc.{Request, Result}
 import views.html.ErrorTemplate
 

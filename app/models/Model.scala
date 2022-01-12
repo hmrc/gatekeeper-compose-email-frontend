@@ -28,14 +28,6 @@ object GatekeeperRole extends Enumeration {
   val USER,SUPERUSER,ADMIN = Value
 }
 
-/*case class BearerToken(authToken: String, expiry: DateTime) {
-  override val toString = authToken
-}
-
-object BearerToken {
-  implicit val format = Json.format[BearerToken]
-}*/
-
 object GatekeeperSessionKeys {
   val LoggedInUser = "LoggedInUser"
   val AuthToken = SessionKeys.authToken
