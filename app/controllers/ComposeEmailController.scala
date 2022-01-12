@@ -20,7 +20,7 @@ import akka.stream.IOResult
 import akka.stream.scaladsl.{FileIO, Source}
 import akka.util.ByteString
 import config.AppConfig
-import connectors.{GatekeeperEmailConnector, UpscanInitiateConnector}
+import connectors.{GatekeeperEmailConnector, PreparedUpload, UpscanInitiateConnector}
 import controllers.UploadProxyController.ErrorResponseHandler.{MessageField, asErrorResult, errorResponse, fieldName, proxyErrorResponse}
 import controllers.UploadProxyController.MultipartFormExtractor.{extractKey, extractSingletonFormValue}
 import controllers.UploadProxyController.TemporaryFilePart.partitionTrys
@@ -46,7 +46,7 @@ import util.MultipartFormDataSummaries.{summariseDataParts, summariseFileParts}
 import views.html.{ComposeEmail, EmailPreview, EmailSentConfirmation}
 import org.apache.http.client.utils.URIBuilder
 import play.api.mvc.MultipartFormData.FilePart
-
+import uk.gov.hmrc.play.bootstrap.http.HttpClient
 import java.net.URI
 import java.nio.charset.StandardCharsets.UTF_8
 import java.nio.file.Path
@@ -62,9 +62,12 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
                                        emailConnector: GatekeeperEmailConnector,
                                        upscanInitiateConnector: UpscanInitiateConnector,
                                        sentEmail: EmailSentConfirmation,
-                                       wsClient: WSClient
+                                       wsClient: WSClient,
+                                       httpClient: HttpClient
                                       )(implicit val appConfig: AppConfig, val ec: ExecutionContext)
   extends FrontendController(mcc) with I18nSupport with Logging {
+
+  lazy val serviceUrl = appConfig.emailBaseUrl
 
   def email: Action[AnyContent] = Action.async { implicit request =>
 //    val uploadId = UploadId.generate
@@ -72,6 +75,7 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
     val errorRedirectUrl   = appConfig.uploadRedirectTargetBase + "/gatekeeper-compose-email-frontend/error"
     for {
       upscanInitiateResponse <- upscanInitiateConnector.initiateV2(None, None) //Some(successRedirectUrl), Some(errorRedirectUrl))
+      response <- httpClient.POSTEmpty[UploadInfo](s"$serviceUrl/gatekeeperemail/insertfileuploadstatus?key=${upscanInitiateResponse.fileReference.reference}")
     } yield Ok(composeEmail(upscanInitiateResponse, controllers.ComposeEmailForm.form.fill(ComposeEmailForm("","",""))))
   }
 
@@ -106,15 +110,14 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
     val outgoingEmail: Future[OutgoingEmail] = postEmail(body)
     val keyEither: Either[Result, String] = MultipartFormExtractor.extractKey(body)
     val r = if(body.files.isEmpty) {
-       MultipartFormExtractor.extractKey(body).map { key =>
-         Future.successful(
-           ErrorResponseHandler.okResponse(ErrorAction(None, key), "No Error")
-         )
-       }
+      MultipartFormExtractor.extractKey(body).map { key =>
+        Future.successful(
+          ErrorResponseHandler.okResponse(ErrorAction(None, key), "No Error")
+        )
+      }
       outgoingEmail.map {  email =>
         Ok(emailPreview(UploadedSuccessfully("", "", "", None), email.htmlEmailBody, controllers.EmailPreviewForm.form.fill(EmailPreviewForm(email.emailId, email.subject))))
-      }
-    }
+      }    }
     else {
       MultipartFormExtractor
         .extractErrorAction(body)
@@ -158,6 +161,10 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
         )
     }
     r
+  }
+
+  private def emailWithOutAttachment(body: MultipartFormData[TemporaryFile], outgoingEmail: Future[OutgoingEmail]): Unit = {
+
   }
 
   private def postEmail(multipartFormData: MultipartFormData[TemporaryFile])(implicit request: RequestHeader) = {
