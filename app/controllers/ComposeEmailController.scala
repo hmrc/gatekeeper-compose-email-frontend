@@ -25,7 +25,7 @@ import controllers.UploadProxyController.ErrorResponseHandler.{MessageField, asE
 import controllers.UploadProxyController.MultipartFormExtractor.{extractKey, extractSingletonFormValue}
 import controllers.UploadProxyController.TemporaryFilePart.partitionTrys
 import controllers.UploadProxyController.{ErrorAction, ErrorResponseHandler, MultipartFormExtractor, TemporaryFilePart, asTuples}
-import models.{OutgoingEmail, Reference, UploadInfo, UploadStatus, UploadedSuccessfully}
+import models.{InProgress, OutgoingEmail, Reference, UploadInfo, UploadStatus, UploadedFailedWithErrors, UploadedSuccessfully}
 import org.apache.commons.io.Charsets
 import play.api.http.Status
 import play.api.libs.ws.{WSClient, WSResponse}
@@ -47,10 +47,12 @@ import views.html.{ComposeEmail, EmailPreview, EmailSentConfirmation}
 import org.apache.http.client.utils.URIBuilder
 import play.api.mvc.MultipartFormData.FilePart
 import uk.gov.hmrc.play.bootstrap.http.HttpClient
+
 import java.net.URI
 import java.nio.charset.StandardCharsets.UTF_8
 import java.nio.file.Path
 import java.util.Base64
+import scala.annotation.tailrec
 import scala.concurrent.{ExecutionContext, Future}
 import scala.runtime.Nothing$
 import scala.util.{Failure, Success, Try}
@@ -101,13 +103,29 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
   }
 
   def upload(): Action[MultipartFormData[TemporaryFile]] = Action.async(parse.multipartFormData) { implicit request =>
+    def queryFileUploadStatusRecursively(connector: GatekeeperEmailConnector, key: String): Future[UploadInfo] = {
+      val uploadInfo = connector.fetchFileuploadStatus(key).flatMap(
+        uploadInfo => uploadInfo.status match {
+          case _ : UploadedSuccessfully =>
+            logger.info(s"****For key: $key, UploadStatus is UploadedSuccessfully. Sleeping 5 seconds")
+            Future {uploadInfo}
+          case _: UploadedFailedWithErrors =>
+            logger.info(s">>>>>For key: $key, UploadStatus is still UploadedFailedWithErrors. Sleeping 5 seconds")
+            Future {uploadInfo}
+          case InProgress =>
+            logger.info(s"------For key: $key, UploadStatus is still InProgress, Recursing in loop once again after sleeping 5 seconds")
+            Thread.sleep(5000)
+            queryFileUploadStatusRecursively(connector, key)
+        }
+      )
+      uploadInfo
+    }
     val body = request.body
     logger.info(
       s"Upload form contains dataParts=${summariseDataParts(body.dataParts)} and fileParts=${summariseFileParts(body.files)}")
     def base64Decode(result: String): String =
       new String(Base64.getDecoder.decode(result), Charsets.UTF_8)
 
-    val outgoingEmail: Future[OutgoingEmail] = postEmail(body)
     val keyEither: Either[Result, String] = MultipartFormExtractor.extractKey(body)
     val r = if(body.files.isEmpty) {
       MultipartFormExtractor.extractKey(body).map { key =>
@@ -115,6 +133,8 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
           ErrorResponseHandler.okResponse(ErrorAction(None, key), "No Error")
         )
       }
+      val emailForm: ComposeEmailForm = MultipartFormExtractor.extractComposeEmailForm(body)
+      val outgoingEmail: Future[OutgoingEmail] = postEmail(emailForm)
       outgoingEmail.map {  email =>
         Ok(emailPreview(UploadedSuccessfully("", "", "", None), email.htmlEmailBody, controllers.EmailPreviewForm.form.fill(EmailPreviewForm(email.emailId, email.subject))))
       }    }
@@ -144,12 +164,27 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
               Future.successful(errorResponse(errorAction, errorMessage))
             }
 
-            logger.info("sleeping for 5 secs")
-            Thread.sleep(5000)
             val res = futResult.flatMap { _ =>
               logger.info("Executing proxyRequest future")
-              val uploadInfo = emailConnector.fetchFileuploadStatus(keyEither.getOrElse(""))
+              fileAdoptionSuccesses.foreach { filePart =>
+                TemporaryFilePart
+                  .deleteFile(filePart)
+                  .fold(
+                    err =>
+                      logger.warn(s"Failed to delete TemporaryFile for Key [${errorAction.key}] at [${filePart.ref}]", err),
+                    didExist =>
+                      if (didExist)
+                        logger.debug(s"Deleted TemporaryFile for Key [${errorAction.key}] at [${filePart.ref}]")
+                  )
+              }
+              val uploadInfo = queryFileUploadStatusRecursively(emailConnector, keyEither.getOrElse(""))
+              val emailForm: ComposeEmailForm = MultipartFormExtractor.extractComposeEmailForm(body)
               val result =uploadInfo.flatMap { info =>
+                val emailFormModified = info.status match {
+                  case s : UploadedSuccessfully => emailForm.copy(emailBody = emailForm.emailBody + "\n\n Attachment URL: " + s.downloadUrl)
+                  case _ => emailForm
+                }
+                val outgoingEmail: Future[OutgoingEmail] = postEmail(emailFormModified)
                 outgoingEmail.map { email =>
                   Ok(emailPreview(info.status, base64Decode(email.htmlEmailBody), controllers.EmailPreviewForm.form.fill(EmailPreviewForm(email.emailId, email.subject))))
                 }
@@ -167,8 +202,8 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
 
   }
 
-  private def postEmail(multipartFormData: MultipartFormData[TemporaryFile])(implicit request: RequestHeader) = {
-    val emailForm: ComposeEmailForm = MultipartFormExtractor.extractComposeEmailForm(multipartFormData)
+  private def postEmail(emailForm: ComposeEmailForm)(implicit request: RequestHeader) = {
+//    val emailForm: ComposeEmailForm = MultipartFormExtractor.extractComposeEmailForm(emailForm)
     emailConnector.saveEmail(emailForm)
   }
 
