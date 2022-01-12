@@ -136,7 +136,7 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
       val emailForm: ComposeEmailForm = MultipartFormExtractor.extractComposeEmailForm(body)
       val outgoingEmail: Future[OutgoingEmail] = postEmail(emailForm)
       outgoingEmail.map {  email =>
-        Ok(emailPreview(UploadedSuccessfully("", "", "", None), base64Decode(email.htmlEmailBody), controllers.EmailPreviewForm.form.fill(EmailPreviewForm(email.emailId, email.subject))))
+        Ok(emailPreview(UploadedSuccessfully("", "", "", None, ""), base64Decode(email.htmlEmailBody), controllers.EmailPreviewForm.form.fill(EmailPreviewForm(email.emailId, email.subject))))
       }    }
     else {
       MultipartFormExtractor
