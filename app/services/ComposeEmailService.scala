@@ -29,5 +29,4 @@ class ComposeEmailService @Inject()(emailConnector: GatekeeperEmailConnector)
   def sendEmail(composeEmailForm: ComposeEmailForm)(implicit hc: HeaderCarrier): Future[Int] = {
     emailConnector.sendEmail(composeEmailForm)
   }
-
 }

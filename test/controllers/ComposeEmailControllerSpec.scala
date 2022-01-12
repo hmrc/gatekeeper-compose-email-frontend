@@ -37,8 +37,6 @@ class ComposeEmailControllerSpec extends ControllerBaseSpec with Matchers with M
   trait Setup extends ControllerSetupBase {
     lazy val mockGatekeeperEmailConnector = mock[GatekeeperEmailConnector]
     private lazy val forbiddenView = app.injector.instanceOf[ForbiddenView]
-    private lazy val emailView = app.injector.instanceOf[ComposeEmail]
-    private lazy val emailSentConfirmationView = app.injector.instanceOf[EmailSentConfirmation]
     val csrfToken: (String, String) = "csrfToken" -> app.injector.instanceOf[TokenProvider].generateToken
 
     val notLoggedInRequest = FakeRequest("GET", "/email").withCSRFToken
