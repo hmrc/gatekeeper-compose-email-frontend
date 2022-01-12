@@ -91,24 +91,10 @@
                 </div>
                 @status match {
                     case InProgress => { Waiting for the file to be scanned }
-                    case s : UploadedSuccessfully => { Upload of <b>@s.name</b> successful witn downloadUrl @s.downloadUrl  }
-                    case Failed => { File has been rejected. }
+                    case s : UploadedSuccessfully => { }
+                    case f: UploadedFailedWithErrors => { <b><FONT COLOR="RED">File has been rejected because of @f.errorMessage, please click on Edit email and reattach a valid file. </b>}
                 }
 
-                @status match {
-                    case s : UploadedSuccessfully => {
-                    <div class="section">
-                        <a href="./hurry-next">
-                            <button class="button">Next</button>
-                        </a>
-                    </div>
-                    }
-                    case _ => {
-                    <div class="section">
-                        <button class="button" disabled="disabled">Next</button>
-                    </div>
-                    }
-                }
                 <br>
 
                 <div>

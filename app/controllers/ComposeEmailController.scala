@@ -77,7 +77,7 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
     val errorRedirectUrl   = appConfig.uploadRedirectTargetBase + "/gatekeeper-compose-email-frontend/error"
     for {
       upscanInitiateResponse <- upscanInitiateConnector.initiateV2(None, None) //Some(successRedirectUrl), Some(errorRedirectUrl))
-      response <- httpClient.POSTEmpty[UploadInfo](s"$serviceUrl/gatekeeperemail/insertfileuploadstatus?key=${upscanInitiateResponse.fileReference.reference}")
+      _ <- httpClient.POSTEmpty[UploadInfo](s"$serviceUrl/gatekeeperemail/insertfileuploadstatus?key=${upscanInitiateResponse.fileReference.reference}")
     } yield Ok(composeEmail(upscanInitiateResponse, controllers.ComposeEmailForm.form.fill(ComposeEmailForm("","",""))))
   }
 
@@ -114,7 +114,7 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
             Future {uploadInfo}
           case InProgress =>
             logger.info(s"------For key: $key, UploadStatus is still InProgress, Recursing in loop once again after sleeping 5 seconds")
-            Thread.sleep(5000)
+            Thread.sleep(2000)
             queryFileUploadStatusRecursively(connector, key)
         }
       )
@@ -196,10 +196,6 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
         )
     }
     r
-  }
-
-  private def emailWithOutAttachment(body: MultipartFormData[TemporaryFile], outgoingEmail: Future[OutgoingEmail]): Unit = {
-
   }
 
   private def postEmail(emailForm: ComposeEmailForm)(implicit request: RequestHeader) = {
