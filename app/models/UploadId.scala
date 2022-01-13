@@ -21,6 +21,7 @@ import play.api.mvc.QueryStringBindable
 
 import java.util.UUID
 
+case class ErrorResponse(errorMessage: String, key: String, errorCode: String, errorRequestId: String, errorResource: String)
 case class UploadId(value: String) extends AnyVal
 
 sealed trait UploadStatus
@@ -38,6 +39,7 @@ case class UploadInfo(reference : Reference, status : UploadStatus)
 object UploadInfo {
   val status = "status"
 
+  implicit val errorResponse: OFormat[ErrorResponse] = Json.format[ErrorResponse]
   implicit val referenceFormat: OFormat[Reference] =  Json.format[Reference]
   implicit val inProgressFormat: OFormat[InProgress.type] = Json.format[InProgress.type]
   implicit val failedFormat: OFormat[Failed.type] = Json.format[Failed.type]

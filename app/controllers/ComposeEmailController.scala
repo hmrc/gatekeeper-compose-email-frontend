@@ -16,16 +16,17 @@
 
 package controllers
 
+import akka.http.scaladsl.model.HttpHeader.ParsingResult.Ok
 import akka.stream.IOResult
 import akka.stream.scaladsl.{FileIO, Source}
 import akka.util.ByteString
 import config.AppConfig
 import connectors.{GatekeeperEmailConnector, PreparedUpload, UpscanInitiateConnector}
-import controllers.UploadProxyController.ErrorResponseHandler.{MessageField, asErrorResult, errorResponse, fieldName, proxyErrorResponse}
+import controllers.UploadProxyController.ErrorResponseHandler.proxyErrorResponse
 import controllers.UploadProxyController.MultipartFormExtractor.{extractKey, extractSingletonFormValue}
 import controllers.UploadProxyController.TemporaryFilePart.partitionTrys
 import controllers.UploadProxyController.{ErrorAction, ErrorResponseHandler, MultipartFormExtractor, TemporaryFilePart, asTuples}
-import models.{InProgress, OutgoingEmail, Reference, UploadInfo, UploadStatus, UploadedFailedWithErrors, UploadedSuccessfully}
+import models.{ErrorResponse, InProgress, OutgoingEmail, Reference, UploadInfo, UploadStatus, UploadedFailedWithErrors, UploadedSuccessfully}
 import org.apache.commons.io.Charsets
 import play.api.http.Status
 import play.api.libs.ws.{WSClient, WSResponse}
@@ -38,14 +39,15 @@ import javax.inject.{Inject, Singleton}
 import play.api.Logging
 import play.api.data.Form
 import play.api.i18n.I18nSupport
-import play.api.libs.Files.TemporaryFile
+import play.api.libs.Files.{TemporaryFile, logger}
 import play.api.libs.json.Json
 import services.{UpscanFileReference, UpscanInitiateResponse}
 import uk.gov.hmrc.play.bootstrap.frontend.controller.FrontendController
 import util.MultipartFormDataSummaries.{summariseDataParts, summariseFileParts}
-import views.html.{ComposeEmail, EmailPreview, EmailSentConfirmation}
+import views.html.{ComposeEmail, EmailPreview, EmailSentConfirmation, FileSizeMimeChecks}
 import org.apache.http.client.utils.URIBuilder
 import play.api.mvc.MultipartFormData.FilePart
+import play.api.mvc.Results.Redirect
 import uk.gov.hmrc.play.bootstrap.http.HttpClient
 
 import java.net.URI
@@ -56,11 +58,13 @@ import scala.annotation.tailrec
 import scala.concurrent.{ExecutionContext, Future}
 import scala.runtime.Nothing$
 import scala.util.{Failure, Success, Try}
+import models.UploadInfo.errorResponse
 
 @Singleton
 class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
                                        composeEmail: ComposeEmail,
                                        emailPreview: EmailPreview,
+                                       fileChecksPreview: FileSizeMimeChecks,
                                        emailConnector: GatekeeperEmailConnector,
                                        upscanInitiateConnector: UpscanInitiateConnector,
                                        sentEmail: EmailSentConfirmation,
@@ -85,6 +89,11 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
     Future.successful(Ok(sentEmail()))
   }
 
+//  def showError(errorCode: String, errorMessage: String, errorRequestId: String, key: String): Action[AnyContent] = Action {
+//    implicit request =>
+//      Ok(error_template("Upload Error", errorMessage, s"Code: $errorCode, RequestId: $errorRequestId, FileReference: $key"))
+//  }
+
   def sendEmail(): Action[AnyContent] = Action.async {
     implicit request => {
       def handleValidForm(form: ComposeEmailForm) = {
@@ -103,7 +112,7 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
   }
 
   def upload(): Action[MultipartFormData[TemporaryFile]] = Action.async(parse.multipartFormData) { implicit request =>
-    def queryFileUploadStatusRecursively(connector: GatekeeperEmailConnector, key: String): Future[UploadInfo] = {
+    def queryFileUploadStatusRecursively(connector: GatekeeperEmailConnector, key: String, counter: Int = 0): Future[UploadInfo] = {
       val uploadInfo = connector.fetchFileuploadStatus(key).flatMap(
         uploadInfo => uploadInfo.status match {
           case _ : UploadedSuccessfully =>
@@ -113,9 +122,12 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
             logger.info(s">>>>>For key: $key, UploadStatus is still UploadedFailedWithErrors. Sleeping 5 seconds")
             Future {uploadInfo}
           case InProgress =>
-            logger.info(s"------For key: $key, UploadStatus is still InProgress, Recursing in loop once again after sleeping 5 seconds")
+            logger.info(s"------For key: $key, UploadStatus is still InProgress, Recursing $counter time in loop once again after sleeping 5 seconds")
             Thread.sleep(2000)
-            queryFileUploadStatusRecursively(connector, key)
+            if(counter > 5)
+              Future {uploadInfo}
+            else
+              queryFileUploadStatusRecursively(connector, key, counter+1)
         }
       )
       uploadInfo
@@ -128,11 +140,11 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
 
     val keyEither: Either[Result, String] = MultipartFormExtractor.extractKey(body)
     val r = if(body.files.isEmpty) {
-      MultipartFormExtractor.extractKey(body).map { key =>
-        Future.successful(
-          ErrorResponseHandler.okResponse(ErrorAction(None, key), "No Error")
-        )
-      }
+//      MultipartFormExtractor.extractKey(body).map { key =>
+//        Future.successful(
+//          ErrorResponseHandler.okResponse(ErrorAction(None, key), "No Error")
+//        )
+//      }
       val emailForm: ComposeEmailForm = MultipartFormExtractor.extractComposeEmailForm(body)
       val outgoingEmail: Future[OutgoingEmail] = postEmail(emailForm)
       outgoingEmail.map {  email =>
@@ -144,6 +156,7 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
         .fold(
           errorResult => Future.successful(errorResult),
           errorAction => {
+            logger.info(s"******>>>> ${errorAction.redirectUrl}")
             val (fileAdoptionFailures, fileAdoptionSuccesses) = partitionTrys {
               body.files.map { filePart =>
                 for {
@@ -161,10 +174,10 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
               proxyRequest(errorAction, uploadBody, upscanUrl)
             }
             { errorMessage =>
-              Future.successful(errorResponse(errorAction, errorMessage))
+              Future.successful(None)
             }
 
-            val res = futResult.flatMap { _ =>
+            val res = futResult.flatMap { fut =>
               logger.info("Executing proxyRequest future")
               fileAdoptionSuccesses.foreach { filePart =>
                 TemporaryFilePart
@@ -177,19 +190,30 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
                         logger.debug(s"Deleted TemporaryFile for Key [${errorAction.key}] at [${filePart.ref}]")
                   )
               }
-              val uploadInfo = queryFileUploadStatusRecursively(emailConnector, keyEither.getOrElse(""))
               val emailForm: ComposeEmailForm = MultipartFormExtractor.extractComposeEmailForm(body)
-              val result =uploadInfo.flatMap { info =>
-                val emailFormModified = info.status match {
-                  case s : UploadedSuccessfully => emailForm.copy(emailBody = emailForm.emailBody + "\n\n Attachment URL: " + s.downloadUrl)
-                  case _ => emailForm
+
+              if(fut.isDefined) {
+                val outgoingEmail: Future[OutgoingEmail] = postEmail(emailForm)
+                val errorPath = outgoingEmail.map { email =>
+                  val errorResponse = fut.get
+                  Ok(fileChecksPreview(errorResponse.errorMessage, base64Decode(email.htmlEmailBody), controllers.EmailPreviewForm.form.fill(EmailPreviewForm(email.emailId, email.subject))))
                 }
-                val outgoingEmail: Future[OutgoingEmail] = postEmail(emailFormModified)
-                outgoingEmail.map { email =>
-                  Ok(emailPreview(info.status, base64Decode(email.htmlEmailBody), controllers.EmailPreviewForm.form.fill(EmailPreviewForm(email.emailId, email.subject))))
-                }
+                errorPath
               }
-              result
+              else {
+                val uploadInfo = queryFileUploadStatusRecursively(emailConnector, keyEither.getOrElse(""))
+                val result = uploadInfo.flatMap { info =>
+                  val emailFormModified = info.status match {
+                    case s: UploadedSuccessfully => emailForm.copy(emailBody = emailForm.emailBody + "\n\n Attachment URL: " + s.downloadUrl)
+                    case _ => emailForm
+                  }
+                  val outgoingEmail: Future[OutgoingEmail] = postEmail(emailFormModified)
+                  outgoingEmail.map { email =>
+                      Ok(emailPreview(info.status, base64Decode(email.htmlEmailBody), controllers.EmailPreviewForm.form.fill(EmailPreviewForm(email.emailId, email.subject))))
+                  }
+                }
+                result
+              }
             }
             res
           }
@@ -207,7 +231,7 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
     dataPart.flatMap { case (header, body) => body.map(DataPart(header, _)) }.toList
 
   private def proxyRequest(errorAction: ErrorAction, body: Source[MultipartFormData.Part[Source[ByteString, _]], _], upscanUrl: String)(
-    implicit request: RequestHeader): Future[Result] =
+    implicit request: RequestHeader): Future[Option[ErrorResponse]] =
 
     for {
       response <- wsClient
@@ -216,12 +240,17 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
         .post(body)
 
       _ = logger.debug(
-        s"Upload response for Key=[${errorAction.key}] has status=[${response.status}], " +
+        s"************Upload response for Key=[${errorAction.key}] has status=[${response.status}], " +
           s"headers=[${response.headers}], body=[${response.body}]")
     } yield
       response match {
-        case r if r.status >= 200 && r.status < 400 => toSuccessResult(r)
-        case r                                      => proxyErrorResponse(errorAction, r.status, r.body, r.headers)
+        case r if r.status >= 200 && r.status < 299 =>
+          logger.info(s"****>>>  response status: ${response.status}")
+          None
+        case r                                      =>
+          logger.info(s"****>>>  response status for non 200 to 400 is : ${response.status} and body: ${response.body} and headers: ${response.headers}")
+          r.headers.contains("")
+          proxyErrorResponse(errorAction, r.status, r.body, r.headers)
       }
 
   private def toSuccessResult(response: WSResponse): Result =
@@ -327,32 +356,36 @@ private object UploadProxyController {
 
     private val MessageField = "Message"
 
-    def errorResponse(errorAction: ErrorAction, message: String): Result =
-      asErrorResult(errorAction, Status.INTERNAL_SERVER_ERROR, Map(fieldName(MessageField) -> message))
-
-    def okResponse(errorAction: ErrorAction, message: String): Result =
-      asErrorResult(errorAction, Status.OK, Map(fieldName(MessageField) -> message))
+//    def errorResponse(errorAction: ErrorAction, message: String): Result =
+//      asErrorResult(errorAction, Status.INTERNAL_SERVER_ERROR, Map(fieldName(MessageField) -> message))
+//
+//    def okResponse(errorAction: ErrorAction, message: String): Result =
+//      asErrorResult(errorAction, Status.OK, Map(fieldName(MessageField) -> message))
 
     def proxyErrorResponse(
                             errorAction: ErrorAction,
                             statusCode: Int,
-                            xmlResponseBody: String,
-                            responseHeaders: Map[String, Seq[String]]): Result =
-      asErrorResult(errorAction, statusCode, xmlErrorFields(xmlResponseBody).toMap, responseHeaders)
-
-    private def asErrorResult(
-                               errorAction: ErrorAction,
-                               statusCode: Int,
-                               errorFields: Map[String, String],
-                               responseHeaders: Map[String, Seq[String]] = Map.empty): Result = {
-      val resultFields     = errorFields + (KeyName -> errorAction.key)
-      val exposableHeaders = responseHeaders.filter { case (name, _) => isExposableResponseHeader(name) }
-      errorAction.redirectUrl
-        .fold(ifEmpty = jsonResult(statusCode, resultFields)) { redirectUrl =>
-          redirectResult(redirectUrl, queryParams = resultFields)
-        }
-        .withHeaders(asTuples(exposableHeaders): _*)
+                            jsonResponseBody: String,
+                            responseHeaders: Map[String, Seq[String]]): Option[ErrorResponse] = {
+      logger.info(s"JSON Response bits $jsonResponseBody")
+      Some(jsonErrorFields(jsonResponseBody))
+      //asErrorResult(errorAction, statusCode, jsonErrorFields(jsonResponseBody), responseHeaders)
     }
+
+//    private def asErrorResult(
+//                               errorAction: ErrorAction,
+//                               statusCode: Int,
+//                               errorFields: ErrorResponse,
+//                               responseHeaders: Map[String, Seq[String]] = Map.empty): Result = {
+//      val resultFields     = errorFields + (KeyName -> errorAction.key)
+//      val exposableHeaders = responseHeaders.filter { case (name, _) => isExposableResponseHeader(name) }
+//      logger.info(s"About to redirect to ${errorAction.redirectUrl}")
+//      errorAction.redirectUrl
+//        .fold(ifEmpty = jsonResult(statusCode, resultFields)) { redirectUrl =>
+//          redirectResult(redirectUrl, queryParams = responseHeaders)
+//        }
+//        .withHeaders(asTuples(exposableHeaders): _*)
+//    }
 
     /*
      * This is a dummy placeholder to draw attention to the fact that filtering of error response headers is
@@ -366,21 +399,20 @@ private object UploadProxyController {
     private def jsonResult(statusCode: Int, fields: Map[String, String]): Result =
       Results.Status(statusCode)(Json.toJsObject(fields))
 
-    private def redirectResult(url: String, queryParams: Map[String, String]): Result = {
+    private def redirectResult(url: String, queryParams: Map[String, Seq[String]]): Result = {
+      logger.info(s"****>>>> redirectResult with $url")
       val urlBuilder = queryParams.foldLeft(new URIBuilder(url)) { (urlBuilder, param) =>
-        urlBuilder.addParameter(param._1, param._2)
+        urlBuilder.addParameter(param._1, param._2.head)
       }
-      Results.SeeOther(urlBuilder.build().toASCIIString)
+      logger.info(s">>>>>*****URL for error redirection is ${urlBuilder.build().toASCIIString} and query params are ${queryParams}")
+      Redirect(urlBuilder.build().toASCIIString)
     }
 
-    private def xmlErrorFields(xmlBody: String): Seq[(String, String)] =
-      Try(scala.xml.XML.loadString(xmlBody)).toOption.toList.flatMap { xml =>
-        val requestId = makeOptionalField("RequestId", xml)
-        val resource  = makeOptionalField("Resource", xml)
-        val message   = makeOptionalField(MessageField, xml)
-        val code      = makeOptionalField("Code", xml)
-        Seq(code, message, resource, requestId).flatten
-      }
+    private def jsonErrorFields(jsonBody: String): ErrorResponse = {
+      val json = Json.parse(jsonBody)
+      json.as[ErrorResponse]
+    }
+
 
     private def makeOptionalField(elemType: String, xml: Elem): Option[(String, String)] =
       (xml \ elemType).headOption.map(node => fieldName(elemType) -> node.text)
