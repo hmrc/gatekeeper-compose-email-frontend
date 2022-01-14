@@ -100,7 +100,7 @@ lazy val SandboxTest = config("sandbox") extend Test
 
 lazy val appName = "gatekeeper-compose-email-frontend"
 
-coverageMinimum := 72
+coverageMinimum := 84
 coverageFailOnMinimum := true
 coverageExcludedPackages := Seq(
   "<empty>",

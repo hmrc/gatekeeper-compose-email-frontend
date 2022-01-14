@@ -45,7 +45,7 @@ class GatekeeperEmailConnector @Inject()(http: HttpClient, config: EmailConnecto
     })
   }
 
-  def doPost(request: SendEmailRequest)(implicit hc: HeaderCarrier): Future[Either[UpstreamErrorResponse, Int]] = {
+  private def doPost(request: SendEmailRequest)(implicit hc: HeaderCarrier): Future[Either[UpstreamErrorResponse, Int]] = {
     http.POST[SendEmailRequest, Either[UpstreamErrorResponse, Int]](s"$serviceUrl/gatekeeper-email", request)
   }
 }

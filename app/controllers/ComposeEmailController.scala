@@ -43,16 +43,13 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
                                       (implicit  val appConfig: AppConfig, val ec: ExecutionContext)
   extends FrontendController(mcc) with ErrorHelper with GatekeeperAuthWrapper with Logging {
 
-
   def email: Action[AnyContent] = requiresAtLeast(GatekeeperRole.USER) { implicit request =>
     Future.successful(Ok(composeEmail(form.fill(ComposeEmailForm("","","")))))
   }
 
-
   def sentEmailConfirmation: Action[AnyContent] = requiresAtLeast(GatekeeperRole.USER) {
     implicit request => Future.successful(Ok(sentEmail()))
   }
-
 
   def sendEmail(): Action[AnyContent] = requiresAtLeast(GatekeeperRole.USER) {
     implicit request => {
