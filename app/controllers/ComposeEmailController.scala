@@ -204,7 +204,7 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
                 val uploadInfo = queryFileUploadStatusRecursively(emailConnector, keyEither.getOrElse(""))
                 val result = uploadInfo.flatMap { info =>
                   val emailFormModified = info.status match {
-                    case s: UploadedSuccessfully => emailForm.copy(emailBody = emailForm.emailBody + "\n\n Attachment URL: " + s.downloadUrl)
+                    case s: UploadedSuccessfully => emailForm.copy(emailBody = emailForm.emailBody + s"\n\n Attachment URL: **[${s.name}](${s.downloadUrl})**" )
                     case _ => emailForm
                   }
                   val outgoingEmail: Future[OutgoingEmail] = postEmail(emailFormModified)
