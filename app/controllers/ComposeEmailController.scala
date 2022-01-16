@@ -77,11 +77,6 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
     Future.successful(Ok(sentEmail()))
   }
 
-//  def showError(errorCode: String, errorMessage: String, errorRequestId: String, key: String): Action[AnyContent] = Action {
-//    implicit request =>
-//      Ok(error_template("Upload Error", errorMessage, s"Code: $errorCode, RequestId: $errorRequestId, FileReference: $key"))
-//  }
-
   def sendEmail(): Action[AnyContent] = Action.async {
     implicit request => {
       def handleValidForm(form: ComposeEmailForm) = {
