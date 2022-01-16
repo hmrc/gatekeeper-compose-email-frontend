@@ -68,20 +68,17 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
                                        emailConnector: GatekeeperEmailConnector,
                                        upscanInitiateConnector: UpscanInitiateConnector,
                                        sentEmail: EmailSentConfirmation,
-                                       wsClient: WSClient,
-                                       httpClient: HttpClient
+                                       wsClient: WSClient
                                       )(implicit val appConfig: AppConfig, val ec: ExecutionContext)
   extends FrontendController(mcc) with I18nSupport with Logging {
 
   lazy val serviceUrl = appConfig.emailBaseUrl
 
   def email: Action[AnyContent] = Action.async { implicit request =>
-//    val uploadId = UploadId.generate
-    val successRedirectUrl = appConfig.uploadRedirectTargetBase + "/gatekeeper-compose-email-frontend/success"
-    val errorRedirectUrl   = appConfig.uploadRedirectTargetBase + "/gatekeeper-compose-email-frontend/error"
+    logger.info(s"upscanInitiateConnector:$upscanInitiateConnector")
     for {
-      upscanInitiateResponse <- upscanInitiateConnector.initiateV2(None, None) //Some(successRedirectUrl), Some(errorRedirectUrl))
-      _ <- httpClient.POSTEmpty[UploadInfo](s"$serviceUrl/gatekeeperemail/insertfileuploadstatus?key=${upscanInitiateResponse.fileReference.reference}")
+      upscanInitiateResponse <- upscanInitiateConnector.initiateV2(None, None)
+      _ <- emailConnector.inProgressUploadStatus(upscanInitiateResponse.fileReference.reference)
     } yield Ok(composeEmail(upscanInitiateResponse, controllers.ComposeEmailForm.form.fill(ComposeEmailForm("","",""))))
   }
 
@@ -223,7 +220,6 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
   }
 
   private def postEmail(emailForm: ComposeEmailForm)(implicit request: RequestHeader) = {
-//    val emailForm: ComposeEmailForm = MultipartFormExtractor.extractComposeEmailForm(emailForm)
     emailConnector.saveEmail(emailForm)
   }
 

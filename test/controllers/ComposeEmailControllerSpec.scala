@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 HM Revenue & Customs
+ * Copyright 2022 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,18 +16,28 @@
 
 package controllers
 
+import common.ControllerBaseSpec
+import connectors.{GatekeeperEmailConnector, UpscanInitiateConnector}
+import models.{InProgress, Reference, UploadInfo}
 import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpec
-import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.Application
-import play.api.Play.materializer
 import play.api.http.Status
 import play.api.inject.guice.GuiceApplicationBuilder
+import play.api.libs.ws.WSClient
+import play.api.test.CSRFTokenHelper._
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
-import play.api.test.CSRFTokenHelper._
+import services.{UpscanFileReference, UpscanInitiateResponse}
+import uk.gov.hmrc.http.HeaderCarrier
+import views.html.{ComposeEmail, EmailPreview, EmailSentConfirmation, ErrorTemplate}
 
-class ComposeEmailControllerSpec extends AnyWordSpec with Matchers with GuiceOneAppPerSuite  {
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future.successful
+
+class ComposeEmailControllerSpec extends ControllerBaseSpec with Matchers {
+
+  implicit val materializer = app.materializer
+
   override def fakeApplication(): Application =
     new GuiceApplicationBuilder()
       .configure(
@@ -38,16 +48,40 @@ class ComposeEmailControllerSpec extends AnyWordSpec with Matchers with GuiceOne
 
   private val fakeGetRequest = FakeRequest("GET", "/email").withCSRFToken
   private val fakeConfirmationGetRequest = FakeRequest("GET", "/sent-email").withCSRFToken
+  val mockUpscanInitiateConnector: UpscanInitiateConnector = mock[UpscanInitiateConnector]
+  val mockEmailConnector: GatekeeperEmailConnector = mock[GatekeeperEmailConnector]
+  private lazy val composeEmailTemplateView = app.injector.instanceOf[ComposeEmail]
+  private lazy val emailPreviewTemplateView = app.injector.instanceOf[EmailPreview]
+  private lazy val emailSentTemplateView = app.injector.instanceOf[EmailSentConfirmation]
 
-  private val controller = app.injector.instanceOf[ComposeEmailController]
+  private val controller = new ComposeEmailController(
+    mcc,
+    composeEmailTemplateView,
+    emailPreviewTemplateView,
+    mockEmailConnector,
+    mockUpscanInitiateConnector,
+    emailSentTemplateView,
+    mock[WSClient]
+  )
+
+  trait Setup {
+    implicit val hc: HeaderCarrier = HeaderCarrier()
+    val upscanUploadUrl = "/gatekeeperemail/insertfileuploadstatus?key=fileReference"
+    when(mockUpscanInitiateConnector.initiateV2(*, *)(*))
+      .thenReturn(successful(UpscanInitiateResponse(UpscanFileReference("fileReference"), "upscanUrl", Map())))
+
+    when(mockEmailConnector.inProgressUploadStatus(*)(*))
+      .thenReturn(successful(UploadInfo(Reference("fileReference"), InProgress)))
+
+  }
 
   "GET /email" should {
-    "return 200" in {
-      val result = controller.email(fakeGetRequest)
+    "return 200" in new Setup {
+      val result = controller.email()(fakeGetRequest)
       status(result) shouldBe Status.OK
     }
 
-    "return HTML" in {
+    "return HTML" in new Setup {
       val result = controller.email(fakeGetRequest)
       contentType(result) shouldBe Some("text/html")
       charset(result)     shouldBe Some("utf-8")
@@ -55,12 +89,12 @@ class ComposeEmailControllerSpec extends AnyWordSpec with Matchers with GuiceOne
   }
 
   "GET /sent-email" should {
-    "return 200" in {
+    "return 200" in new Setup {
       val result = controller.sentEmailConfirmation(fakeConfirmationGetRequest)
-      status(result) shouldBe Status.OK
+      status(result) shouldBe 200
     }
 
-    "return HTML" in {
+    "return HTML" in new Setup {
       val result = controller.sentEmailConfirmation(fakeConfirmationGetRequest)
       contentType(result) shouldBe Some("text/html")
       charset(result)     shouldBe Some("utf-8")
@@ -68,7 +102,7 @@ class ComposeEmailControllerSpec extends AnyWordSpec with Matchers with GuiceOne
   }
 
   "POST /email" should {
-    "send an email upon receiving a valid form submission" in {
+    "send an email upon receiving a valid form submission" in new Setup {
       val fakeRequest = FakeRequest("POST", "/email")
         .withFormUrlEncodedBody("emailRecipient"->"fsadfas%40adfas.com", "emailSubject"->"dfasd", "emailBody"->"asdfasf")
         .withCSRFToken
@@ -76,7 +110,7 @@ class ComposeEmailControllerSpec extends AnyWordSpec with Matchers with GuiceOne
       status(result) shouldBe SEE_OTHER
     }
 
-    "reject a form submission with missing emailRecipient" in {
+    "reject a form submission with missing emailRecipient" in new Setup {
       val fakeRequest = FakeRequest("POST", "/email")
         .withFormUrlEncodedBody("emailSubject"->"dfasd", "emailBody"->"asdfasf")
         .withCSRFToken
@@ -84,7 +118,7 @@ class ComposeEmailControllerSpec extends AnyWordSpec with Matchers with GuiceOne
       status(result) shouldBe BAD_REQUEST
     }
 
-    "reject a form submission with missing emailSubject" in {
+    "reject a form submission with missing emailSubject" in new Setup {
       val fakeRequest = FakeRequest("POST", "/email")
         .withFormUrlEncodedBody("emailRecipient"->"fsadfas%40adfas.com", "emailBody"->"asdfasf")
         .withCSRFToken
@@ -92,7 +126,7 @@ class ComposeEmailControllerSpec extends AnyWordSpec with Matchers with GuiceOne
       status(result) shouldBe BAD_REQUEST
     }
 
-    "reject a form submission with missing emailBody" in {
+    "reject a form submission with missing emailBody" in new Setup {
       val fakeRequest = FakeRequest("POST", "/email")
         .withFormUrlEncodedBody("emailRecipient"->"fsadfas%40adfas.com", "emailSubject"->"dfasd")
         .withCSRFToken

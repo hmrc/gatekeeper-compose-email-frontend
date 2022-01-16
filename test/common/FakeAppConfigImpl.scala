@@ -16,13 +16,17 @@
 
 package common
 
-import org.mockito.{ArgumentMatchersSugar, MockitoSugar}
-import org.scalatest.{Matchers, OptionValues, WordSpec}
-import org.scalatestplus.play.WsScalaTestClient
-import play.api.test.{DefaultAwaitTimeout, FutureAwaits}
+import com.google.inject.Singleton
+import config.AppConfig
+import play.api.Configuration
 
-abstract class HmrcSpec extends WordSpec with Matchers with OptionValues with WsScalaTestClient with MockitoSugar with ArgumentMatchersSugar
+import javax.inject.Inject
 
-abstract class AsyncHmrcSpec
-  extends HmrcSpec with DefaultAwaitTimeout with FutureAwaits {
+@Singleton
+class FakeAppConfigImpl @Inject()(config: Configuration)
+  extends AppConfig(config) {
+
+
+  override val emailBaseUrl = "https://mock-gatekeeper-frontend/gatekeeper-email/insertfileuploadstatus?key=fileReference"
+
 }
