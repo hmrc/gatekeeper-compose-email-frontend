@@ -29,7 +29,7 @@ import play.api.test.FakeRequest
 import play.api.test.Helpers._
 import services.{UpscanFileReference, UpscanInitiateResponse}
 import uk.gov.hmrc.http.HeaderCarrier
-import views.html.{ComposeEmail, EmailPreview, EmailSentConfirmation, ErrorTemplate}
+import views.html.{ComposeEmail, EmailPreview, EmailSentConfirmation, FileSizeMimeChecks}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future.successful
@@ -48,21 +48,22 @@ class ComposeEmailControllerSpec extends ControllerBaseSpec with Matchers {
 
   private val fakeGetRequest = FakeRequest("GET", "/email").withCSRFToken
   private val fakeConfirmationGetRequest = FakeRequest("GET", "/sent-email").withCSRFToken
-  val mockUpscanInitiateConnector: UpscanInitiateConnector = mock[UpscanInitiateConnector]
-  val mockEmailConnector: GatekeeperEmailConnector = mock[GatekeeperEmailConnector]
+  private val mockUpscanInitiateConnector: UpscanInitiateConnector = mock[UpscanInitiateConnector]
+  private val mockEmailConnector: GatekeeperEmailConnector = mock[GatekeeperEmailConnector]
+  private val mockWSClient: WSClient = mock[WSClient]
   private lazy val composeEmailTemplateView = app.injector.instanceOf[ComposeEmail]
   private lazy val emailPreviewTemplateView = app.injector.instanceOf[EmailPreview]
   private lazy val emailSentTemplateView = app.injector.instanceOf[EmailSentConfirmation]
-
+  private lazy val fileChecksPreview: FileSizeMimeChecks = app.injector.instanceOf[FileSizeMimeChecks]
   private val controller = new ComposeEmailController(
     mcc,
     composeEmailTemplateView,
     emailPreviewTemplateView,
+    fileChecksPreview,
     mockEmailConnector,
     mockUpscanInitiateConnector,
     emailSentTemplateView,
-    mock[WSClient]
-  )
+    mockWSClient)
 
   trait Setup {
     implicit val hc: HeaderCarrier = HeaderCarrier()

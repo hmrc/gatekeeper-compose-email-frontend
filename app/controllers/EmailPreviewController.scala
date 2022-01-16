@@ -22,9 +22,7 @@ import play.api.Logging
 import play.api.data.Form
 import play.api.i18n.I18nSupport
 import play.api.mvc.{Action, AnyContent, MessagesControllerComponents}
-import services.{UpscanFileReference, UpscanInitiateResponse}
 import uk.gov.hmrc.play.bootstrap.frontend.controller.FrontendController
-import views.html.EmailSentConfirmation
 
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
@@ -32,9 +30,7 @@ import scala.concurrent.{ExecutionContext, Future}
 @Singleton
 class EmailPreviewController @Inject()
                 (mcc: MessagesControllerComponents,
-                 emailConnector: GatekeeperEmailConnector,
-                 sentEmail: EmailSentConfirmation
-                )
+                 emailConnector: GatekeeperEmailConnector)
                 (implicit val appConfig: AppConfig, val ec: ExecutionContext)
   extends FrontendController(mcc) with I18nSupport with Logging {
 

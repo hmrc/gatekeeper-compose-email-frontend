@@ -16,49 +16,40 @@
 
 package controllers
 
-import akka.http.scaladsl.model.HttpHeader.ParsingResult.Ok
 import akka.stream.IOResult
 import akka.stream.scaladsl.{FileIO, Source}
 import akka.util.ByteString
 import config.AppConfig
-import connectors.{GatekeeperEmailConnector, PreparedUpload, UpscanInitiateConnector}
+import connectors.{GatekeeperEmailConnector, UpscanInitiateConnector}
 import controllers.UploadProxyController.ErrorResponseHandler.proxyErrorResponse
-import controllers.UploadProxyController.MultipartFormExtractor.{extractKey, extractSingletonFormValue}
 import controllers.UploadProxyController.TemporaryFilePart.partitionTrys
-import controllers.UploadProxyController.{ErrorAction, ErrorResponseHandler, MultipartFormExtractor, TemporaryFilePart, asTuples}
-import models.{ErrorResponse, InProgress, OutgoingEmail, Reference, UploadInfo, UploadStatus, UploadedFailedWithErrors, UploadedSuccessfully}
+import controllers.UploadProxyController.{ErrorAction, MultipartFormExtractor, TemporaryFilePart, asTuples}
+import models.UploadInfo.errorResponse
+import models._
 import org.apache.commons.io.Charsets
-import play.api.http.Status
-import play.api.libs.ws.{WSClient, WSResponse}
-import play.api.mvc.MultipartFormData.DataPart
-import play.api.mvc.{Action, ActionBuilder, AnyContent, MessagesControllerComponents, MultipartFormData, RequestHeader, Result, Results}
-
-import java.nio.file.Files
-import scala.xml.Elem
-import javax.inject.{Inject, Singleton}
+import org.apache.http.client.utils.URIBuilder
 import play.api.Logging
 import play.api.data.Form
 import play.api.i18n.I18nSupport
 import play.api.libs.Files.{TemporaryFile, logger}
 import play.api.libs.json.Json
+import play.api.libs.ws.{WSClient, WSResponse}
+import play.api.mvc.MultipartFormData.{DataPart, FilePart}
+import play.api.mvc.Results.Redirect
+import play.api.mvc._
 import services.{UpscanFileReference, UpscanInitiateResponse}
 import uk.gov.hmrc.play.bootstrap.frontend.controller.FrontendController
 import util.MultipartFormDataSummaries.{summariseDataParts, summariseFileParts}
 import views.html.{ComposeEmail, EmailPreview, EmailSentConfirmation, FileSizeMimeChecks}
-import org.apache.http.client.utils.URIBuilder
-import play.api.mvc.MultipartFormData.FilePart
-import play.api.mvc.Results.Redirect
-import uk.gov.hmrc.play.bootstrap.http.HttpClient
 
 import java.net.URI
 import java.nio.charset.StandardCharsets.UTF_8
-import java.nio.file.Path
+import java.nio.file.{Files, Path}
 import java.util.Base64
-import scala.annotation.tailrec
+import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
-import scala.runtime.Nothing$
 import scala.util.{Failure, Success, Try}
-import models.UploadInfo.errorResponse
+import scala.xml.Elem
 
 @Singleton
 class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,

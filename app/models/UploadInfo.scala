@@ -30,8 +30,6 @@ case object Failed extends UploadStatus
 case class UploadedSuccessfully(name: String, mimeType: String, downloadUrl: String, size: Option[Long], objectStoreUrl: String) extends UploadStatus
 case class UploadedFailedWithErrors(errorCode: String, errorMessage: String, errorRequestId: String, key: String) extends UploadStatus
 
-//case class UploadId(value : UUID) extends AnyVal
-
 case class Reference(value: String) extends AnyVal
 
 
