@@ -18,9 +18,8 @@ package connectors
 
 import config.EmailConnectorConfig
 import controllers.{ComposeEmailForm, EmailPreviewForm}
-import models.{OutgoingEmail, SendEmailRequest, UploadInfo}
 import models.SendEmailRequest.createEmailRequest
-import play.api.libs.json.JsValue
+import models.{OutgoingEmail, SendEmailRequest, UploadInfo}
 import uk.gov.hmrc.http.HttpReads.Implicits._
 import uk.gov.hmrc.http.{HeaderCarrier, HttpClient, UpstreamErrorResponse}
 import uk.gov.hmrc.play.http.metrics.common.API
@@ -51,6 +50,10 @@ class GatekeeperEmailConnector @Inject()(http: HttpClient, config: EmailConnecto
         case resp@Right(_) => resp.right.get
         case Left(err) => throw err
       }
+  }
+
+  def inProgressUploadStatus(keyReference: String)(implicit hc: HeaderCarrier): Future[UploadInfo] = {
+    http.POSTEmpty[UploadInfo](s"$serviceUrl/gatekeeperemail/insertfileuploadstatus?key=$keyReference")
   }
 
   def fetchFileuploadStatus(key: String)(implicit hc: HeaderCarrier) = {

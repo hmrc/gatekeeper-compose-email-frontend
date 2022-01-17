@@ -14,23 +14,19 @@
  * limitations under the License.
  */
 
-package models
+package common
 
-import play.api.libs.json.Reads
-import play.api.mvc.QueryStringBindable
+import com.google.inject.Singleton
+import config.AppConfig
+import play.api.Configuration
 
-import java.util.UUID
+import javax.inject.Inject
 
-//sealed trait UploadStatus
-//case object InProgress extends UploadStatus
-//case object Failed extends UploadStatus
-//case class UploadedSuccessfully(name: String, mimeType: String, downloadUrl: String, size: Option[Long]) extends UploadStatus
-//case class UploadedFailedWithErrors(errorCode: String, errorMessage: String, errorRequestId: String, key: String) extends UploadStatus
-//
-////case class UploadId(value : UUID) extends AnyVal
-//
-//case class Reference(value: String) extends AnyVal
-//
+@Singleton
+class FakeAppConfigImpl @Inject()(config: Configuration)
+  extends AppConfig(config) {
 
 
+  override val emailBaseUrl = "https://mock-gatekeeper-frontend/gatekeeper-email/insertfileuploadstatus?key=fileReference"
 
+}
