@@ -45,6 +45,8 @@ import scala.concurrent.{ExecutionContext, Future}
 import uk.gov.hmrc.http.HeaderCarrier
 import util.{ErrorAction, MultipartFormExtractor}
 
+import java.nio.file.Path
+
 @Singleton
 class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
                                        composeEmail: ComposeEmail,
@@ -150,56 +152,82 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
               } yield adoptedFilePart
             }
           }
-
-          val errorResponse = fileAdoptionFailures.headOption.fold {
-            val uploadBody =
-              Source(dataParts(body.dataParts) ++ fileAdoptionSuccesses.map(TemporaryFilePart.toUploadSource))
-            val upscanS3buckerURL = MultipartFormExtractor.extractUpscanUrl(body).get
-            proxyRequest(errorAction, uploadBody, upscanS3buckerURL)
-          }
-          { _ => Future.successful(None) }
+          val errorResponse = fetchFileErrorResponse(body, errorAction, fileAdoptionSuccesses, fileAdoptionFailures)
 
           val res = errorResponse.flatMap { errResp =>
             logger.info("Executing proxyRequest future")
-            fileAdoptionSuccesses.foreach { filePart =>
-              TemporaryFilePart
-                .deleteFile(filePart)
-                .fold(
-                  err =>
-                    logger.warn(s"Failed to delete TemporaryFile for Key [${errorAction.key}] at [${filePart.ref}]", err),
-                  didExist =>
-                    if (didExist)
-                      logger.debug(s"Deleted TemporaryFile for Key [${errorAction.key}] at [${filePart.ref}]")
-                )
-            }
-            val emailForm: ComposeEmailForm = MultipartFormExtractor.extractComposeEmailForm(body)
+            fetchResultFromErrorResponse(body, errorAction, fileAdoptionSuccesses, fileAdoptionFailures, errResp, keyEither)
 
-            if(errResp.isDefined) {
-              val outgoingEmail: Future[OutgoingEmail] = postEmail(emailForm)
-              val errorPath = outgoingEmail.map { email =>
-                val errorResponse = errResp.get
-                Ok(fileChecksPreview(errorResponse.errorMessage, base64Decode(email.htmlEmailBody), controllers.EmailPreviewForm.form.fill(EmailPreviewForm(email.emailId, email.subject))))
-              }
-              errorPath
-            }
-            else {
-              val uploadInfo = queryFileUploadStatusRecursively(emailConnector, keyEither.getOrElse(""))
-              val result = uploadInfo.flatMap { info =>
-                val emailFormModified = info.status match {
-                  case s: UploadedSuccessfully => emailForm.copy(emailBody = emailForm.emailBody + s"\n\n Attachment URL: **[${s.name}](${s.downloadUrl})**" )
-                  case _ => emailForm
-                }
-                val outgoingEmail: Future[OutgoingEmail] = postEmail(emailFormModified)
-                outgoingEmail.map { email =>
-                  Ok(emailPreview(info.status, base64Decode(email.htmlEmailBody), controllers.EmailPreviewForm.form.fill(EmailPreviewForm(email.emailId, email.subject))))
-                }
-              }
-              result
-            }
           }
           res
         }
       )
+  }
+
+  private def fetchFileErrorResponse(body: MultipartFormData[TemporaryFile], errorAction: ErrorAction,
+                                     fileAdoptionSuccesses: Seq[MultipartFormData.FilePart[Path]],
+                                     fileAdoptionFailures: Seq[String])
+                                    (implicit requestHeader: RequestHeader, request: Request[_])
+                                    : Future[Option[ErrorResponse]] = {
+
+    val errorResponse = fileAdoptionFailures.headOption.fold {
+      val uploadBody =
+        Source(dataParts(body.dataParts) ++ fileAdoptionSuccesses.map(TemporaryFilePart.toUploadSource))
+      val upscanS3buckerURL = MultipartFormExtractor.extractUpscanUrl(body).get
+      proxyRequest(errorAction, uploadBody, upscanS3buckerURL)
+    }
+    { _ => Future.successful(None) }
+    errorResponse
+  }
+
+  private def fetchResultFromErrorResponse(body: MultipartFormData[TemporaryFile], errorAction: ErrorAction,
+                                     fileAdoptionSuccesses: Seq[MultipartFormData.FilePart[Path]],
+                                     fileAdoptionFailures: Seq[String],
+                                     errResp: Option[ErrorResponse],
+                                           keyEither: Either[Result, String])
+                                    (implicit requestHeader: RequestHeader, request: Request[_])
+                                    : Future[Result] = {
+
+    fileAdoptionSuccesses.foreach { filePart =>
+      TemporaryFilePart
+        .deleteFile(filePart)
+        .fold(
+          err =>
+            logger.warn(s"Failed to delete TemporaryFile for Key [${errorAction.key}] " +
+              s"at [${filePart.ref}]", err),
+          didExist =>
+            if (didExist) {
+              logger.debug(s"Deleted TemporaryFile for Key [${errorAction.key}] at " +
+                s"[${filePart.ref}]")
+            }
+        )
+    }
+    val emailForm: ComposeEmailForm = MultipartFormExtractor.extractComposeEmailForm(body)
+
+    if(errResp.isDefined) {
+      val outgoingEmail: Future[OutgoingEmail] = postEmail(emailForm)
+      val errorPath = outgoingEmail.map { email =>
+        val errorResponse = errResp.get
+        Ok(fileChecksPreview(errorResponse.errorMessage, base64Decode(email.htmlEmailBody),
+          controllers.EmailPreviewForm.form.fill(EmailPreviewForm(email.emailId, email.subject))))
+      }
+      errorPath
+    }
+    else {
+      val uploadInfo = queryFileUploadStatusRecursively(emailConnector, keyEither.getOrElse(""))
+      val result = uploadInfo.flatMap { info =>
+        val emailFormModified = info.status match {
+          case s: UploadedSuccessfully => emailForm.copy(emailBody = emailForm.emailBody + s"\n\n Attachment URL: **[${s.name}](${s.downloadUrl})**" )
+          case _ => emailForm
+        }
+        val outgoingEmail: Future[OutgoingEmail] = postEmail(emailFormModified)
+        outgoingEmail.map { email =>
+          Ok(emailPreview(info.status, base64Decode(email.htmlEmailBody),
+            controllers.EmailPreviewForm.form.fill(EmailPreviewForm(email.emailId, email.subject))))
+        }
+      }
+      result
+    }
   }
 
   def upload(): Action[MultipartFormData[TemporaryFile]] = Action.async(parse.multipartFormData) { implicit request =>
