@@ -17,17 +17,16 @@
 @import config.AppConfig
 @import include._
 
-@this(layout: Layout, applicationConfig: AppConfig)
+@this(layout: Layout)
 
 @()(implicit request: Request[_], messages: Messages, applicationConfig: AppConfig)
 
 @layout(pageTitle = Some(s"${applicationConfig.title} - Email Sent")){
-<h1 class="govuk-heading-xl">Email sent!</h1>
-<p class="govuk-body">@{"HMRC API Gatekeeper"}</p>
-<div>
- @helper.CSRF.formField
+ <h1 class="govuk-heading-xl">Email sent!</h1>
+ <p class="govuk-body">@{"HMRC API Gatekeeper"}</p>
+ <div>
+  @helper.CSRF.formField
 
-</div>
+ </div>
 
-
-        }
+}

@@ -25,12 +25,12 @@
 @import uk.gov.hmrc.hmrcfrontend.views.viewmodels.footer.Footer
 @import uk.gov.hmrc.hmrcfrontend.views.viewmodels.language.En
 
-@this(  govukLayout: GovukLayout,
-siteHeader: SiteHeader,
-hmrcStandardHeader: HmrcStandardHeader,
-hmrcFooter: HmrcFooter,
-hmrcHead: HmrcHead,
-appConfig: AppConfig)
+@this(govukLayout: GovukLayout,
+      siteHeader: SiteHeader,
+      hmrcStandardHeader: HmrcStandardHeader,
+      hmrcFooter: HmrcFooter,
+      hmrcHead: HmrcHead,
+      appConfig: AppConfig)
 
 @(pageTitle: Option[String] = None,
         scriptsBlock: Option[Html] = None)(contentBlock: Html)(implicit request: Request[_], messages: Messages)
