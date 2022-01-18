@@ -63,11 +63,8 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
   lazy val serviceUrl = appConfig.emailBaseUrl
 
   def email: Action[AnyContent] = Action.async { implicit request =>
-//    val uploadId = UploadId.generate
-    val successRedirectUrl = appConfig.uploadRedirectTargetBase + "/gatekeeper-compose-email-frontend/success"
-    val errorRedirectUrl   = appConfig.uploadRedirectTargetBase + "/gatekeeper-compose-email-frontend/error"
     for {
-      upscanInitiateResponse <- upscanInitiateConnector.initiateV2(None, None) //Some(successRedirectUrl), Some(errorRedirectUrl))
+      upscanInitiateResponse <- upscanInitiateConnector.initiateV2(None, None)
       _ <- httpClient.POSTEmpty[UploadInfo](s"$serviceUrl/gatekeeperemail/insertfileuploadstatus?key=${upscanInitiateResponse.fileReference.reference}")
     } yield Ok(composeEmail(upscanInitiateResponse, controllers.ComposeEmailForm.form.fill(ComposeEmailForm("","",""))))
   }
@@ -75,11 +72,6 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
   def sentEmailConfirmation: Action[AnyContent] = Action.async { implicit request =>
     Future.successful(Ok(sentEmail()))
   }
-
-//  def showError(errorCode: String, errorMessage: String, errorRequestId: String, key: String): Action[AnyContent] = Action {
-//    implicit request =>
-//      Ok(error_template("Upload Error", errorMessage, s"Code: $errorCode, RequestId: $errorRequestId, FileReference: $key"))
-//  }
 
   def sendEmail(): Action[AnyContent] = Action.async {
     implicit request => {
@@ -97,6 +89,22 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
       ComposeEmailForm.form.bindFromRequest.fold(handleInvalidForm(_), handleValidForm(_))
     }
   }
+
+  def upload(): Action[MultipartFormData[TemporaryFile]] = Action.async(parse.multipartFormData) { implicit request =>
+    val body = request.body
+    logger.info(
+      s"Upload form contains dataParts=${summariseDataParts(body.dataParts)} and fileParts=${summariseFileParts(body.files)}")
+
+    val keyEither: Either[Result, String] = MultipartFormExtractor.extractKey(body)
+    val result = if(body.files.isEmpty) {
+      noAttachmentEmail(body)
+    }
+    else {
+      attachmentEmail(body, keyEither)
+    }
+    result
+  }
+
   private def queryFileUploadStatusRecursively(connector: GatekeeperEmailConnector,
                                                key: String, counter: Int = 0)
                                               (implicit hc: HeaderCarrier): Future[UploadInfo] = {
@@ -108,7 +116,7 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
           logger.info(s"For key: $key, UploadStatus is UploadedSuccessfully.")
           Future {uploadInfo}
         case _: UploadedFailedWithErrors =>
-          logger.info(s"For key: $key, UploadStatus is still UploadedFailedWithErrors.")
+          logger.info(s"For key: $key, UploadStatus is UploadedFailedWithErrors.")
           Future {uploadInfo}
         case InProgress =>
           logger.info(s"For key: $key, UploadStatus is still InProgress, " +
@@ -129,7 +137,7 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
 
   private def noAttachmentEmail(body: MultipartFormData[TemporaryFile])(implicit requestHeader: RequestHeader, request: Request[_]): Future[Result] = {
     val emailForm: ComposeEmailForm = MultipartFormExtractor.extractComposeEmailForm(body)
-    val outgoingEmail: Future[OutgoingEmail] = postEmail(emailForm)
+    val outgoingEmail: Future[OutgoingEmail] = saveEmail(emailForm)
     outgoingEmail.map {  email =>
       Ok(emailPreview(UploadedSuccessfully("", "", "", None, ""), base64Decode(email.htmlEmailBody),
         controllers.EmailPreviewForm.form.fill(EmailPreviewForm(email.emailId, email.subject))))
@@ -157,7 +165,6 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
           val res = errorResponse.flatMap { errResp =>
             logger.info("Executing proxyRequest future")
             fetchResultFromErrorResponse(body, errorAction, fileAdoptionSuccesses, fileAdoptionFailures, errResp, keyEither)
-
           }
           res
         }
@@ -205,7 +212,7 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
     val emailForm: ComposeEmailForm = MultipartFormExtractor.extractComposeEmailForm(body)
 
     if(errResp.isDefined) {
-      val outgoingEmail: Future[OutgoingEmail] = postEmail(emailForm)
+      val outgoingEmail: Future[OutgoingEmail] = saveEmail(emailForm)
       val errorPath = outgoingEmail.map { email =>
         val errorResponse = errResp.get
         Ok(fileChecksPreview(errorResponse.errorMessage, base64Decode(email.htmlEmailBody),
@@ -220,7 +227,7 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
           case s: UploadedSuccessfully => emailForm.copy(emailBody = emailForm.emailBody + s"\n\n Attachment URL: **[${s.name}](${s.downloadUrl})**" )
           case _ => emailForm
         }
-        val outgoingEmail: Future[OutgoingEmail] = postEmail(emailFormModified)
+        val outgoingEmail: Future[OutgoingEmail] = saveEmail(emailFormModified)
         outgoingEmail.map { email =>
           Ok(emailPreview(info.status, base64Decode(email.htmlEmailBody),
             controllers.EmailPreviewForm.form.fill(EmailPreviewForm(email.emailId, email.subject))))
@@ -230,31 +237,17 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
     }
   }
 
-  def upload(): Action[MultipartFormData[TemporaryFile]] = Action.async(parse.multipartFormData) { implicit request =>
-    val body = request.body
-    logger.info(
-      s"Upload form contains dataParts=${summariseDataParts(body.dataParts)} and fileParts=${summariseFileParts(body.files)}")
 
-    val keyEither: Either[Result, String] = MultipartFormExtractor.extractKey(body)
-    val result = if(body.files.isEmpty) {
-      noAttachmentEmail(body)
-    }
-    else {
-      attachmentEmail(body, keyEither)
-    }
-    result
-  }
 
-  private def postEmail(emailForm: ComposeEmailForm)(implicit request: RequestHeader) = {
+  private def saveEmail(emailForm: ComposeEmailForm)(implicit request: RequestHeader) = {
     emailConnector.saveEmail(emailForm)
   }
 
-  private def dataParts(dataPart: Map[String, Seq[String]]): List[DataPart] =
+  def dataParts(dataPart: Map[String, Seq[String]]): List[DataPart] =
     dataPart.flatMap { case (header, body) => body.map(DataPart(header, _)) }.toList
 
-  private def proxyRequest(errorAction: ErrorAction, body: Source[MultipartFormData.Part[Source[ByteString, _]], _], upscanUrl: String)(
-    implicit request: RequestHeader): Future[Option[ErrorResponse]] =
-
+  def proxyRequest(errorAction: ErrorAction, body: Source[MultipartFormData.Part[Source[ByteString, _]], _],
+                   upscanUrl: String): Future[Option[ErrorResponse]] = {
     for {
       response <- wsClient
         .url(upscanUrl)
@@ -270,9 +263,9 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
           logger.info(s"response status: ${response.status}")
           None
         case r                                      =>
-          logger.info(s"response status for non 200 to 400 is : ${response.status} and body: ${response.body} and headers: ${response.headers}")
-          r.headers.contains("")
+          logger.info(s"response status for non 200 to 400 is : ${response.status} and " +
+            s"body: ${response.body} and headers: ${response.headers}")
           proxyErrorResponse(errorAction, r.status, r.body, r.headers)
       }
+  }
 }
-
