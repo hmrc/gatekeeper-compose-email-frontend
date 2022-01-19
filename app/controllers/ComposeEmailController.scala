@@ -20,7 +20,6 @@ import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import config.AppConfig
 import connectors.{GatekeeperEmailConnector, UpscanInitiateConnector}
-import util.UploadProxyController.ErrorResponseHandler.proxyErrorResponse
 import util.UploadProxyController.TemporaryFilePart.partitionTrys
 import util.UploadProxyController.TemporaryFilePart
 import models.{ErrorResponse, InProgress, OutgoingEmail, UploadInfo, UploadedFailedWithErrors, UploadedSuccessfully}
@@ -43,7 +42,7 @@ import uk.gov.hmrc.play.bootstrap.http.HttpClient
 import java.util.Base64
 import scala.concurrent.{ExecutionContext, Future}
 import uk.gov.hmrc.http.HeaderCarrier
-import util.{ErrorAction, MultipartFormExtractor}
+import util.{ErrorAction, MultipartFormExtractor, ProxyRequestor}
 
 import java.nio.file.Path
 
@@ -56,7 +55,8 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
                                        upscanInitiateConnector: UpscanInitiateConnector,
                                        sentEmail: EmailSentConfirmation,
                                        wsClient: WSClient,
-                                       httpClient: HttpClient
+                                       httpClient: HttpClient,
+                                       proxyRequestor: ProxyRequestor
                                       )(implicit val appConfig: AppConfig, val ec: ExecutionContext)
   extends FrontendController(mcc) with I18nSupport with Logging {
 
@@ -177,11 +177,11 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
                                     (implicit requestHeader: RequestHeader, request: Request[_])
                                     : Future[Option[ErrorResponse]] = {
 
+    println(s"*************** Inside fetchFileErrorResponse... with fileAdoptionFailures $fileAdoptionFailures")
     val errorResponse = fileAdoptionFailures.headOption.fold {
-      val uploadBody =
-        Source(dataParts(body.dataParts) ++ fileAdoptionSuccesses.map(TemporaryFilePart.toUploadSource))
+      val uploadBody = Source(dataParts(body.dataParts) ++ fileAdoptionSuccesses.map(TemporaryFilePart.toUploadSource))
       val upscanS3buckerURL = MultipartFormExtractor.extractUpscanUrl(body).get
-      proxyRequest(errorAction, uploadBody, upscanS3buckerURL)
+      proxyRequestor.proxyRequest(errorAction, uploadBody, upscanS3buckerURL)
     }
     { _ => Future.successful(None) }
     errorResponse
@@ -200,11 +200,11 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
         .deleteFile(filePart)
         .fold(
           err =>
-            logger.warn(s"Failed to delete TemporaryFile for Key [${errorAction.key}] " +
+            logger.info(s"Failed to delete TemporaryFile for Key [${errorAction.key}] " +
               s"at [${filePart.ref}]", err),
           didExist =>
             if (didExist) {
-              logger.debug(s"Deleted TemporaryFile for Key [${errorAction.key}] at " +
+              logger.info(s"Deleted TemporaryFile for Key [${errorAction.key}] at " +
                 s"[${filePart.ref}]")
             }
         )
@@ -240,32 +240,10 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
 
 
   private def saveEmail(emailForm: ComposeEmailForm)(implicit request: RequestHeader) = {
+    println(s"******>>> $emailForm")
     emailConnector.saveEmail(emailForm)
   }
 
   def dataParts(dataPart: Map[String, Seq[String]]): List[DataPart] =
     dataPart.flatMap { case (header, body) => body.map(DataPart(header, _)) }.toList
-
-  def proxyRequest(errorAction: ErrorAction, body: Source[MultipartFormData.Part[Source[ByteString, _]], _],
-                   upscanUrl: String): Future[Option[ErrorResponse]] = {
-    for {
-      response <- wsClient
-        .url(upscanUrl)
-        .withFollowRedirects(follow = false)
-        .post(body)
-
-      _ = logger.debug(
-        s"Upload response for Key=[${errorAction.key}] has status=[${response.status}], " +
-          s"headers=[${response.headers}], body=[${response.body}]")
-    } yield
-      response match {
-        case r if r.status >= 200 && r.status < 299 =>
-          logger.info(s"response status: ${response.status}")
-          None
-        case r                                      =>
-          logger.info(s"response status for non 200 to 400 is : ${response.status} and " +
-            s"body: ${response.body} and headers: ${response.headers}")
-          proxyErrorResponse(errorAction, r.status, r.body, r.headers)
-      }
-  }
 }
