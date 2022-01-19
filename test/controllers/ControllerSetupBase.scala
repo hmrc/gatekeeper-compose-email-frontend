@@ -1,4 +1,4 @@
-@*
+/*
  * Copyright 2022 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,21 +12,24 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *@
+ */
 
-@import config.AppConfig
-@import include._
+package controllers
 
-@this(layout: Layout)
+import models.GatekeeperSessionKeys
+import mocks.connector.AuthConnectorMock
+import org.mockito.ArgumentMatchersSugar
+import org.mockito.scalatest.MockitoSugar
+import play.api.mvc.AnyContentAsEmpty
+import play.api.test.FakeRequest
 
-@()(implicit request: Request[_], messages: Messages, applicationConfig: AppConfig)
+class ControllerSetupBase extends MockitoSugar
+with ArgumentMatchersSugar
+with AuthConnectorMock {
 
-@layout(pageTitle = Some(s"${applicationConfig.title} - Email Sent")){
- <h1 class="govuk-heading-xl">Email sent!</h1>
- <p class="govuk-body">@{"HMRC API Gatekeeper"}</p>
- <div>
-  @helper.CSRF.formField
+  val userToken = GatekeeperSessionKeys.LoggedInUser -> userName
+  val authToken = GatekeeperSessionKeys.AuthToken -> "some-bearer-token"
+  val aLoggedInRequest: FakeRequest[AnyContentAsEmpty.type] = FakeRequest().withSession(authToken, userToken)
 
- </div>
 
 }

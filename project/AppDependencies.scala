@@ -11,7 +11,7 @@ object AppDependencies {
   def apply(): Seq[ModuleID] = dependencies ++ testDependencies
 
   lazy val dependencies = Seq(
-    "uk.gov.hmrc"       %%  "bootstrap-frontend-play-28"    % "5.16.0",
+    "uk.gov.hmrc"       %%  "bootstrap-frontend-play-28"    % "5.18.0",
     "uk.gov.hmrc"       %%  "time"                          % "3.11.0",
     "uk.gov.hmrc"       %%  "govuk-template"                % "5.72.0-play-28",
     "uk.gov.hmrc"       %%  "play-ui"                       % "9.7.0-play-28",
@@ -19,8 +19,8 @@ object AppDependencies {
     "uk.gov.hmrc"       %%  "json-encryption"               % "4.8.0-play-26",
     "uk.gov.hmrc"       %%  "play-json-union-formatter"     % "1.11.0",
     "uk.gov.hmrc"       %%  "emailaddress"                  % "3.4.0",
-    "uk.gov.hmrc"       %% "play-frontend-hmrc"             % "1.22.0-play-28",
-    "uk.gov.hmrc.mongo" %% "hmrc-mongo-play-28"             % "0.55.0",
+    "uk.gov.hmrc"       %%  "play-frontend-hmrc"            % "1.31.0-play-28",
+    "uk.gov.hmrc.mongo" %%  "hmrc-mongo-play-28"            % "0.55.0",
     "uk.gov.hmrc"       %%  "http-metrics"                  % "2.3.0-play-28",
     "commons-net"       %   "commons-net"                   % "3.6",
     "org.slf4j"         %   "slf4j-api"                     % slf4jVersion,

@@ -16,15 +16,16 @@
 
 package utils
 
+import config.AppConfig
 import play.api.i18n.Messages
-import play.api.mvc.Results.{BadRequest, InternalServerError, NotFound}
+import play.api.mvc.Results.InternalServerError
 import play.api.mvc.{Request, Result}
 import views.html.ErrorTemplate
 
 trait ErrorHelper {
   val errorTemplate: ErrorTemplate
 
-  def technicalDifficulties(implicit request: Request[_], messagesProvider: Messages) : Result = {
+  def technicalDifficulties(implicit request: Request[_], messagesProvider: Messages, appConfig: AppConfig) : Result = {
     InternalServerError(errorTemplate("Technical difficulties", "Technical difficulties",
       "Sorry, we are experiencing technical difficulties"))
   }

@@ -14,19 +14,24 @@
  * limitations under the License.
  */
 
-package services
+package mocks.config
 
-import connectors.GatekeeperEmailConnector
-import controllers.ComposeEmailForm
-import uk.gov.hmrc.http.HeaderCarrier
-
+import com.google.inject.Singleton
+import config.{AppConfigImpl}
 import javax.inject.Inject
-import scala.concurrent.{ExecutionContext, Future}
+import mocks.TestRoles
+import play.api.Configuration
 
-class ComposeEmailService @Inject()(emailConnector: GatekeeperEmailConnector)
-                         (implicit val ec: ExecutionContext){
+@Singleton
+class FakeAppConfigImpl @Inject()(config: Configuration)
+  extends AppConfigImpl(config) {
 
-  def sendEmail(composeEmailForm: ComposeEmailForm)(implicit hc: HeaderCarrier): Future[Int] = {
-    emailConnector.sendEmail(composeEmailForm)
-  }
+  override val title = "Unit Test Title"
+
+  override val strideLoginUrl = "https://loginUri"
+  override val gatekeeperSuccessUrl = "http://mock-gatekeeper-frontend/api-gatekeeper/applications"
+
+  override val userRole = TestRoles.userRole
+  override val adminRole = TestRoles.adminRole
+  override val superUserRole = TestRoles.superUserRole
 }

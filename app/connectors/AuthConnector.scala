@@ -1,4 +1,4 @@
-@*
+/*
  * Copyright 2022 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,21 +12,16 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *@
+ */
 
-@import config.AppConfig
-@import include._
+package connectors
 
-@this(layout: Layout)
+import config.AppConfig
+import javax.inject.{Inject, Singleton}
+import uk.gov.hmrc.auth.core._
+import uk.gov.hmrc.http.HttpClient
 
-@()(implicit request: Request[_], messages: Messages, applicationConfig: AppConfig)
-
-@layout(pageTitle = Some(s"${applicationConfig.title} - Email Sent")){
- <h1 class="govuk-heading-xl">Email sent!</h1>
- <p class="govuk-body">@{"HMRC API Gatekeeper"}</p>
- <div>
-  @helper.CSRF.formField
-
- </div>
-
+@Singleton
+class AuthConnector @Inject()(val http: HttpClient, appConfig: AppConfig) extends PlayAuthConnector {
+  lazy val serviceUrl = appConfig.authBaseUrl
 }

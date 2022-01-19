@@ -14,19 +14,11 @@
  * limitations under the License.
  *@
 
-@import config.AppConfig
-@import include._
-
 @this(layout: Layout)
 
-@()(implicit request: Request[_], messages: Messages, applicationConfig: AppConfig)
+@()(implicit request : Request[_], messagesProvider: MessagesProvider)
 
-@layout(pageTitle = Some(s"${applicationConfig.title} - Email Sent")){
- <h1 class="govuk-heading-xl">Email sent!</h1>
- <p class="govuk-body">@{"HMRC API Gatekeeper"}</p>
- <div>
-  @helper.CSRF.formField
-
- </div>
-
+@layout(pageTitle = Some("Forbidden")) {
+  <h1>You do not have permission to access Gatekeeper</h1>
+  <h2>Contact your administrator for access</h2>
 }

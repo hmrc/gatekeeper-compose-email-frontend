@@ -1,4 +1,4 @@
-@*
+/*
  * Copyright 2022 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,21 +12,18 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *@
+ */
 
-@import config.AppConfig
-@import include._
+package models
 
-@this(layout: Layout)
+import uk.gov.hmrc.http.SessionKeys
 
-@()(implicit request: Request[_], messages: Messages, applicationConfig: AppConfig)
+object GatekeeperRole extends Enumeration {
+  type GatekeeperRole = Value
+  val USER, SUPERUSER, ADMIN = Value
+}
 
-@layout(pageTitle = Some(s"${applicationConfig.title} - Email Sent")){
- <h1 class="govuk-heading-xl">Email sent!</h1>
- <p class="govuk-body">@{"HMRC API Gatekeeper"}</p>
- <div>
-  @helper.CSRF.formField
-
- </div>
-
+object GatekeeperSessionKeys {
+  val LoggedInUser = "LoggedInUser"
+  val AuthToken = SessionKeys.authToken
 }

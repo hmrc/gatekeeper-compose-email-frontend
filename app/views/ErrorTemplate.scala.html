@@ -15,12 +15,13 @@
  *@
 
 @import uk.gov.hmrc.govukfrontend.views.html.components.Text
+@import include._
 
-@this(main: MainView)
+@import config.AppConfig
+@this(layout: Layout)
 
-@(pageTitle: String, heading: String, message: String)(implicit request: Request[_], messagesProvider: MessagesProvider)
-
-@main(title = pageTitle, heading, message) {
-  <h1>class="govuk-heading-xl">@{Text(heading).asHtml}</h1>
-  <p>class="govuk-body">@{Text(message).asHtml}</p>
+@(pageTitle: String, heading: String, message: String)(implicit request: Request[_], messages: Messages, applicationConfig: AppConfig)
+@layout(pageTitle = Some(pageTitle)) {
+ <h1 class="govuk-heading-xl">@{Text(heading).asHtml}</h1>
+ <p class="govuk-body">@{Text(message).asHtml}</p>
 }

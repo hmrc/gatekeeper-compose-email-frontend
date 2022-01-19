@@ -86,6 +86,10 @@ lazy val microservice =  (project in file("."))
   .settings(
     resolvers ++= Seq(
       Resolver.typesafeRepo("releases")
+    ),
+    TwirlKeys.templateImports ++= Seq(
+    "views.html.helper.CSPNonce",
+    "config.AppConfig"
     )
   )
   .disablePlugins(sbt.plugins.JUnitXmlReportPlugin)
@@ -96,7 +100,7 @@ lazy val SandboxTest = config("sandbox") extend Test
 
 lazy val appName = "gatekeeper-compose-email-frontend"
 
-coverageMinimum := 72
+coverageMinimum := 85
 coverageFailOnMinimum := true
 coverageExcludedPackages := Seq(
   "<empty>",

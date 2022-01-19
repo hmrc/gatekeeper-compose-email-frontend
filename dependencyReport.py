@@ -30,7 +30,7 @@ def findOutOfDateDependencies(dependencies):
     return outOfDateDependencies
 
 def reportOnDependencies(dependencyType, dependencies):
-    print dependencyType + " needing upgrade:"
+    print (dependencyType + " needing upgrade:")
     outOfDateDependencies = findOutOfDateDependencies(dependencies)
     if len(outOfDateDependencies) > 0:
         for i in range(len(outOfDateDependencies)):

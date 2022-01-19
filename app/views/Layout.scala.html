@@ -17,15 +17,31 @@
 @import config.AppConfig
 @import uk.gov.hmrc.hmrcfrontend.views.html.helpers.HmrcLayout
 @import views.html.helper.CSPNonce
+@import include._
+@import uk.gov.hmrc.govukfrontend.views.html.components.GovukLayout
+@import uk.gov.hmrc.hmrcfrontend.views.html.helpers.HmrcStandardHeader
+@import uk.gov.hmrc.hmrcfrontend.views.html.components.HmrcFooter
+@import uk.gov.hmrc.hmrcfrontend.views.html.helpers.HmrcHead
+@import uk.gov.hmrc.hmrcfrontend.views.viewmodels.footer.Footer
+@import uk.gov.hmrc.hmrcfrontend.views.viewmodels.language.En
 
-@this(
-        appConfig: AppConfig,
-        hmrcLayout: HmrcLayout
-)
-@(pageTitle: Option[String] = None)(contentBlock: Html)(implicit request: Request[_], messages: Messages)
+@this(govukLayout: GovukLayout,
+      siteHeader: SiteHeader,
+      hmrcStandardHeader: HmrcStandardHeader,
+      hmrcFooter: HmrcFooter,
+      hmrcHead: HmrcHead,
+      appConfig: AppConfig)
 
-@hmrcLayout(
-    pageTitle = pageTitle,
-    nonce = CSPNonce.get,
-    isWelshTranslationAvailable = appConfig.welshLanguageSupportEnabled
+@(pageTitle: Option[String] = None,
+        scriptsBlock: Option[Html] = None)(contentBlock: Html)(implicit request: Request[_], messages: Messages)
+
+@govukLayout(
+ pageTitle = pageTitle,
+ headBlock = Some(hmrcHead()),
+ headerBlock = Some(siteHeader()),
+ scriptsBlock = None,
+ beforeContentBlock = None,
+ footerBlock = Some(hmrcFooter(new Footer(meta= None, language = En))),
+ assetPath = None,
+ cspNonce = None
 )(contentBlock)
