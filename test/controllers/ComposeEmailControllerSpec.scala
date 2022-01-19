@@ -201,9 +201,9 @@ class ComposeEmailControllerSpec extends ControllerBaseSpec with Matchers with G
         .thenReturn(successful(None))
 
       val uploadRequest = FakeRequest().withBody(formDataBody)
-//      val result = controller.upload()(uploadRequest)
-      val result = controller.proxyRequest(ErrorAction(None, "file-key"), uploadBody, "http://upscan-s3/")
-      (result) shouldBe None
+      val result = controller.upload()(uploadRequest)
+      //val result = controller.proxyRequest(ErrorAction(None, "file-key"), uploadBody, "http://upscan-s3/")
+      status(result) shouldBe SEE_OTHER
     }
 
 

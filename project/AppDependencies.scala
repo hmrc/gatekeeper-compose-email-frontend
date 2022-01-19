@@ -18,7 +18,7 @@ object AppDependencies {
     "uk.gov.hmrc"       %%  "play-conditional-form-mapping" % "1.2.0-play-26",
     "uk.gov.hmrc"       %%  "json-encryption"               % "4.8.0-play-26",
     "uk.gov.hmrc"       %%  "play-json-union-formatter"     % "1.11.0",
-    "uk.gov.hmrc"       %%  "emailaddress"                  % "3.4.0",
+    "uk.gov.hmrc"       %%  "emailaddress"                  % "3.5.0",
     "uk.gov.hmrc"       %% "play-frontend-hmrc"             % "1.22.0-play-28",
     "uk.gov.hmrc.mongo" %% "hmrc-mongo-play-28"             % "0.55.0",
     "uk.gov.hmrc"       %%  "http-metrics"                  % "2.3.0-play-28",
