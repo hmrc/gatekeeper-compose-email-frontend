@@ -20,8 +20,8 @@ import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import common.ControllerBaseSpec
 import config.EmailConnectorConfig
-import connectors.{GatekeeperEmailConnector, PreparedUpload, UploadForm, UpscanInitiateConnector, UpscanInitiateRequestV2}
-import controllers.{ComposeEmailController, ComposeEmailForm}
+import connectors.{AuthConnector, GatekeeperEmailConnector, PreparedUpload, UploadForm, UpscanInitiateConnector, UpscanInitiateRequestV2}
+import controllers.{ComposeEmailController, ComposeEmailForm, ControllerSetupBase}
 import models.{InProgress, OutgoingEmail, Reference, UploadInfo, UploadedSuccessfully}
 import org.mockito.MockitoSugar
 import org.mockito.MockitoSugar.mock
@@ -38,15 +38,19 @@ import play.api.test.FakeRequest
 import play.api.test.Helpers.{BAD_REQUEST, OK}
 import play.shaded.ahc.io.netty.handler.codec.http.DefaultHttpHeaders
 import play.shaded.ahc.org.asynchttpclient.uri.Uri
+import services.ComposeEmailService
 import uk.gov.hmrc.http.{HeaderCarrier, HttpClient}
-import util.ProxyRequestor
-import views.html.{ComposeEmail, EmailPreview, EmailSentConfirmation, FileSizeMimeChecks}
+import utils.ProxyRequestor
+import views.html.{ComposeEmail, EmailPreview, EmailSentConfirmation, ErrorTemplate, FileSizeMimeChecks, ForbiddenView}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-object ComposeEmailControllerSpecHelpers  extends ControllerBaseSpec with Matchers with GivenWhenThen with MockitoSugar{
+object ComposeEmailControllerSpecHelpers  extends ControllerBaseSpec with Matchers with GivenWhenThen
+  with MockitoSugar {
   implicit val materializer = app.materializer
+  lazy val forbiddenView = app.injector.instanceOf[ForbiddenView]
+  val errorTemplate: ErrorTemplate = fakeApplication.injector.instanceOf[ErrorTemplate]
 
   override def fakeApplication(): Application =
     new GuiceApplicationBuilder()
@@ -67,7 +71,7 @@ object ComposeEmailControllerSpecHelpers  extends ControllerBaseSpec with Matche
   lazy val fileChecksPreview: FileSizeMimeChecks = app.injector.instanceOf[FileSizeMimeChecks]
   lazy val httpClient = mock[HttpClient]
 
-  class GatekeeperEmailConnectorTest extends GatekeeperEmailConnector(httpClient, mock[EmailConnectorConfig]){
+  class ComposeEmailServiceTest extends ComposeEmailService(mock[GatekeeperEmailConnector]){
     override def saveEmail(composeEmailForm: ComposeEmailForm)(implicit hc: HeaderCarrier): Future[OutgoingEmail] =
       Future.successful(OutgoingEmail("srinivasalu.munagala@digital.hmrc.gov.uk",
         "Hello", List(""), None,  "*test email body*", "", "", "", None))
@@ -79,7 +83,7 @@ object ComposeEmailControllerSpecHelpers  extends ControllerBaseSpec with Matche
     override def inProgressUploadStatus(keyReference: String)(implicit hc: HeaderCarrier): Future[UploadInfo] =
       Future.successful(UploadInfo(Reference(keyReference), InProgress))
   }
-  val mockGateKeeperConnector = new GatekeeperEmailConnectorTest
+  val mockGateKeeperService = new ComposeEmailServiceTest
 
   class ProxyRequestorTest extends ProxyRequestor(mockWSClient) {
 
@@ -103,21 +107,23 @@ object ComposeEmailControllerSpecHelpers  extends ControllerBaseSpec with Matche
     }
   }
   val mockUpscanInitiateConnectorTest = new UpscanInitiateConnectorTest
+  val mockAuthConnector = mock[AuthConnector]
 
-  def buildController(mockGateKeeperConnector: GatekeeperEmailConnector, mockedProxyRequestor: ProxyRequestor): ComposeEmailController = {
+  def buildController(mockGateKeeperService: ComposeEmailService, mockedProxyRequestor: ProxyRequestor): ComposeEmailController = {
     new ComposeEmailController(
       mcc,
       composeEmailTemplateView,
       emailPreviewTemplateView,
       fileChecksPreview,
-      mockGateKeeperConnector,
-      mockUpscanInitiateConnectorTest,
+      mockGateKeeperService,
       emailSentTemplateView,
+      mockUpscanInitiateConnectorTest,
       mockWSClient,
       httpClient,
-      mockedProxyRequestor)
+      mockedProxyRequestor,
+      forbiddenView, mockAuthConnector, errorTemplate)
   }
-  val controller = buildController(mockGateKeeperConnector, mockedProxyRequestor)
+  val controller = buildController(mockGateKeeperService, mockedProxyRequestor)
 
   class ProxyRequestorTestWrongSize extends ProxyRequestor(mockWSClient) {
 

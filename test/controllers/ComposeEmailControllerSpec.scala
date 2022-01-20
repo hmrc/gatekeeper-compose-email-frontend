@@ -33,6 +33,7 @@ import uk.gov.hmrc.http.HeaderCarrier
 import views.html.{ComposeEmail, EmailSentConfirmation, ErrorTemplate, ForbiddenView}
 import play.api.mvc.MultipartFormData.DataPart
 import play.api.mvc.MultipartFormData
+import utils.ComposeEmailControllerSpecHelpers.{buildController, errorTemplate, forbiddenView, mockedProxyRequestor}
 import utils.Implicits.Base64StringOps
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -42,7 +43,6 @@ class ComposeEmailControllerSpec extends ControllerBaseSpec with Matchers with M
 
   trait Setup extends ControllerSetupBase {
     lazy val mockGatekeeperEmailConnector = mock[GatekeeperEmailConnector]
-    private lazy val forbiddenView = app.injector.instanceOf[ForbiddenView]
     val csrfToken: (String, String) = "csrfToken" -> app.injector.instanceOf[TokenProvider].generateToken
 
     val notLoggedInRequest = FakeRequest("GET", "/email").withCSRFToken
@@ -68,14 +68,9 @@ class ComposeEmailControllerSpec extends ControllerBaseSpec with Matchers with M
     )
     val mockEmailService: ComposeEmailService = mock[ComposeEmailService]
     val composeEmailForm: ComposeEmailForm = ComposeEmailForm("fsadfas%40adfas.com", "dfasd", "asdfasf")
-    val errorTemplate: ErrorTemplate = fakeApplication.injector.instanceOf[ErrorTemplate]
     val composeEmail: ComposeEmail = fakeApplication.injector.instanceOf[ComposeEmail]
     val emailSentConfirmation: EmailSentConfirmation = fakeApplication.injector.instanceOf[EmailSentConfirmation]
-    val controller = new ComposeEmailController(stubMessagesControllerComponents(),
-      composeEmail,
-      mockEmailService,
-      emailSentConfirmation,
-      forbiddenView, mockAuthConnector, errorTemplate)
+    val controller = buildController(mockEmailService, mockedProxyRequestor)
   }
 
   "GET /email" should {
@@ -146,7 +141,7 @@ class ComposeEmailControllerSpec extends ControllerBaseSpec with Matchers with M
 
     "handle receiving a failure response from the email service" in new Setup {
         givenTheGKUserIsAuthorisedAndIsANormalUser()
-        when(mockEmailService.sendEmail(*)(*)).thenReturn(Future.successful(BAD_REQUEST))
+        when(mockEmailService.saveEmail(*)(*)).thenReturn(Future.successful(OutgoingEmail()))
         val fakeRequest = FakeRequest("POST", "/email")
           .withSession(csrfToken, authToken, userToken)
           .withFormUrlEncodedBody("emailRecipient" -> "fsadfas%40adfas.com", "emailSubject" -> "dfasd", "emailBody" -> "asdfasf")
@@ -164,7 +159,7 @@ class ComposeEmailControllerSpec extends ControllerBaseSpec with Matchers with M
         .withSession(csrfToken, authToken, userToken)
         .withFormUrlEncodedBody("emailSubject" -> "dfasd", "emailBody" -> "asdfasf")
         .withCSRFToken
-      val result = controller.sendEmail()(fakeRequest)
+      val result = controller.()(fakeRequest)
       status(result) shouldBe BAD_REQUEST
       verifyAuthConnectorCalledForUser
       verifyZeroInteractions(mockEmailService)
