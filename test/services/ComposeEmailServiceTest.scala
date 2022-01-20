@@ -41,7 +41,7 @@ class ComposeEmailServiceSpec extends AnyWordSpec with Matchers with GuiceOneApp
 
   "sendEmail" should {
     "handle sending an email successfully" in new Setup {
-      when(mockEmailConnector.sendEmail(*)(*)).thenReturn(Future.successful(Status.OK))
+      when(mockEmailConnector.saveEmail(*)(*)).thenReturn(Future.successful(Status.OK))
       val resultStatusCode = await(underTest.sendEmail(new ComposeEmailForm("","","")))
       resultStatusCode shouldBe Status.OK
     }

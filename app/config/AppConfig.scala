@@ -35,6 +35,17 @@ trait AppConfig {
   def superUserRole: String
   def userRole: String
   def welshLanguageSupportEnabled: Boolean
+
+  def initiateUrl: String
+  def initiateV2Url: String
+  def uploadRedirectTargetBase: String
+  def callbackEndpointTarget: String
+
+  def emailBaseUrl: String
+  def emailSubject: String
+  def maxFileSize: String
+  def approvedFileExtensions: String
+  def approvedFileTypes: String
 }
 
 @Singleton
@@ -43,10 +54,17 @@ class AppConfigImpl @Inject()(config: Configuration)
   val welshLanguageSupportEnabled = config.getOptional[Boolean]("features.welsh-language-support").getOrElse(false)
 
   val appName = "HMRC API Gatekeeper"
+  lazy val initiateUrl              = baseUrl("upscan-initiate") + "/upscan/initiate"
+  lazy val initiateV2Url            = baseUrl("upscan-initiate") + "/upscan/v2/initiate"
+  lazy val uploadRedirectTargetBase = getString("upload-redirect-target-base")
+  lazy val callbackEndpointTarget   = getString("upscan.callback-endpoint")
   val assetsPrefix = getString("assets.url") + getString("assets.version")
   val title = "HMRC API Gatekeeper"
   val emailBaseUrl =  baseUrl("gatekeeper-email")
   val emailSubject =  getString("emailSubject")
+  val maxFileSize = getString("file-formats.max-file-size-mb")
+  val approvedFileExtensions = getString("file-formats.approved-file-extensions")
+  val approvedFileTypes = getString("file-formats.approved-file-types")
 
 
   override def gatekeeperSuccessUrl: String = getString("api-gatekeeper-email-success-url")

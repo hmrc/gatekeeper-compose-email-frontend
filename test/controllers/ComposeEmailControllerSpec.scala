@@ -16,11 +16,14 @@
 
 package controllers
 
+import config.EmailConnectorConfig
 import connectors.GatekeeperEmailConnector
+import models.{OutgoingEmail, UploadInfo}
 import org.mockito.{ArgumentMatchersSugar, MockitoSugar}
 import org.scalatest.matchers.should.Matchers
 import play.api.Play.materializer
 import play.api.http.Status
+import play.api.libs.Files.TemporaryFile
 import play.api.test.CSRFTokenHelper._
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
@@ -28,6 +31,9 @@ import play.filters.csrf.CSRF.TokenProvider
 import services.ComposeEmailService
 import uk.gov.hmrc.http.HeaderCarrier
 import views.html.{ComposeEmail, EmailSentConfirmation, ErrorTemplate, ForbiddenView}
+import play.api.mvc.MultipartFormData.DataPart
+import play.api.mvc.MultipartFormData
+import utils.Implicits.Base64StringOps
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -45,7 +51,21 @@ class ComposeEmailControllerSpec extends ControllerBaseSpec with Matchers with M
     val fakePostFormRequest = FakeRequest("POST", "/email").withSession(csrfToken, authToken, userToken).withCSRFToken
 
     implicit val hc: HeaderCarrier = HeaderCarrier()
-
+    val upscanUploadUrl = "/gatekeeperemail/insertfileuploadstatus?key=fileReference"
+    val dataParts = Map(
+      "x-amz-algorithm"         -> Seq("AWS4-HMAC-SHA256"),
+      "x-amz-credential"        -> Seq("some-credentials"),
+      "x-amz-date"              -> Seq("20180517T113023Z"),
+      "policy"                  -> Seq("{\"policy\":null}".base64encode()),
+      "x-amz-signature"         -> Seq("some-signature"),
+      "acl"                     -> Seq("private"),
+      "key"                     -> Seq("file-key"),
+      "x-amz-meta-callback-url" -> Seq("http://mylocalservice.com/callback"),
+      "emailSubject"            -> Seq("Test Email Subject"),
+      "emailBody"               -> Seq("*test email body*"),
+      "emailRecipient"          -> Seq("srinivasalu.munagala@digital.hmrc.gov.uk"),
+      "upscan-url"              -> Seq("http://upscan-s3/")
+    )
     val mockEmailService: ComposeEmailService = mock[ComposeEmailService]
     val composeEmailForm: ComposeEmailForm = ComposeEmailForm("fsadfas%40adfas.com", "dfasd", "asdfasf")
     val errorTemplate: ErrorTemplate = fakeApplication.injector.instanceOf[ErrorTemplate]
@@ -172,6 +192,135 @@ class ComposeEmailControllerSpec extends ControllerBaseSpec with Matchers with M
       status(result) shouldBe BAD_REQUEST
       verifyAuthConnectorCalledForUser
       verifyZeroInteractions(mockEmailService)
+    }
+  }
+
+  "POST /upload" should {
+    "preview a successfully POSTed form and file" in new Setup {
+      givenTheGKUserIsAuthorisedAndIsANormalUser()
+      Given("a valid form containing a valid file")
+      val fileToUpload = CreateTempFileFromResource("/text-to-upload.txt")
+      val filePart = new MultipartFormData.FilePart[TemporaryFile](
+        key = "file",
+        filename = "/text-to-upload.pdf",
+        contentType = None,
+        fileToUpload,
+        fileSize = fileToUpload.length()
+      )
+      val formDataBody = new MultipartFormData[TemporaryFile](
+        dataParts,
+        files    = Seq(filePart),
+        badParts = Nil
+      )
+      val (_, fileAdoptionSuccesses) = partitionTrys {
+        formDataBody.files.map { filePart =>
+          for {
+            adoptedFilePart <- TemporaryFilePart.adoptFile(filePart)
+            _ = logger.debug(
+              s"Moved TemporaryFile for Key file-key from [${filePart.ref.path}] to [${adoptedFilePart.ref}]")
+          } yield adoptedFilePart
+        }
+      }
+      val uploadBody =
+        Source(formDataBody.dataParts.flatMap { case (header, body) => body.map(DataPart(header, _)) }.toList
+          ++ fileAdoptionSuccesses.map(TemporaryFilePart.toUploadSource))
+
+
+      val uploadRequest = FakeRequest().withBody(formDataBody).withCSRFToken
+      val result = controller.upload()(uploadRequest)
+      status(result) shouldBe 200
+    }
+
+    "preview a successfully POSTed form and show error for file with virus" in new Setup {
+      givenTheGKUserIsAuthorisedAndIsANormalUser()
+      Given("a valid form containing a valid file with virus")
+      class GatekeeperEmailConnectorVirusTest extends GatekeeperEmailConnector(httpClient, mock[EmailConnectorConfig]){
+        override def saveEmail(composeEmailForm: ComposeEmailForm)(implicit hc: HeaderCarrier): Future[OutgoingEmail] =
+          Future.successful(OutgoingEmail("srinivasalu.munagala@digital.hmrc.gov.uk",
+            "Hello", List(""), None,  "*test email body*", "", "", "", None))
+
+        override def fetchFileuploadStatus(key: String)(implicit hc: HeaderCarrier): Future[UploadInfo] =
+          Future.successful(UploadInfo(Reference("fileReference"),
+            UploadedFailedWithErrors("QUARANTINE", "file got virus", "243rwrf", "file-key")))
+      }
+      val mockGateKeeperConnector = new GatekeeperEmailConnectorVirusTest
+      val fileToUpload = CreateTempFileFromResource("/eicar.txt")
+      val filePart = new MultipartFormData.FilePart[TemporaryFile](
+        key = "file",
+        filename = "eicar.txt",
+        contentType = None,
+        fileToUpload,
+        fileSize = fileToUpload.length()
+      )
+      val controller = buildController(mockGateKeeperConnector, mockedProxyRequestor)
+      val formDataBody = new MultipartFormData[TemporaryFile](
+        dataParts,
+        files    = Seq(filePart),
+        badParts = Nil
+      )
+      val (_, fileAdoptionSuccesses) = partitionTrys {
+        formDataBody.files.map { filePart =>
+          for {
+            adoptedFilePart <- TemporaryFilePart.adoptFile(filePart)
+            _ = logger.debug(
+              s"Moved TemporaryFile for Key file-key from [${filePart.ref.path}] to [${adoptedFilePart.ref}]")
+          } yield adoptedFilePart
+        }
+      }
+      val uploadRequest = FakeRequest().withBody(formDataBody).withCSRFToken
+      val result = controller.upload()(uploadRequest)
+      status(result) shouldBe 200
+    }
+
+    "preview a successfully POSTed form and show error for file with file size above allowed limit" in new Setup {
+      givenTheGKUserIsAuthorisedAndIsANormalUser()
+      Given("a valid form containing a valid file with virus")
+      class GatekeeperEmailConnectorInvalidFile extends GatekeeperEmailConnector(httpClient, mock[EmailConnectorConfig]){
+        override def saveEmail(composeEmailForm: ComposeEmailForm)(implicit hc: HeaderCarrier): Future[OutgoingEmail] =
+          Future.successful(OutgoingEmail("srinivasalu.munagala@digital.hmrc.gov.uk",
+            "Hello", List(""), None,  "*test email body*", "", "", "", None))
+
+        override def fetchFileuploadStatus(key: String)(implicit hc: HeaderCarrier): Future[UploadInfo] =
+          Future.successful(UploadInfo(Reference("fileReference"),
+            InProgress))
+      }
+      val mockGateKeeperConnector = new GatekeeperEmailConnectorInvalidFile
+      val fileToUpload = CreateTempFileFromResource("/screenshot.png")
+      val filePart = new MultipartFormData.FilePart[TemporaryFile](
+        key = "file",
+        filename = "screenshot.png",
+        contentType = None,
+        fileToUpload,
+        fileSize = fileToUpload.length()
+      )
+
+      val formDataBody = new MultipartFormData[TemporaryFile](
+        dataParts,
+        files    = Seq(filePart),
+        badParts = Nil
+      )
+
+      val mockedProxyRequestorWrongSize = new ProxyRequestorTestWrongSize
+
+      val controller = buildController(mockGateKeeperConnector, mockedProxyRequestorWrongSize)
+      val uploadRequest = FakeRequest().withBody(formDataBody).withCSRFToken
+      val result = controller.upload()(uploadRequest)
+      status(result) shouldBe 200
+    }
+
+    "preview a successfully POSTed form with out a file" in new Setup {
+      givenTheGKUserIsAuthorisedAndIsANormalUser()
+      Given("a valid form containing a valid file")
+
+      val formDataBody = new MultipartFormData[TemporaryFile](
+        dataParts,
+        files    = Seq(),
+        badParts = Nil
+      )
+
+      val uploadRequest = FakeRequest().withBody(formDataBody).withCSRFToken
+      val result = controller.upload()(uploadRequest)
+      status(result) shouldBe 200
     }
   }
 }

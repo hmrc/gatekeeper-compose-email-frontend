@@ -17,7 +17,9 @@
 package services
 
 import connectors.GatekeeperEmailConnector
-import controllers.ComposeEmailForm
+import controllers.{ComposeEmailForm, EmailPreviewForm}
+import models.{OutgoingEmail, UploadInfo}
+import models.SendEmailRequest.createEmailRequest
 import uk.gov.hmrc.http.HeaderCarrier
 
 import javax.inject.Inject
@@ -26,7 +28,19 @@ import scala.concurrent.{ExecutionContext, Future}
 class ComposeEmailService @Inject()(emailConnector: GatekeeperEmailConnector)
                          (implicit val ec: ExecutionContext){
 
-  def sendEmail(composeEmailForm: ComposeEmailForm)(implicit hc: HeaderCarrier): Future[Int] = {
+  def sendEmail(composeEmailForm: EmailPreviewForm)(implicit hc: HeaderCarrier): Future[OutgoingEmail] = {
     emailConnector.sendEmail(composeEmailForm)
+  }
+
+  def saveEmail(composeEmailForm: ComposeEmailForm)(implicit hc: HeaderCarrier): Future[OutgoingEmail] = {
+    emailConnector.saveEmail(composeEmailForm)
+  }
+
+  def inProgressUploadStatus(keyReference: String)(implicit hc: HeaderCarrier): Future[UploadInfo] = {
+    emailConnector.inProgressUploadStatus(keyReference)
+  }
+
+  def fetchFileuploadStatus(key: String)(implicit hc: HeaderCarrier) = {
+    emailConnector.fetchFileuploadStatus(key)
   }
 }
