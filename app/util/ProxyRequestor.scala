@@ -33,7 +33,6 @@ class ProxyRequestor @Inject() (wsClient: WSClient)(implicit val ec: ExecutionCo
 
   def proxyRequest(errorAction: ErrorAction, body: Source[MultipartFormData.Part[Source[ByteString, _]], _],
     upscanUrl: String): Future[Option[ErrorResponse]] = {
-    println("*****^^^^^***** Inside proxyRequest...")
       for {
         response <- post(upscanUrl, body)
 

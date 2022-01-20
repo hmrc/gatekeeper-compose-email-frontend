@@ -77,14 +77,6 @@ class UpscanInitiateConnector @Inject()(httpClient: HttpClient, appConfig: AppCo
     HeaderNames.CONTENT_TYPE -> "application/json"
   )
 
-  def initiateV1(redirectOnSuccess: Option[String])(implicit hc: HeaderCarrier): Future[UpscanInitiateResponse] = {
-    val request = UpscanInitiateRequestV1(
-      callbackUrl = appConfig.callbackEndpointTarget,
-      successRedirect = redirectOnSuccess
-    )
-    initiate(appConfig.initiateUrl, request)
-  }
-
   def initiateV2(redirectOnSuccess: Option[String], redirectOnError: Option[String])
                 (implicit hc: HeaderCarrier): Future[UpscanInitiateResponse] = {
     val request = UpscanInitiateRequestV2(
@@ -95,14 +87,21 @@ class UpscanInitiateConnector @Inject()(httpClient: HttpClient, appConfig: AppCo
     initiate(appConfig.initiateV2Url, request)
   }
 
-  private def initiate[T](url: String, request: T)(
+  private def initiate(url: String, request: UpscanInitiateRequestV2)(
     implicit hc: HeaderCarrier,
-    wts: Writes[T]): Future[UpscanInitiateResponse] =
+    wts: Writes[UpscanInitiateRequestV2]): Future[UpscanInitiateResponse] = {
     for {
-      response <- httpClient.POST[T, PreparedUpload](url, request, headers.toSeq)
-      fileReference = UpscanFileReference(response.reference.value)
-      postTarget    = response.uploadRequest.href
-      formFields    = response.uploadRequest.fields
-    } yield UpscanInitiateResponse(fileReference, postTarget, formFields)
+        response <- post(url, request)
+        fileReference = UpscanFileReference(response.reference.value)
+        postTarget    = response.uploadRequest.href
+        formFields    = response.uploadRequest.fields
+      } yield UpscanInitiateResponse(fileReference, postTarget, formFields)
+  }
+
+  def post(url: String, request: UpscanInitiateRequestV2)(
+    implicit hc: HeaderCarrier,
+    wts: Writes[UpscanInitiateRequestV2]): Future[PreparedUpload] = {
+    httpClient.POST[UpscanInitiateRequestV2, PreparedUpload](url, request, headers.toSeq)
+  }
 
 }

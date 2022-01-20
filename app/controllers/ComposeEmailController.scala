@@ -65,7 +65,8 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
   def email: Action[AnyContent] = Action.async { implicit request =>
     for {
       upscanInitiateResponse <- upscanInitiateConnector.initiateV2(None, None)
-      _ <- httpClient.POSTEmpty[UploadInfo](s"$serviceUrl/gatekeeperemail/insertfileuploadstatus?key=${upscanInitiateResponse.fileReference.reference}")
+      _ <- emailConnector.inProgressUploadStatus(upscanInitiateResponse.fileReference.reference)
+//      _ <- httpClient.POSTEmpty[UploadInfo](s"$serviceUrl/gatekeeperemail/insertfileuploadstatus?key=${upscanInitiateResponse.fileReference.reference}")
     } yield Ok(composeEmail(upscanInitiateResponse, controllers.ComposeEmailForm.form.fill(ComposeEmailForm("","",""))))
   }
 
@@ -177,7 +178,6 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
                                     (implicit requestHeader: RequestHeader, request: Request[_])
                                     : Future[Option[ErrorResponse]] = {
 
-    println(s"*************** Inside fetchFileErrorResponse... with fileAdoptionFailures $fileAdoptionFailures")
     val errorResponse = fileAdoptionFailures.headOption.fold {
       val uploadBody = Source(dataParts(body.dataParts) ++ fileAdoptionSuccesses.map(TemporaryFilePart.toUploadSource))
       val upscanS3buckerURL = MultipartFormExtractor.extractUpscanUrl(body).get
@@ -240,7 +240,6 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
 
 
   private def saveEmail(emailForm: ComposeEmailForm)(implicit request: RequestHeader) = {
-    println(s"******>>> $emailForm")
     emailConnector.saveEmail(emailForm)
   }
 
