@@ -107,9 +107,9 @@ object ComposeEmailControllerSpecHelpers  extends ControllerBaseSpec with Matche
     }
   }
   val mockUpscanInitiateConnectorTest = new UpscanInitiateConnectorTest
-  val mockAuthConnector = mock[AuthConnector]
+  //val mockAuthConnector = mock[AuthConnector]
 
-  def buildController(mockGateKeeperService: ComposeEmailService, mockedProxyRequestor: ProxyRequestor): ComposeEmailController = {
+  def buildController(mockedProxyRequestor: ProxyRequestor, mockAuthConnector: AuthConnector): ComposeEmailController = {
     new ComposeEmailController(
       mcc,
       composeEmailTemplateView,
@@ -123,7 +123,7 @@ object ComposeEmailControllerSpecHelpers  extends ControllerBaseSpec with Matche
       mockedProxyRequestor,
       forbiddenView, mockAuthConnector, errorTemplate)
   }
-  val controller = buildController(mockGateKeeperService, mockedProxyRequestor)
+  //val controller = buildController(mockGateKeeperService, mockedProxyRequestor, mockAuthConnector)
 
   class ProxyRequestorTestWrongSize extends ProxyRequestor(mockWSClient) {
 

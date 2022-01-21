@@ -34,7 +34,7 @@ import uk.gov.hmrc.http.HeaderCarrier
 import views.html.{ComposeEmail, EmailSentConfirmation, ErrorTemplate, ForbiddenView}
 import play.api.mvc.MultipartFormData.DataPart
 import play.api.mvc.MultipartFormData
-import utils.ComposeEmailControllerSpecHelpers.{Given, ProxyRequestorTestWrongSize, buildController, errorTemplate, forbiddenView, httpClient, mockedProxyRequestor}
+import utils.ComposeEmailControllerSpecHelpers.{Given, ProxyRequestorTestWrongSize, buildController, errorTemplate, forbiddenView, httpClient, mockGateKeeperService, mockedProxyRequestor}
 import utils.CreateTempFileFromResource
 import utils.Implicits.Base64StringOps
 import utils.UploadProxyController.TemporaryFilePart
@@ -70,11 +70,10 @@ class ComposeEmailControllerSpec extends ControllerBaseSpec with Matchers with M
       "emailRecipient"          -> Seq("srinivasalu.munagala@digital.hmrc.gov.uk"),
       "upscan-url"              -> Seq("http://upscan-s3/")
     )
-    val mockEmailService: ComposeEmailService = mock[ComposeEmailService]
     val composeEmailForm: ComposeEmailForm = ComposeEmailForm("fsadfas%40adfas.com", "dfasd", "asdfasf")
     val composeEmail: ComposeEmail = fakeApplication.injector.instanceOf[ComposeEmail]
     val emailSentConfirmation: EmailSentConfirmation = fakeApplication.injector.instanceOf[EmailSentConfirmation]
-    val controller = buildController(mockEmailService, mockedProxyRequestor)
+    val controller = buildController(mockedProxyRequestor, mockAuthConnector)
   }
 
   "GET /email" should {
@@ -166,7 +165,7 @@ class ComposeEmailControllerSpec extends ControllerBaseSpec with Matchers with M
       val result = controller.upload()(fakeRequest)
       status(result) shouldBe BAD_REQUEST
       verifyAuthConnectorCalledForUser
-      verifyZeroInteractions(mockEmailService)
+      verifyZeroInteractions(mockGateKeeperService)
     }
 
     "reject a form submission with missing emailSubject" in new Setup {
@@ -178,7 +177,7 @@ class ComposeEmailControllerSpec extends ControllerBaseSpec with Matchers with M
       val result = controller.upload()(fakeRequest)
       status(result) shouldBe BAD_REQUEST
       verifyAuthConnectorCalledForUser
-      verifyZeroInteractions(mockEmailService)
+      verifyZeroInteractions(mockGateKeeperService)
     }
 
     "reject a form submission with missing emailBody" in new Setup {
@@ -190,7 +189,7 @@ class ComposeEmailControllerSpec extends ControllerBaseSpec with Matchers with M
       val result = controller.upload()(fakeRequest)
       status(result) shouldBe BAD_REQUEST
       verifyAuthConnectorCalledForUser
-      verifyZeroInteractions(mockEmailService)
+      verifyZeroInteractions(mockGateKeeperService)
     }
   }
 
@@ -251,7 +250,7 @@ class ComposeEmailControllerSpec extends ControllerBaseSpec with Matchers with M
         fileToUpload,
         fileSize = fileToUpload.length()
       )
-      override val controller = buildController(mockEmailService, mockedProxyRequestor)
+      override val controller = buildController(mockedProxyRequestor, mockAuthConnector)
       val formDataBody = new MultipartFormData[TemporaryFile](
         dataParts,
         files    = Seq(filePart),
@@ -284,10 +283,10 @@ class ComposeEmailControllerSpec extends ControllerBaseSpec with Matchers with M
             InProgress))
       }
       val mockGateKeeperConnector = new GatekeeperEmailConnectorInvalidFile
-      val fileToUpload = CreateTempFileFromResource("/screenshot.png")
+      val fileToUpload = CreateTempFileFromResource("/screenshot.txt")
       val filePart = new MultipartFormData.FilePart[TemporaryFile](
         key = "file",
-        filename = "screenshot.png",
+        filename = "screenshot.txt",
         contentType = None,
         fileToUpload,
         fileSize = fileToUpload.length()
@@ -301,7 +300,7 @@ class ComposeEmailControllerSpec extends ControllerBaseSpec with Matchers with M
 
       val mockedProxyRequestorWrongSize = new ProxyRequestorTestWrongSize
 
-      override val controller = buildController(mockEmailService, mockedProxyRequestorWrongSize)
+      override val controller = buildController(mockedProxyRequestorWrongSize, mockAuthConnector)
       val uploadRequest = FakeRequest().withBody(formDataBody).withCSRFToken
       val result = controller.upload()(uploadRequest)
       status(result) shouldBe 200
