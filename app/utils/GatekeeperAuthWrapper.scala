@@ -55,9 +55,9 @@ trait GatekeeperAuthWrapper extends I18nSupport{
   }
 
   def requiresAtLeastForMultiPartFormData(minimumRoleRequired: GatekeeperRole)(body: LoggedInRequest[MultipartFormData[TemporaryFile]] => Future[Result])
-                                         (implicit ec: ExecutionContext, appConfig: AppConfig): Action[MultipartFormData[TemporaryFile]] = Action.async(parse.multipartFormData) {
+                                         (implicit ec: ExecutionContext, appConfig: AppConfig): Action[MultipartFormData[TemporaryFile]] =
+    Action.async(parse.multipartFormData) {
     implicit request: Request[MultipartFormData[TemporaryFile]] =>
-
       val predicate = authPredicate(minimumRoleRequired)
       val retrieval = Retrievals.name and Retrievals.authorisedEnrolments
 

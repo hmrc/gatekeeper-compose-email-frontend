@@ -18,7 +18,7 @@ package services
 
 import connectors.GatekeeperEmailConnector
 import controllers.{ComposeEmailForm, EmailPreviewForm}
-import models.OutgoingEmail
+import models.{InProgress, OutgoingEmail, Reference, UploadInfo, UploadedSuccessfully}
 import org.mockito.ArgumentMatchersSugar
 import org.mockito.scalatest.MockitoSugar
 import org.scalatest.matchers.should.Matchers
@@ -45,6 +45,19 @@ class ComposeEmailServiceSpec extends AnyWordSpec with Matchers with GuiceOneApp
       when(mockEmailConnector.saveEmail(*)(*)).thenReturn(Future.successful(OutgoingEmail("", "", List(""), None, "", "", "", "", None)))
       val result = await(underTest.saveEmail(new ComposeEmailForm("","", "")))
       result shouldBe OutgoingEmail("", "", List(""), None, "", "", "", "", None)
+    }
+
+    "handle sending an initial file upload status successfully" in new Setup {
+      when(mockEmailConnector.inProgressUploadStatus(*)(*)).thenReturn(Future.successful(UploadInfo(Reference("ref"), InProgress)))
+      val result = await(underTest.inProgressUploadStatus("ref"))
+      result shouldBe UploadInfo(Reference("ref"), InProgress)
+    }
+
+    "handle fetching a file upload status successfully" in new Setup {
+      when(mockEmailConnector.fetchFileuploadStatus(*)(*))
+        .thenReturn(Future.successful(UploadInfo(Reference("ref"), UploadedSuccessfully("", "", "", None, ""))))
+      val result = await(underTest.fetchFileuploadStatus("ref"))
+      result shouldBe UploadInfo(Reference("ref"), UploadedSuccessfully("", "", "", None, ""))
     }
   }
 }

@@ -39,7 +39,7 @@ import utils.MultipartFormDataSummaries.{summariseDataParts, summariseFileParts}
 import utils.UploadProxyController.TemporaryFilePart
 import utils.UploadProxyController.TemporaryFilePart.partitionTrys
 import utils.GatekeeperAuthWrapper
-import utils.{ErrorAction, ErrorHelper, MultipartFormExtractor, ProxyRequestor}
+import utils.{ErrorAction, MultipartFormExtractor, ProxyRequestor}
 import views.html.{ComposeEmail, EmailPreview, EmailSentConfirmation, ErrorTemplate, FileSizeMimeChecks, ForbiddenView}
 
 import java.nio.file.Path
