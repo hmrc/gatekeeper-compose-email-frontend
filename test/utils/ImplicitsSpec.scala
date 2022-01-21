@@ -18,7 +18,7 @@ package utils
 
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
-import util.Implicits.Base64StringOps
+import utils.Implicits.Base64StringOps
 
 
 class ImplicitsSpec extends AnyWordSpec with Matchers {

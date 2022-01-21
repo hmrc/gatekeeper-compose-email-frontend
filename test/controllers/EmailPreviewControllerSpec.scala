@@ -28,6 +28,7 @@ import play.api.test.CSRFTokenHelper.CSRFFRequestHeader
 import play.api.test.FakeRequest
 import play.api.test.Helpers.{defaultAwaitTimeout, status}
 import uk.gov.hmrc.http.HeaderCarrier
+import utils.ComposeEmailControllerSpecHelpers.mcc
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future.successful

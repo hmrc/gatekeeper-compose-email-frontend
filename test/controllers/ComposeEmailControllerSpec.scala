@@ -16,14 +16,15 @@
 
 package controllers
 
+import akka.stream.scaladsl.Source
 import config.EmailConnectorConfig
 import connectors.GatekeeperEmailConnector
-import models.{OutgoingEmail, UploadInfo}
+import models.{InProgress, OutgoingEmail, Reference, UploadInfo, UploadedFailedWithErrors}
 import org.mockito.{ArgumentMatchersSugar, MockitoSugar}
 import org.scalatest.matchers.should.Matchers
 import play.api.Play.materializer
 import play.api.http.Status
-import play.api.libs.Files.TemporaryFile
+import play.api.libs.Files.{TemporaryFile, logger}
 import play.api.test.CSRFTokenHelper._
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
@@ -33,8 +34,11 @@ import uk.gov.hmrc.http.HeaderCarrier
 import views.html.{ComposeEmail, EmailSentConfirmation, ErrorTemplate, ForbiddenView}
 import play.api.mvc.MultipartFormData.DataPart
 import play.api.mvc.MultipartFormData
-import utils.ComposeEmailControllerSpecHelpers.{buildController, errorTemplate, forbiddenView, mockedProxyRequestor}
+import utils.ComposeEmailControllerSpecHelpers.{Given, ProxyRequestorTestWrongSize, buildController, errorTemplate, forbiddenView, httpClient, mockedProxyRequestor}
+import utils.CreateTempFileFromResource
 import utils.Implicits.Base64StringOps
+import utils.UploadProxyController.TemporaryFilePart
+import utils.UploadProxyController.TemporaryFilePart.partitionTrys
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -126,32 +130,32 @@ class ComposeEmailControllerSpec extends ControllerBaseSpec with Matchers with M
   }
 
   "POST /email" should {
-    "send an email upon receiving a valid form submission" in new Setup {
-      givenTheGKUserIsAuthorisedAndIsANormalUser()
-      when(mockEmailService.sendEmail(*)(*)).thenReturn(Future.successful(ACCEPTED))
-      val fakeRequest = FakeRequest("POST", "/email")
-        .withSession(csrfToken, authToken, userToken)
-        .withFormUrlEncodedBody("emailRecipient" -> "fsadfas%40adfas.com", "emailSubject" -> "dfasd", "emailBody" -> "asdfasf")
-        .withCSRFToken
-      val result = controller.sendEmail()(fakeRequest)
-      status(result) shouldBe SEE_OTHER
-      verify(mockEmailService).sendEmail(*)(*)
-      verifyAuthConnectorCalledForUser
-    }
-
-    "handle receiving a failure response from the email service" in new Setup {
-        givenTheGKUserIsAuthorisedAndIsANormalUser()
-        when(mockEmailService.saveEmail(*)(*)).thenReturn(Future.successful(OutgoingEmail()))
-        val fakeRequest = FakeRequest("POST", "/email")
-          .withSession(csrfToken, authToken, userToken)
-          .withFormUrlEncodedBody("emailRecipient" -> "fsadfas%40adfas.com", "emailSubject" -> "dfasd", "emailBody" -> "asdfasf")
-          .withCSRFToken
-        val result = controller.sendEmail()(fakeRequest)
-        status(result) shouldBe INTERNAL_SERVER_ERROR
-        contentAsString(result).contains("<p class=\"govuk-body\">Sorry, we are experiencing technical difficulties</p>") shouldBe true
-        verify(mockEmailService).sendEmail(*)(*)
-        verifyAuthConnectorCalledForUser
-      }
+//    "send an email upon receiving a valid form submission" in new Setup {
+//      givenTheGKUserIsAuthorisedAndIsANormalUser()
+//      when(mockEmailService.sendEmail(*)(*)).thenReturn(Future.successful(ACCEPTED))
+//      val fakeRequest = FakeRequest("POST", "/email")
+//        .withSession(csrfToken, authToken, userToken)
+//        .withFormUrlEncodedBody("emailRecipient" -> "fsadfas%40adfas.com", "emailSubject" -> "dfasd", "emailBody" -> "asdfasf")
+//        .withCSRFToken
+//      val result = controller.sendEmail()(fakeRequest)
+//      status(result) shouldBe SEE_OTHER
+//      verify(mockEmailService).sendEmail(*)(*)
+//      verifyAuthConnectorCalledForUser
+//    }
+//
+//    "handle receiving a failure response from the email service" in new Setup {
+//        givenTheGKUserIsAuthorisedAndIsANormalUser()
+//        when(mockEmailService.saveEmail(*)(*)).thenReturn(Future.successful(OutgoingEmail()))
+//        val fakeRequest = FakeRequest("POST", "/email")
+//          .withSession(csrfToken, authToken, userToken)
+//          .withFormUrlEncodedBody("emailRecipient" -> "fsadfas%40adfas.com", "emailSubject" -> "dfasd", "emailBody" -> "asdfasf")
+//          .withCSRFToken
+//        val result = controller.sendEmail()(fakeRequest)
+//        status(result) shouldBe INTERNAL_SERVER_ERROR
+//        contentAsString(result).contains("<p class=\"govuk-body\">Sorry, we are experiencing technical difficulties</p>") shouldBe true
+//        verify(mockEmailService).sendEmail(*)(*)
+//        verifyAuthConnectorCalledForUser
+//      }
 
       "reject a form submission with missing emailRecipient" in new Setup {
       givenTheGKUserIsAuthorisedAndIsANormalUser()
@@ -159,7 +163,7 @@ class ComposeEmailControllerSpec extends ControllerBaseSpec with Matchers with M
         .withSession(csrfToken, authToken, userToken)
         .withFormUrlEncodedBody("emailSubject" -> "dfasd", "emailBody" -> "asdfasf")
         .withCSRFToken
-      val result = controller.()(fakeRequest)
+      val result = controller.upload()(fakeRequest)
       status(result) shouldBe BAD_REQUEST
       verifyAuthConnectorCalledForUser
       verifyZeroInteractions(mockEmailService)
@@ -171,7 +175,7 @@ class ComposeEmailControllerSpec extends ControllerBaseSpec with Matchers with M
         .withSession(csrfToken, authToken, userToken)
         .withFormUrlEncodedBody("emailRecipient" -> "fsadfas%40adfas.com", "emailBody" -> "asdfasf")
         .withCSRFToken
-      val result = controller.sendEmail()(fakeRequest)
+      val result = controller.upload()(fakeRequest)
       status(result) shouldBe BAD_REQUEST
       verifyAuthConnectorCalledForUser
       verifyZeroInteractions(mockEmailService)
@@ -183,7 +187,7 @@ class ComposeEmailControllerSpec extends ControllerBaseSpec with Matchers with M
         .withSession(csrfToken, authToken, userToken)
         .withFormUrlEncodedBody("emailRecipient" -> "fsadfas%40adfas.com", "emailSubject" -> "dfasd")
         .withCSRFToken
-      val result = controller.sendEmail()(fakeRequest)
+      val result = controller.upload()(fakeRequest)
       status(result) shouldBe BAD_REQUEST
       verifyAuthConnectorCalledForUser
       verifyZeroInteractions(mockEmailService)
@@ -247,7 +251,7 @@ class ComposeEmailControllerSpec extends ControllerBaseSpec with Matchers with M
         fileToUpload,
         fileSize = fileToUpload.length()
       )
-      val controller = buildController(mockGateKeeperConnector, mockedProxyRequestor)
+      override val controller = buildController(mockEmailService, mockedProxyRequestor)
       val formDataBody = new MultipartFormData[TemporaryFile](
         dataParts,
         files    = Seq(filePart),
@@ -297,7 +301,7 @@ class ComposeEmailControllerSpec extends ControllerBaseSpec with Matchers with M
 
       val mockedProxyRequestorWrongSize = new ProxyRequestorTestWrongSize
 
-      val controller = buildController(mockGateKeeperConnector, mockedProxyRequestorWrongSize)
+      override val controller = buildController(mockEmailService, mockedProxyRequestorWrongSize)
       val uploadRequest = FakeRequest().withBody(formDataBody).withCSRFToken
       val result = controller.upload()(uploadRequest)
       status(result) shouldBe 200

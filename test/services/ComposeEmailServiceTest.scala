@@ -17,7 +17,8 @@
 package services
 
 import connectors.GatekeeperEmailConnector
-import controllers.ComposeEmailForm
+import controllers.{ComposeEmailForm, EmailPreviewForm}
+import models.OutgoingEmail
 import org.mockito.ArgumentMatchersSugar
 import org.mockito.scalatest.MockitoSugar
 import org.scalatest.matchers.should.Matchers
@@ -41,9 +42,9 @@ class ComposeEmailServiceSpec extends AnyWordSpec with Matchers with GuiceOneApp
 
   "sendEmail" should {
     "handle sending an email successfully" in new Setup {
-      when(mockEmailConnector.saveEmail(*)(*)).thenReturn(Future.successful(Status.OK))
-      val resultStatusCode = await(underTest.sendEmail(new ComposeEmailForm("","","")))
-      resultStatusCode shouldBe Status.OK
+      when(mockEmailConnector.saveEmail(*)(*)).thenReturn(Future.successful(OutgoingEmail("", "", List(""), None, "", "", "", "", None)))
+      val result = await(underTest.sendEmail(new EmailPreviewForm("","")))
+      result shouldBe OutgoingEmail("", "", List(""), None, "", "", "", "", None)
     }
   }
 }

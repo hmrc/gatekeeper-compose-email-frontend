@@ -73,24 +73,7 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
     implicit request => Future.successful(Ok(sentEmail()))
   }
 
-//  def sendEmail(): Action[AnyContent] = requiresAtLeast(GatekeeperRole.USER) {
-//    implicit request => {
-//      def handleValidForm(form: ComposeEmailForm) = {
-//        logger.info(s"ComposeEmailForm: $form")
-//        logger.info(s"Body is ${form.emailBody}, toAddress is ${form.emailRecipient}, subject is ${form.emailSubject}")
-//        emailService.saveEmail(form)
-//        upload()
-//      }
-//
-//      def handleInvalidForm(formWithErrors: Form[ComposeEmailForm]) = {
-//        logger.warn(s"Error in form: ${formWithErrors.errors}")
-//        Future.successful(BadRequest(composeEmail(UpscanInitiateResponse(UpscanFileReference(""), "", Map()), formWithErrors)))
-//      }
-//      ComposeEmailForm.form.bindFromRequest.fold(handleInvalidForm(_), handleValidForm(_))
-//    }
-//  }
-
-  def upload(): Action[MultipartFormData[TemporaryFile]] = requiresAtLeast3(GatekeeperRole.USER) {
+  def upload(): Action[MultipartFormData[TemporaryFile]] = requiresAtLeastForMultiPartFormData(GatekeeperRole.USER) {
     implicit request =>
       val form = MultipartFormExtractor.extractComposeEmailForm(request.body)
       def handleValidForm(form: ComposeEmailForm) = {
