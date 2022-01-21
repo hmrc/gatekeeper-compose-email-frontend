@@ -22,7 +22,7 @@ import com.google.common.base.Charsets
 import javax.inject.{Inject, Singleton}
 import play.api.Logging
 import play.api.data.Form
-import play.api.mvc.{Action, AnyContent, MessagesControllerComponents, MultipartFormData, Request, RequestHeader, Result}
+import play.api.mvc.{Action, AnyContent, AnyContentAsMultipartFormData, MessagesControllerComponents, MultipartFormData, Request, RequestHeader, Result}
 
 import scala.concurrent.{ExecutionContext, Future}
 import config.AppConfig
@@ -62,7 +62,7 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
                                       (implicit  val appConfig: AppConfig, val ec: ExecutionContext)
   extends FrontendController(mcc) with ErrorHelper with GatekeeperAuthWrapper with Logging {
 
-  def email: Action[AnyContent] = Action.async { implicit request =>
+  def email: Action[AnyContent] = requiresAtLeast(GatekeeperRole.USER) { implicit request =>
     for {
       upscanInitiateResponse <- upscanInitiateConnector.initiateV2(None, None)
       _ <- emailService.inProgressUploadStatus(upscanInitiateResponse.fileReference.reference)
@@ -73,37 +73,49 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
     implicit request => Future.successful(Ok(sentEmail()))
   }
 
-  def sendEmail(): Action[AnyContent] = requiresAtLeast(GatekeeperRole.USER) {
-    implicit request => {
+//  def sendEmail(): Action[AnyContent] = requiresAtLeast(GatekeeperRole.USER) {
+//    implicit request => {
+//      def handleValidForm(form: ComposeEmailForm) = {
+//        logger.info(s"ComposeEmailForm: $form")
+//        logger.info(s"Body is ${form.emailBody}, toAddress is ${form.emailRecipient}, subject is ${form.emailSubject}")
+//        emailService.saveEmail(form)
+//        upload()
+//      }
+//
+//      def handleInvalidForm(formWithErrors: Form[ComposeEmailForm]) = {
+//        logger.warn(s"Error in form: ${formWithErrors.errors}")
+//        Future.successful(BadRequest(composeEmail(UpscanInitiateResponse(UpscanFileReference(""), "", Map()), formWithErrors)))
+//      }
+//      ComposeEmailForm.form.bindFromRequest.fold(handleInvalidForm(_), handleValidForm(_))
+//    }
+//  }
+
+  def upload(): Action[MultipartFormData[TemporaryFile]] = requiresAtLeast3(GatekeeperRole.USER) {
+    implicit request =>
+      val form = MultipartFormExtractor.extractComposeEmailForm(request.body)
       def handleValidForm(form: ComposeEmailForm) = {
         logger.info(s"ComposeEmailForm: $form")
         logger.info(s"Body is ${form.emailBody}, toAddress is ${form.emailRecipient}, subject is ${form.emailSubject}")
-        emailService.saveEmail(form)
-        Future.successful(Redirect(routes.ComposeEmailController.sentEmailConfirmation()))
+        val body = request.body
+        logger.info(
+          s"Upload form contains dataParts=${summariseDataParts(body.dataParts)} and fileParts=${summariseFileParts(body.files)}")
+
+        val keyEither: Either[Result, String] = MultipartFormExtractor.extractKey(body)
+        val result = if(body.files.isEmpty) {
+          noAttachmentEmail(body)
+        }
+        else {
+          attachmentEmail(body, keyEither)
+        }
+        result
       }
 
       def handleInvalidForm(formWithErrors: Form[ComposeEmailForm]) = {
         logger.warn(s"Error in form: ${formWithErrors.errors}")
-        Future.successful(BadRequest(composeEmail(UpscanInitiateResponse(UpscanFileReference(""), "", Map()), formWithErrors)))
+        val upscanInitiateResponse = MultipartFormExtractor.extractUpscanInitiateResponse(request.body)
+        Future.successful(BadRequest(composeEmail(upscanInitiateResponse, formWithErrors)))
       }
       ComposeEmailForm.form.bindFromRequest.fold(handleInvalidForm(_), handleValidForm(_))
-    }
-  }
-
-  def upload(): Action[MultipartFormData[TemporaryFile]] = Action.async(parse.multipartFormData)  {
-    implicit request =>
-    val body = request.body
-    logger.info(
-      s"Upload form contains dataParts=${summariseDataParts(body.dataParts)} and fileParts=${summariseFileParts(body.files)}")
-
-    val keyEither: Either[Result, String] = MultipartFormExtractor.extractKey(body)
-    val result = if(body.files.isEmpty) {
-      noAttachmentEmail(body)
-    }
-    else {
-      attachmentEmail(body, keyEither)
-    }
-    result
   }
 
   private def queryFileUploadStatusRecursively(emailService: ComposeEmailService,

@@ -23,6 +23,7 @@ import play.api.libs.json.Json
 import play.api.mvc.{MultipartFormData, Result, Results}
 import utils.ErrorAction
 import org.apache.http.client.utils.URIBuilder
+import services.{UpscanFileReference, UpscanInitiateResponse}
 
 import java.net.URI
 import java.nio.charset.StandardCharsets.UTF_8
@@ -66,6 +67,11 @@ object MultipartFormExtractor {
     val subject = extractSingletonFormValue(EmailSubject, multiPartFormData)
     val body = extractSingletonFormValue(EmailBody, multiPartFormData)
     ComposeEmailForm(to.get, subject.get, body.get)
+  }
+  def extractUpscanInitiateResponse(multiPartFormData: MultipartFormData[TemporaryFile]): UpscanInitiateResponse = {
+    val keyName = UpscanFileReference(extractSingletonFormValue(KeyName, multiPartFormData).get)
+    val postTarget = extractUpscanUrl(multiPartFormData).get
+    UpscanInitiateResponse(keyName, postTarget, multiPartFormData.dataParts.mapValues(_(0)))
   }
   private def extractSingletonFormValue(
                                          key: String,
