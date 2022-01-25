@@ -17,17 +17,17 @@
 package controllers
 
 import common.ControllerBaseSpec
-import connectors.GatekeeperEmailConnector
+import connectors.{GatekeeperEmailConnector, UpscanInitiateConnector}
 import models.OutgoingEmail
 import org.scalatest.matchers.should.Matchers
 import play.api.Application
 import play.api.http.Status
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.Json
-import play.api.test.CSRFTokenHelper.CSRFFRequestHeader
 import play.api.test.FakeRequest
 import play.api.test.Helpers.{defaultAwaitTimeout, status}
 import uk.gov.hmrc.http.HeaderCarrier
+import views.html.ComposeEmail
 import utils.ComposeEmailControllerSpecHelpers.mcc
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -45,8 +45,13 @@ class EmailPreviewControllerSpec extends ControllerBaseSpec with Matchers {
       .build()
 
   private val mockGatekeeperEmailConnector: GatekeeperEmailConnector = mock[GatekeeperEmailConnector]
+  private val mockUpscanInitiateConnector: UpscanInitiateConnector = mock[UpscanInitiateConnector]
+  private lazy val composeEmailTemplateView = app.injector.instanceOf[ComposeEmail]
+
   private val controller = new EmailPreviewController(
     mcc,
+    composeEmailTemplateView,
+    mockUpscanInitiateConnector,
     mockGatekeeperEmailConnector
   )
 
@@ -76,14 +81,33 @@ class EmailPreviewControllerSpec extends ControllerBaseSpec with Matchers {
 
     "send an email upon receiving a valid form submission" in new Setup {
       val fakeRequest = FakeRequest("POST", "/send-email")
-        .withFormUrlEncodedBody("emailId"->"emailId", "emailSubject"->"emailSubject")
+        .withFormUrlEncodedBody("emailId"->"emailId", "composeEmailForm.emailSubject"->"emailSubject",
+          "composeEmailForm.emailBody"->"emailBody", "composeEmailForm.emailRecipient"->"emailRecipient")
       val result = controller.sendEmail()(fakeRequest)
       status(result) shouldBe Status.SEE_OTHER
     }
 
     "send an email upon receiving an invalid form submission" in new Setup {
       val fakeRequest = FakeRequest("POST", "/send-email")
-        .withFormUrlEncodedBody("emailSubject"->"emailSubject")
+        .withFormUrlEncodedBody("emailId"->"emailId")
+      val result = controller.sendEmail()(fakeRequest)
+      status(result) shouldBe Status.BAD_REQUEST
+    }
+  }
+
+  "POST /edit-email" should {
+
+    "edit email submits valid form to compose email" in new Setup {
+      val fakeRequest = FakeRequest("POST", "/edit-email")
+        .withFormUrlEncodedBody("emailId"->"emailId", "composeEmailForm.emailSubject"->"emailSubject",
+          "composeEmailForm.emailBody"->"emailBody", "composeEmailForm.emailRecipient"->"emailRecipient")
+      val result = controller.sendEmail()(fakeRequest)
+      status(result) shouldBe Status.SEE_OTHER
+    }
+
+    "edit email submits invalid form to compose email" in new Setup {
+      val fakeRequest = FakeRequest("POST", "/edit-email")
+        .withFormUrlEncodedBody("emailId"->"emailId")
       val result = controller.sendEmail()(fakeRequest)
       status(result) shouldBe Status.BAD_REQUEST
     }
