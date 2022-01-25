@@ -18,7 +18,7 @@ object AppDependencies {
     "uk.gov.hmrc"       %%  "play-conditional-form-mapping" % "1.2.0-play-26",
     "uk.gov.hmrc"       %%  "json-encryption"               % "4.8.0-play-26",
     "uk.gov.hmrc"       %%  "play-json-union-formatter"     % "1.11.0",
-    "uk.gov.hmrc"       %%  "emailaddress"                  % "3.4.0",
+    "uk.gov.hmrc"       %%  "emailaddress"                  % "3.5.0",
     "uk.gov.hmrc"       %%  "play-frontend-hmrc"            % "1.31.0-play-28",
     "uk.gov.hmrc.mongo" %%  "hmrc-mongo-play-28"            % "0.55.0",
     "uk.gov.hmrc"       %%  "http-metrics"                  % "2.3.0-play-28",
@@ -31,7 +31,8 @@ object AppDependencies {
     "ch.qos.logback"    %   "logback-core"                  % logbackVersion,
     "com.typesafe.play" %%  "play-json"                     % "2.8.1",
     "com.typesafe.play" %%  "play-json-joda"                % "2.8.1",
-    "org.typelevel"     %%  "cats-core"                     % "2.3.1"
+    "org.typelevel"     %%  "cats-core"                     % "2.3.1",
+    "org.apache.httpcomponents" % "httpclient"                 % "4.5.13"
   )
 
   lazy val testScopes = Seq(Test.name, IntegrationTest.name, "acceptance").mkString(",")
