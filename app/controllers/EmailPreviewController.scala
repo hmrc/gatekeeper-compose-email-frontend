@@ -37,12 +37,31 @@ class EmailPreviewController @Inject()
   def sendEmail(): Action[AnyContent] = Action.async {
     implicit request => {
       def handleValidForm(form: EmailPreviewForm) = {
-        logger.info(s"EmailPreviewForm: $form")
-        logger.info(s"Persisted emailId is ${form.emailId}, subject is ${form.emailSubject}")
+        logger.info(s"SEND EMAIL EmailPreviewForm: $form")
+        logger.info(s"Persisted emailId is ${form.emailId}")
+        logger.info(s"request.body.asFormUrlEncoded: ${request.body.asFormUrlEncoded}")
         emailConnector.sendEmail(form)
         Future.successful(Redirect(routes.ComposeEmailController.sentEmailConfirmation()))
       }
 
+      def handleInvalidForm(formWithErrors: Form[EmailPreviewForm]) = {
+        logger.warn(s"Error in form: ${formWithErrors.errors}")
+        Future.successful(BadRequest("Error with EmailPreview form"))
+      }
+      EmailPreviewForm.form.bindFromRequest.fold(handleInvalidForm(_), handleValidForm(_))
+    }
+  }
+
+  def editEmail(): Action[AnyContent] = Action.async {
+    implicit request => {
+      def handleValidForm(form: EmailPreviewForm) = {
+        logger.info(s"EDIT EMAIL - EmailPreviewForm: $form")
+        logger.info(s"Persisted emailId is ${form.emailId}")
+        for {
+          upscanInitiateResponse <- upscanInitiateConnector.initiateV2(None, None)
+          _ <- emailConnector.inProgressUploadStatus(upscanInitiateResponse.fileReference.reference)
+        } yield Ok(composeEmail(upscanInitiateResponse, controllers.ComposeEmailForm.form.fill(form.composeEmailForm)))
+      }
       def handleInvalidForm(formWithErrors: Form[EmailPreviewForm]) = {
         logger.warn(s"Error in form: ${formWithErrors.errors}")
         Future.successful(BadRequest("Error with EmailPreview form"))
