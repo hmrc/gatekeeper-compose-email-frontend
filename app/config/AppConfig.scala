@@ -38,7 +38,6 @@ trait AppConfig {
 
   def initiateUrl: String
   def initiateV2Url: String
-  def uploadRedirectTargetBase: String
   def callbackEndpointTarget: String
 
   def emailBaseUrl: String
@@ -56,7 +55,6 @@ class AppConfigImpl @Inject()(config: Configuration)
   val appName = "HMRC API Gatekeeper"
   lazy val initiateUrl              = baseUrl("upscan-initiate") + "/upscan/initiate"
   lazy val initiateV2Url            = baseUrl("upscan-initiate") + "/upscan/v2/initiate"
-  lazy val uploadRedirectTargetBase = getString("upload-redirect-target-base")
   lazy val callbackEndpointTarget   = getString("upscan.callback-endpoint")
   val assetsPrefix = getString("assets.url") + getString("assets.version")
   val title = "HMRC API Gatekeeper"
