@@ -17,12 +17,13 @@
 package controllers
 
 import config.AppConfig
-import connectors.GatekeeperEmailConnector
+import connectors.{GatekeeperEmailConnector, UpscanInitiateConnector}
 import play.api.Logging
 import play.api.data.Form
 import play.api.i18n.I18nSupport
 import play.api.mvc.{Action, AnyContent, MessagesControllerComponents}
 import uk.gov.hmrc.play.bootstrap.frontend.controller.FrontendController
+import views.html.ComposeEmail
 
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
@@ -30,6 +31,8 @@ import scala.concurrent.{ExecutionContext, Future}
 @Singleton
 class EmailPreviewController @Inject()
 (mcc: MessagesControllerComponents,
+ composeEmail: ComposeEmail,
+ upscanInitiateConnector : UpscanInitiateConnector,
  emailConnector: GatekeeperEmailConnector)
 (implicit val appConfig: AppConfig, val ec: ExecutionContext)
   extends FrontendController(mcc) with I18nSupport with Logging {

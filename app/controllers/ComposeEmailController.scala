@@ -135,7 +135,7 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
     val outgoingEmail: Future[OutgoingEmail] = saveEmail(emailForm)
     outgoingEmail.map {  email =>
       Ok(emailPreview(UploadedSuccessfully("", "", "", None, ""), base64Decode(email.htmlEmailBody),
-        controllers.EmailPreviewForm.form.fill(EmailPreviewForm(email.emailId, email.subject))))
+        controllers.EmailPreviewForm.form.fill(EmailPreviewForm(email.emailId, emailForm))))
     }
   }
 
@@ -210,7 +210,7 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
       val errorPath = outgoingEmail.map { email =>
         val errorResponse = errResp.get
         Ok(fileChecksPreview(errorResponse.errorMessage, base64Decode(email.htmlEmailBody),
-          controllers.EmailPreviewForm.form.fill(EmailPreviewForm(email.emailId, email.subject))))
+          controllers.EmailPreviewForm.form.fill(EmailPreviewForm(email.emailId, emailForm))))
       }
       errorPath
     }
@@ -224,7 +224,7 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
         val outgoingEmail: Future[OutgoingEmail] = saveEmail(emailFormModified)
         outgoingEmail.map { email =>
           Ok(emailPreview(info.status, base64Decode(email.htmlEmailBody),
-            controllers.EmailPreviewForm.form.fill(EmailPreviewForm(email.emailId, email.subject))))
+            controllers.EmailPreviewForm.form.fill(EmailPreviewForm(email.emailId, emailForm))))
         }
       }
       result
