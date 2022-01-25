@@ -2,8 +2,10 @@
 
 ->         /hmrc-frontend           hmrcfrontend.Routes
 GET        /email                   controllers.ComposeEmailController.email
+GET        /email-reloaded          controllers.ComposeEmailController.emailReloaded
 GET        /sent-email              controllers.ComposeEmailController.sentEmailConfirmation
 POST       /email                   controllers.ComposeEmailController.sendEmail
 GET        /assets/*file            controllers.Assets.versioned(path = "/public", file: Asset)
 POST       /upload                  controllers.ComposeEmailController.upload
 POST       /send-email              controllers.EmailPreviewController.sendEmail
+POST       /edit-email              controllers.EmailPreviewController.editEmail

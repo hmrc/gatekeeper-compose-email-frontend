@@ -38,10 +38,12 @@ import play.api.mvc.MultipartFormData.{DataPart, FilePart}
 import play.api.mvc.Results.Redirect
 import play.api.mvc._
 import services.{UpscanFileReference, UpscanInitiateResponse}
+import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.bootstrap.frontend.controller.FrontendController
 import util.MultipartFormDataSummaries.{summariseDataParts, summariseFileParts}
 import views.html.{ComposeEmail, EmailPreview, EmailSentConfirmation, FileSizeMimeChecks}
 
+import java.io.File
 import java.net.URI
 import java.nio.charset.StandardCharsets.UTF_8
 import java.nio.file.{Files, Path}
@@ -67,10 +69,34 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
 
   def email: Action[AnyContent] = Action.async { implicit request =>
     logger.info(s"upscanInitiateConnector:$upscanInitiateConnector")
+    val filePath: File = new File("")
+
     for {
       upscanInitiateResponse <- upscanInitiateConnector.initiateV2(None, None)
       _ <- emailConnector.inProgressUploadStatus(upscanInitiateResponse.fileReference.reference)
     } yield Ok(composeEmail(upscanInitiateResponse, controllers.ComposeEmailForm.form.fill(ComposeEmailForm("","",""))))
+  }
+
+  def emailReloaded: Action[AnyContent] = Action.async { implicit request =>
+    implicit val hc: HeaderCarrier = HeaderCarrier()
+
+    logger.info(s"upscanInitiateConnector:$upscanInitiateConnector")
+    def handleValidForm(form: ComposeEmailForm) = {
+      val filePath: File = new File("")
+
+      for {
+        upscanInitiateResponse <- upscanInitiateConnector.initiateV2(None, None)
+        _ <- emailConnector.inProgressUploadStatus(upscanInitiateResponse.fileReference.reference)
+      } yield Ok(composeEmail(upscanInitiateResponse,
+        controllers.ComposeEmailForm.form.fill(form)))
+    }
+    def handleInvalidForm(formWithErrors: Form[ComposeEmailForm]) = {
+      logger.warn(s"Error in form: ${formWithErrors.errors}")
+      val filePath: File = new File("")
+
+      Future.successful(BadRequest(composeEmail(UpscanInitiateResponse(UpscanFileReference(""), "", Map()), formWithErrors)))
+    }
+    ComposeEmailForm.form.bindFromRequest.fold(handleInvalidForm(_), handleValidForm(_))
   }
 
   def sentEmailConfirmation: Action[AnyContent] = Action.async { implicit request =>
@@ -88,6 +114,7 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
 
       def handleInvalidForm(formWithErrors: Form[ComposeEmailForm]) = {
         logger.warn(s"Error in form: ${formWithErrors.errors}")
+        val filePath: File = new File("")
         Future.successful(BadRequest(composeEmail(UpscanInitiateResponse(UpscanFileReference(""), "", Map()), formWithErrors)))
       }
       ComposeEmailForm.form.bindFromRequest.fold(handleInvalidForm(_), handleValidForm(_))
@@ -122,6 +149,11 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
       new String(Base64.getDecoder.decode(result), Charsets.UTF_8)
 
     val keyEither: Either[Result, String] = MultipartFormExtractor.extractKey(body)
+//    val filePathOption: Option[Path] = body.files.headOption.map { filePart =>
+//      filePart.ref.path
+//    }
+//    val filePath: File = filePathOption.get.toAbsolutePath.toFile
+
     val r = if(body.files.isEmpty) {
 //      MultipartFormExtractor.extractKey(body).map { key =>
 //        Future.successful(
@@ -129,9 +161,11 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
 //        )
 //      }
       val emailForm: ComposeEmailForm = MultipartFormExtractor.extractComposeEmailForm(body)
+      logger.info(s"*****emailForm If Files are not attached*****$emailForm")
       val outgoingEmail: Future[OutgoingEmail] = postEmail(emailForm)
       outgoingEmail.map {  email =>
-        Ok(emailPreview(UploadedSuccessfully("", "", "", None, ""), base64Decode(email.htmlEmailBody), controllers.EmailPreviewForm.form.fill(EmailPreviewForm(email.emailId, email.subject))))
+        Ok(emailPreview(UploadedSuccessfully("", "", "", None, ""), base64Decode(email.htmlEmailBody),
+          controllers.EmailPreviewForm.form.fill(EmailPreviewForm(email.emailId, emailForm))))
       }    }
     else {
       MultipartFormExtractor
@@ -162,6 +196,7 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
 
             val res = futResult.flatMap { fut =>
               logger.info("Executing proxyRequest future")
+
               fileAdoptionSuccesses.foreach { filePart =>
                 TemporaryFilePart
                   .deleteFile(filePart)
@@ -173,13 +208,15 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
                         logger.debug(s"Deleted TemporaryFile for Key [${errorAction.key}] at [${filePart.ref}]")
                   )
               }
-              val emailForm: ComposeEmailForm = MultipartFormExtractor.extractComposeEmailForm(body)
 
+              val emailForm: ComposeEmailForm = MultipartFormExtractor.extractComposeEmailForm(body)
+              logger.info(s"*****emailForm*****$emailForm")
               if(fut.isDefined) {
                 val outgoingEmail: Future[OutgoingEmail] = postEmail(emailForm)
                 val errorPath = outgoingEmail.map { email =>
                   val errorResponse = fut.get
-                  Ok(fileChecksPreview(errorResponse.errorMessage, base64Decode(email.htmlEmailBody), controllers.EmailPreviewForm.form.fill(EmailPreviewForm(email.emailId, email.subject))))
+                  Ok(fileChecksPreview(errorResponse.errorMessage, base64Decode(email.htmlEmailBody),
+                    controllers.EmailPreviewForm.form.fill(EmailPreviewForm(email.emailId, emailForm))))
                 }
                 errorPath
               }
@@ -192,7 +229,8 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
                   }
                   val outgoingEmail: Future[OutgoingEmail] = postEmail(emailFormModified)
                   outgoingEmail.map { email =>
-                      Ok(emailPreview(info.status, base64Decode(email.htmlEmailBody), controllers.EmailPreviewForm.form.fill(EmailPreviewForm(email.emailId, email.subject))))
+                      Ok(emailPreview(info.status, base64Decode(email.htmlEmailBody),
+                        controllers.EmailPreviewForm.form.fill(EmailPreviewForm(email.emailId, emailForm))))
                   }
                 }
                 result

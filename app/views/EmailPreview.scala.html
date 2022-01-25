@@ -17,6 +17,7 @@
 @import config.AppConfig
 @import include._
 @import services._
+@import java.io._
 
 @this(layout: Layout, appConfig: AppConfig)
 
@@ -30,7 +31,9 @@
 <main class="govuk-main-wrapper " id="main-content" role="main">
 
     <input type="hidden" name="emailId" value="@form.data.getOrElse("emailId", "")" />
-    <input type="hidden" name="emailSubject" value="@form.data.getOrElse("emailSubject", "")" />
+    <input type="hidden" name="composeEmailForm.emailSubject" value="@form.data.getOrElse("composeEmailForm.emailSubject", "")" />
+    <input type="hidden" name="composeEmailForm.emailBody" value="@form.data.getOrElse("composeEmailForm.emailBody", "")" />
+    <input type="hidden" name="composeEmailForm.emailRecipient" value="@form.data.getOrElse("composeEmailForm.emailRecipient", "")" />
 
     <div class="govuk-width-container">
         <div class="govuk-grid-row">
@@ -40,19 +43,35 @@
 
                 <div class="govuk-grid-column-one-half govuk-!-padding-left-0">
                     <div class="govuk-button-group">
-                        <button class="govuk-button" data-module="govuk-button">
+                        <button class="govuk-button" data-module="govuk-button" value="send">
                             Send email
                         </button>
                     </div>
                 </div>
+                @helper.form(action = routes.EmailPreviewController.editEmail) {
+                @helper.CSRF.formField
+                <input type="hidden" name="emailId" value="@form.data.getOrElse("emailId", "")" />
+                <input type="hidden" name="composeEmailForm.emailSubject" value="@form.data.getOrElse("composeEmailForm.emailSubject", "")" />
+                <input type="hidden" name="composeEmailForm.emailBody" value="@form.data.getOrElse("composeEmailForm.emailBody", "")" />
+                <input type="hidden" name="composeEmailForm.emailRecipient" value="@form.data.getOrElse("composeEmailForm.emailRecipient", "")" />
 
                 <div class="govuk-grid-column-one-half govuk-!-padding-right-0">
                     <div class="govuk-button-group">
-                        <button draggable="false" class="govuk-button govuk-button--secondary govuk-!-width-full" data-module="govuk-button">
-                            Edit email
-                        </button>
+
+                        <input type="submit"
+                               class="govuk-button govuk-button--secondary govuk-!-width-full"
+                               data-module="govuk-button" value="Edit email"/>
+
+<!--                        <a href="@routes.EmailPreviewController.editEmail"-->
+                        <!--                               onclick="location.href='routes.EmailPreviewController.editEmail';"-->
+
+                        <!--                                class="govuk-button govuk-button&#45;&#45;secondary govuk-!-width-full"-->
+<!--                           data-module="govuk-button">-->
+<!--                        Edit email-->
+<!--                        </a>-->
                     </div>
                 </div>
+                }
             </div>
 
             <div class="govuk-grid-column-two-thirds">
@@ -80,7 +99,7 @@
                                 Subject
                             </dt>
                             <dd class="govuk-summary-list__value">
-                                @form.data.getOrElse("emailSubject", "")
+                                @form.data.getOrElse("composeEmailForm.emailSubject", "")
                             </dd>
                         </div>
                     </dl>

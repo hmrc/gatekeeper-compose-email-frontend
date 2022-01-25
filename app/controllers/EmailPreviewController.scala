@@ -17,19 +17,23 @@
 package controllers
 
 import config.AppConfig
-import connectors.GatekeeperEmailConnector
+import connectors.{GatekeeperEmailConnector, UpscanInitiateConnector}
 import play.api.Logging
 import play.api.data.Form
 import play.api.i18n.I18nSupport
 import play.api.mvc.{Action, AnyContent, MessagesControllerComponents}
 import uk.gov.hmrc.play.bootstrap.frontend.controller.FrontendController
+import views.html.ComposeEmail
 
+import java.io.File
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
 class EmailPreviewController @Inject()
                 (mcc: MessagesControllerComponents,
+                 composeEmail: ComposeEmail,
+                 upscanInitiateConnector: UpscanInitiateConnector,
                  emailConnector: GatekeeperEmailConnector)
                 (implicit val appConfig: AppConfig, val ec: ExecutionContext)
   extends FrontendController(mcc) with I18nSupport with Logging {
@@ -37,10 +41,23 @@ class EmailPreviewController @Inject()
   def sendEmail(): Action[AnyContent] = Action.async {
     implicit request => {
       def handleValidForm(form: EmailPreviewForm) = {
-        logger.info(s"EmailPreviewForm: $form")
-        logger.info(s"Persisted emailId is ${form.emailId}, subject is ${form.emailSubject}")
-        emailConnector.sendEmail(form)
-        Future.successful(Redirect(routes.ComposeEmailController.sentEmailConfirmation()))
+        logger.info(s"SEND EMAIL EmailPreviewForm: $form")
+        logger.info(s"Persisted emailId is ${form.emailId}")
+        logger.info(s"request.body.asFormUrlEncoded: ${request.body.asFormUrlEncoded}")
+//        val filePathStr: String = request.body.asFormUrlEncoded.get("filePath").head
+//        val filePath: File = new File(filePathStr)
+//        logger.info(s"request.body.asFormUrlEncoded -> filePath: $filePath")
+        val postAction: Seq[String] = Seq("edit")//request.body.asFormUrlEncoded.get("action")
+        postAction.headOption match {
+          case Some("edit") =>
+            for {
+              upscanInitiateResponse <- upscanInitiateConnector.initiateV2(None, None)
+              _ <- emailConnector.inProgressUploadStatus(upscanInitiateResponse.fileReference.reference)
+            } yield Ok(composeEmail(upscanInitiateResponse, controllers.ComposeEmailForm.form.fill(form.composeEmailForm)))
+          case Some("send") =>
+            emailConnector.sendEmail(form)
+            Future.successful(Redirect(routes.ComposeEmailController.sentEmailConfirmation()))
+        }
       }
 
       def handleInvalidForm(formWithErrors: Form[EmailPreviewForm]) = {
@@ -48,6 +65,28 @@ class EmailPreviewController @Inject()
         Future.successful(BadRequest("Error with EmailPreview form"))
       }
       EmailPreviewForm.form.bindFromRequest.fold(handleInvalidForm(_), handleValidForm(_))
+    }
+  }
+
+  def editEmail(): Action[AnyContent] = Action.async {
+    implicit request => {
+      def handleValidForm(form: EmailPreviewForm) = {
+        logger.info(s"EDIT EMAIL - EmailPreviewForm: $form")
+        logger.info(s"Persisted emailId is ${form.emailId}")
+//        emailConnector.sendEmail(form)
+        Future.successful(Redirect(routes.ComposeEmailController.email()))
+      }
+      def handleInvalidForm(formWithErrors: Form[EmailPreviewForm]) = {
+        logger.warn(s"Error in form: ${formWithErrors.errors}")
+        Future.successful(BadRequest("Error with EmailPreview form"))
+      }
+      EmailPreviewForm.form.bindFromRequest.fold(handleInvalidForm(_), handleValidForm(_))
+
+//      Future.successful(Redirect(routes.ComposeEmailController.email()))
+
+//      Future.successful(Redirect(new Call("GET", refererUrl)))
+//      Future.successful(Redirect(refererUrl))
+
     }
   }
 }
