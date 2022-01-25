@@ -16,19 +16,21 @@
 
 package controllers
 
-import common.ControllerBaseSpec
 import connectors.{GatekeeperEmailConnector, UpscanInitiateConnector}
-import models.OutgoingEmail
+import models.{InProgress, OutgoingEmail, Reference, UploadInfo}
 import org.scalatest.matchers.should.Matchers
 import play.api.Application
 import play.api.http.Status
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.Json
 import play.api.test.FakeRequest
-import play.api.test.Helpers.{defaultAwaitTimeout, status}
+import play.api.test.Helpers.status
+import play.filters.csrf.CSRF.TokenProvider
+import services.{UpscanFileReference, UpscanInitiateResponse}
 import uk.gov.hmrc.http.HeaderCarrier
-import views.html.ComposeEmail
-import utils.ComposeEmailControllerSpecHelpers.mcc
+import utils.ComposeEmailControllerSpecHelpers.{mcc, mockGateKeeperService, mockedProxyRequestor}
+import views.html.{ComposeEmail}
+import play.api.test.CSRFTokenHelper._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future.successful
@@ -36,27 +38,20 @@ import scala.concurrent.Future.successful
 class EmailPreviewControllerSpec extends ControllerBaseSpec with Matchers {
   implicit val materializer = app.materializer
 
-  override def fakeApplication(): Application =
-    new GuiceApplicationBuilder()
-      .configure(
-        "metrics.jvm"     -> false,
-        "metrics.enabled" -> false
-      )
-      .build()
+  trait Setup extends ControllerSetupBase {
+    val csrfToken: (String, String) = "csrfToken" -> app.injector.instanceOf[TokenProvider].generateToken
+    private val mockGatekeeperEmailConnector: GatekeeperEmailConnector = mock[GatekeeperEmailConnector]
+    private val mockUpscanInitiateConnector: UpscanInitiateConnector = mock[UpscanInitiateConnector]
+    private lazy val composeEmailTemplateView = app.injector.instanceOf[ComposeEmail]
 
-  private val mockGatekeeperEmailConnector: GatekeeperEmailConnector = mock[GatekeeperEmailConnector]
-  private val mockUpscanInitiateConnector: UpscanInitiateConnector = mock[UpscanInitiateConnector]
-  private lazy val composeEmailTemplateView = app.injector.instanceOf[ComposeEmail]
-
-  private val controller = new EmailPreviewController(
-    mcc,
-    composeEmailTemplateView,
-    mockUpscanInitiateConnector,
-    mockGatekeeperEmailConnector
-  )
-
-  trait Setup {
+    val controller = new EmailPreviewController(
+      mcc,
+      composeEmailTemplateView,
+      mockUpscanInitiateConnector,
+      mockGatekeeperEmailConnector
+    )
     implicit val hc: HeaderCarrier = HeaderCarrier()
+
     val outgoingEmail =
       s"""
          |  {
@@ -75,6 +70,20 @@ class EmailPreviewControllerSpec extends ControllerBaseSpec with Matchers {
     when(mockGatekeeperEmailConnector.sendEmail(*)(*))
       .thenReturn(successful(Json.parse(outgoingEmail).as[OutgoingEmail]))
 
+    when(mockUpscanInitiateConnector.initiateV2(*, *)(*))
+      .thenReturn(successful(UpscanInitiateResponse(UpscanFileReference("reference"), "", Map())))
+
+    when(mockGatekeeperEmailConnector.inProgressUploadStatus(*)(*))
+      .thenReturn(successful(UploadInfo(Reference("123423"), InProgress)))
+
+
+  def fakeApplication(): Application =
+    new GuiceApplicationBuilder()
+      .configure(
+        "metrics.jvm"     -> false,
+        "metrics.enabled" -> false
+      )
+      .build()
   }
 
   "POST /email" should {
@@ -101,14 +110,18 @@ class EmailPreviewControllerSpec extends ControllerBaseSpec with Matchers {
       val fakeRequest = FakeRequest("POST", "/edit-email")
         .withFormUrlEncodedBody("emailId"->"emailId", "composeEmailForm.emailSubject"->"emailSubject",
           "composeEmailForm.emailBody"->"emailBody", "composeEmailForm.emailRecipient"->"emailRecipient")
-      val result = controller.sendEmail()(fakeRequest)
-      status(result) shouldBe Status.SEE_OTHER
+        .withSession(csrfToken, authToken, userToken).withCSRFToken
+
+      val result = controller.editEmail()(fakeRequest)
+      status(result) shouldBe Status.OK
     }
 
     "edit email submits invalid form to compose email" in new Setup {
       val fakeRequest = FakeRequest("POST", "/edit-email")
         .withFormUrlEncodedBody("emailId"->"emailId")
-      val result = controller.sendEmail()(fakeRequest)
+        .withSession(csrfToken, authToken, userToken).withCSRFToken
+
+      val result = controller.editEmail()(fakeRequest)
       status(result) shouldBe Status.BAD_REQUEST
     }
   }

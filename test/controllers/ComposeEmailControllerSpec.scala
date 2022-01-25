@@ -16,24 +16,23 @@
 
 package controllers
 
-import connectors.GatekeeperEmailConnector
-import models.{InProgress, OutgoingEmail, Reference, UploadInfo, UploadedFailedWithErrors}
+import models._
 import org.mockito.{ArgumentMatchersSugar, MockitoSugar}
 import org.scalatest.matchers.should.Matchers
 import play.api.Play.materializer
 import play.api.http.Status
 import play.api.libs.Files.TemporaryFile
+import play.api.mvc.MultipartFormData
 import play.api.test.CSRFTokenHelper._
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
 import play.filters.csrf.CSRF.TokenProvider
-import uk.gov.hmrc.http.HeaderCarrier
-import views.html.{ComposeEmail, EmailSentConfirmation}
-import play.api.mvc.MultipartFormData
 import services.ComposeEmailService
+import uk.gov.hmrc.http.HeaderCarrier
 import utils.ComposeEmailControllerSpecHelpers._
 import utils.CreateTempFileFromResource
 import utils.Implicits.Base64StringOps
+import views.html.{ComposeEmail, EmailSentConfirmation}
 
 import scala.concurrent.Future
 

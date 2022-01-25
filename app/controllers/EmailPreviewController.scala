@@ -41,8 +41,6 @@ class EmailPreviewController @Inject()
     implicit request => {
       def handleValidForm(form: EmailPreviewForm) = {
         logger.info(s"SEND EMAIL EmailPreviewForm: $form")
-        logger.info(s"Persisted emailId is ${form.emailId}")
-        logger.info(s"request.body.asFormUrlEncoded: ${request.body.asFormUrlEncoded}")
         emailConnector.sendEmail(form)
         Future.successful(Redirect(routes.ComposeEmailController.sentEmailConfirmation()))
       }
@@ -59,7 +57,6 @@ class EmailPreviewController @Inject()
     implicit request => {
       def handleValidForm(form: EmailPreviewForm) = {
         logger.info(s"EDIT EMAIL - EmailPreviewForm: $form")
-        logger.info(s"Persisted emailId is ${form.emailId}")
         for {
           upscanInitiateResponse <- upscanInitiateConnector.initiateV2(None, None)
           _ <- emailConnector.inProgressUploadStatus(upscanInitiateResponse.fileReference.reference)

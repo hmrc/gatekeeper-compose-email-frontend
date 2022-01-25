@@ -18,32 +18,27 @@ package controllers
 
 import akka.stream.scaladsl.Source
 import com.google.common.base.Charsets
-
-import javax.inject.{Inject, Singleton}
-import play.api.Logging
-import play.api.data.Form
-import play.api.mvc.{Action, AnyContent, AnyContentAsMultipartFormData, MessagesControllerComponents, MultipartFormData, Request, RequestHeader, Result}
-
-import scala.concurrent.{ExecutionContext, Future}
 import config.AppConfig
 import connectors.{AuthConnector, UpscanInitiateConnector}
-import controllers.ComposeEmailForm.form
-import models.{ErrorResponse, GatekeeperRole, InProgress, OutgoingEmail, UploadInfo, UploadedFailedWithErrors, UploadedSuccessfully}
+import models._
+import play.api.Logging
+import play.api.data.Form
 import play.api.libs.Files.TemporaryFile
-import play.api.libs.ws.WSClient
 import play.api.mvc.MultipartFormData.DataPart
-import services.{ComposeEmailService, UpscanFileReference, UpscanInitiateResponse}
-import uk.gov.hmrc.http.{HeaderCarrier, HttpClient}
+import play.api.mvc._
+import services.ComposeEmailService
+import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.bootstrap.frontend.controller.FrontendController
 import utils.MultipartFormDataSummaries.{summariseDataParts, summariseFileParts}
 import utils.UploadProxyController.TemporaryFilePart
 import utils.UploadProxyController.TemporaryFilePart.partitionTrys
-import utils.GatekeeperAuthWrapper
-import utils.{ErrorAction, MultipartFormExtractor, ProxyRequestor}
-import views.html.{ComposeEmail, EmailPreview, EmailSentConfirmation, ErrorTemplate, FileSizeMimeChecks, ForbiddenView}
+import utils.{ErrorAction, GatekeeperAuthWrapper, MultipartFormExtractor, ProxyRequestor}
+import views.html._
 
 import java.nio.file.Path
 import java.util.Base64
+import javax.inject.{Inject, Singleton}
+import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
 class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
@@ -53,8 +48,6 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
                                        emailService: ComposeEmailService,
                                        sentEmail: EmailSentConfirmation,
                                        upscanInitiateConnector: UpscanInitiateConnector,
-                                       wsClient: WSClient,
-                                       httpClient: HttpClient,
                                        proxyRequestor: ProxyRequestor,
                                        override val forbiddenView: ForbiddenView,
                                        override val authConnector: AuthConnector)

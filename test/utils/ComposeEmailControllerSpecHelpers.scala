@@ -41,10 +41,6 @@ import play.api.test.Helpers.{BAD_REQUEST, OK}
 import play.shaded.ahc.io.netty.handler.codec.http.DefaultHttpHeaders
 import play.shaded.ahc.org.asynchttpclient.uri.Uri
 import services.ComposeEmailService
-import uk.gov.hmrc.auth.core.authorise.Predicate
-import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals
-import uk.gov.hmrc.auth.core.retrieve.{Name, Retrieval, ~}
-import uk.gov.hmrc.auth.core.{Enrolment, Enrolments}
 import uk.gov.hmrc.http.{HeaderCarrier, HttpClient}
 import utils.ProxyRequestor
 import views.html.{ComposeEmail, EmailPreview, EmailSentConfirmation, ErrorTemplate, FileSizeMimeChecks, ForbiddenView}
@@ -116,15 +112,6 @@ object ComposeEmailControllerSpecHelpers  extends ControllerBaseSpec with Matche
   }
   val mockUpscanInitiateConnectorTest = new UpscanInitiateConnectorTest
 
-//  class AuthMockConnectorChild extends AuthConnector(httpClient, appConfig) {
-//    val predicate = Enrolment(appConfig.userRole)
-//    val retrieval = Retrievals.name and Retrievals.authorisedEnrolments
-//    override def authorise(predicate: Predicate, retrieval: Retrieval[Option[Name] ~ Enrolments])(implicit hc: HeaderCarrier, ec: ExecutionContext)  = {
-//      successful(new ~(Some(Name(Some(userName), None)), Enrolments(Set(Enrolment(userRole)))))
-//    }
-//  }
-
-
   def buildController(mockGateKeeperService: ComposeEmailService,mockedProxyRequestor: ProxyRequestor, mockAuthConnector: AuthConnector): ComposeEmailController = {
     new ComposeEmailController(
       mcc,
@@ -134,12 +121,9 @@ object ComposeEmailControllerSpecHelpers  extends ControllerBaseSpec with Matche
       mockGateKeeperService,
       emailSentTemplateView,
       mockUpscanInitiateConnectorTest,
-      mockWSClient,
-      httpClient,
       mockedProxyRequestor,
       forbiddenView, mockAuthConnector)
   }
-  //val controller = buildController(mockGateKeeperService, mockedProxyRequestor, mockAuthConnector)
 
   class ProxyRequestorTestWrongSize extends ProxyRequestor(mockWSClient) {
 
