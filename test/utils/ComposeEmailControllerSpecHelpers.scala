@@ -137,7 +137,7 @@ object ComposeEmailControllerSpecHelpers  extends ControllerBaseSpec with Matche
       mockWSClient,
       httpClient,
       mockedProxyRequestor,
-      forbiddenView, mockAuthConnector, errorTemplate)
+      forbiddenView, mockAuthConnector)
   }
   //val controller = buildController(mockGateKeeperService, mockedProxyRequestor, mockAuthConnector)
 

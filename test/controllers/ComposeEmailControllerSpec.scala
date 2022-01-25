@@ -16,37 +16,31 @@
 
 package controllers
 
-import akka.stream.scaladsl.Source
-import config.EmailConnectorConfig
 import connectors.GatekeeperEmailConnector
 import models.{InProgress, OutgoingEmail, Reference, UploadInfo, UploadedFailedWithErrors}
 import org.mockito.{ArgumentMatchersSugar, MockitoSugar}
 import org.scalatest.matchers.should.Matchers
 import play.api.Play.materializer
 import play.api.http.Status
-import play.api.libs.Files.{TemporaryFile, logger}
+import play.api.libs.Files.TemporaryFile
 import play.api.test.CSRFTokenHelper._
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
 import play.filters.csrf.CSRF.TokenProvider
-import services.ComposeEmailService
 import uk.gov.hmrc.http.HeaderCarrier
-import views.html.{ComposeEmail, EmailSentConfirmation, ErrorTemplate, ForbiddenView}
-import play.api.mvc.MultipartFormData.DataPart
+import views.html.{ComposeEmail, EmailSentConfirmation}
 import play.api.mvc.MultipartFormData
-import utils.ComposeEmailControllerSpecHelpers.{ComposeEmailServiceTest, Given, ProxyRequestorTestWrongSize, buildController, errorTemplate, forbiddenView, httpClient, mockGateKeeperService, mockedProxyRequestor}
+import services.ComposeEmailService
+import utils.ComposeEmailControllerSpecHelpers._
 import utils.CreateTempFileFromResource
 import utils.Implicits.Base64StringOps
-import utils.UploadProxyController.TemporaryFilePart
-import utils.UploadProxyController.TemporaryFilePart.partitionTrys
 
-import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
 class ComposeEmailControllerSpec extends ControllerBaseSpec with Matchers with MockitoSugar with ArgumentMatchersSugar {
 
   trait Setup extends ControllerSetupBase {
-    lazy val mockGatekeeperEmailConnector = mock[GatekeeperEmailConnector]
+    lazy val mockGatekeeperEmailService = mock[ComposeEmailService]
     val csrfToken: (String, String) = "csrfToken" -> app.injector.instanceOf[TokenProvider].generateToken
 
     val notLoggedInRequest = FakeRequest("GET", "/email").withCSRFToken
@@ -78,60 +72,60 @@ class ComposeEmailControllerSpec extends ControllerBaseSpec with Matchers with M
 
   "GET /email" should {
     "return 200" in new Setup {
-      givenTheGKUserIsAuthorisedAndIsASuperUser()
+      givenTheGKUserIsAuthorisedAndIsANormalUser()
       val result = controller.email()(loggedInRequest)
       status(result) shouldBe Status.OK
-      //verifyAuthConnectorCalledForUser
-      verifyZeroInteractions(mockGatekeeperEmailConnector)
+      verifyAuthConnectorCalledForUser
+      verifyZeroInteractions(mockGatekeeperEmailService)
     }
 
     "redirect to login page for a user that is not authenticated" in new Setup {
       givenFailedLogin()
       val result = controller.email()(notLoggedInRequest)
-      //verifyAuthConnectorCalledForUser
+      verifyAuthConnectorCalledForUser
       status(result) shouldBe Status.SEE_OTHER
-      verifyZeroInteractions(mockGatekeeperEmailConnector)
+      verifyZeroInteractions(mockGatekeeperEmailService)
     }
 
     "deny user with incorrect privileges" in new Setup {
       givenTheGKUserHasInsufficientEnrolments()
       val result = controller.email()(notLoggedInRequest)
-      //verifyAuthConnectorCalledForUser
+      verifyAuthConnectorCalledForUser
       status(result) shouldBe Status.FORBIDDEN
-      verifyZeroInteractions(mockGatekeeperEmailConnector)
+      verifyZeroInteractions(mockGatekeeperEmailService)
     }
 
     "return HTML" in new Setup {
-      givenTheGKUserIsAuthorisedAndIsASuperUser()
+      givenTheGKUserIsAuthorisedAndIsANormalUser()
       val result = controller.email()(loggedInRequest)
       contentType(result) shouldBe Some("text/html")
       charset(result) shouldBe Some("utf-8")
-      verifyZeroInteractions(mockGatekeeperEmailConnector)
+      verifyZeroInteractions(mockGatekeeperEmailService)
     }
   }
 
   "GET /sent-email" should {
     "return 200" in new Setup {
-      givenTheGKUserIsAuthorisedAndIsASuperUser()
+      givenTheGKUserIsAuthorisedAndIsANormalUser()
       val result = controller.sentEmailConfirmation(fakeConfirmationGetRequest)
-      //verifyAuthConnectorCalledForUser
+      verifyAuthConnectorCalledForUser
       status(result) shouldBe Status.OK
-      verifyZeroInteractions(mockGatekeeperEmailConnector)
+      verifyZeroInteractions(mockGatekeeperEmailService)
     }
 
     "return HTML" in new Setup {
-      givenTheGKUserIsAuthorisedAndIsASuperUser()
+      givenTheGKUserIsAuthorisedAndIsANormalUser()
       val result = controller.sentEmailConfirmation(fakeConfirmationGetRequest)
       contentType(result) shouldBe Some("text/html")
       charset(result) shouldBe Some("utf-8")
-      verifyZeroInteractions(mockGatekeeperEmailConnector)
+      verifyZeroInteractions(mockGatekeeperEmailService)
     }
   }
 
 
   "POST /upload" should {
     "reject a form submission with missing emailRecipient" in new Setup {
-      givenTheGKUserIsAuthorisedAndIsASuperUser()
+      givenTheGKUserIsAuthorisedAndIsANormalUser()
       val formDataBody = new MultipartFormData[TemporaryFile](
         dataParts.filter(x => x._1 != "emailRecipient") + ("emailRecipient" -> Seq("")),
         files    = Seq(),
@@ -141,14 +135,14 @@ class ComposeEmailControllerSpec extends ControllerBaseSpec with Matchers with M
 
       val result = controller.upload()(uploadRequest)
       status(result) shouldBe BAD_REQUEST
-      //verifyAuthConnectorCalledForUser
-      //verifyZeroInteractions(mockGateKeeperService)
+      verifyAuthConnectorCalledForUser
+      verifyZeroInteractions(mockGatekeeperEmailService)
     }
 
     "reject a form submission with missing emailSubject" in new Setup {
-      givenTheGKUserIsAuthorisedAndIsASuperUser()
+      givenTheGKUserIsAuthorisedAndIsANormalUser()
       val formDataBody = new MultipartFormData[TemporaryFile](
-        dataParts.filter(x => x._1 != "emailSubject")+ ("emailSubject" -> Seq("")),
+        dataParts.filter(x => x._1 != "emailSubject") + ("emailSubject" -> Seq("")),
         files    = Seq(),
         badParts = Nil
       )
@@ -156,14 +150,14 @@ class ComposeEmailControllerSpec extends ControllerBaseSpec with Matchers with M
 
       val result = controller.upload()(uploadRequest)
       status(result) shouldBe BAD_REQUEST
-      //verifyAuthConnectorCalledForUser
-      //verifyZeroInteractions(mockGateKeeperService)
+      verifyAuthConnectorCalledForUser
+      verifyZeroInteractions(mockGatekeeperEmailService)
     }
 
     "reject a form submission with missing emailBody" in new Setup {
-      givenTheGKUserIsAuthorisedAndIsASuperUser()
+      givenTheGKUserIsAuthorisedAndIsANormalUser()
       val formDataBody = new MultipartFormData[TemporaryFile](
-        dataParts.filter(x => x._1 != "emailBody")+ ("emailBody" -> Seq("")),
+        dataParts.filter(x => x._1 != "emailBody") + ("emailBody" -> Seq("")),
         files    = Seq(),
         badParts = Nil
       )
@@ -171,12 +165,12 @@ class ComposeEmailControllerSpec extends ControllerBaseSpec with Matchers with M
 
       val result = controller.upload()(uploadRequest)
       status(result) shouldBe BAD_REQUEST
-      //verifyAuthConnectorCalledForUser
-      //verifyZeroInteractions(mockGateKeeperService)
+      verifyAuthConnectorCalledForUser
+      verifyZeroInteractions(mockGatekeeperEmailService)
     }
 
     "preview a successfully POSTed form and file" in new Setup {
-      givenTheGKUserIsAuthorisedAndIsASuperUser()
+      givenTheGKUserIsAuthorisedAndIsANormalUser()
       Given("a valid form containing a valid file")
       val fileToUpload = CreateTempFileFromResource("/text-to-upload.txt")
       val filePart = new MultipartFormData.FilePart[TemporaryFile](
@@ -191,14 +185,14 @@ class ComposeEmailControllerSpec extends ControllerBaseSpec with Matchers with M
         files    = Seq(filePart),
         badParts = Nil
       )
-
+      verifyZeroInteractions(mockGatekeeperEmailService)
       val uploadRequest = FakeRequest().withBody(formDataBody).withCSRFToken
       val result = controller.upload()(uploadRequest)
       status(result) shouldBe 200
     }
 
     "preview a successfully POSTed form and show error for file with virus" in new Setup {
-      givenTheGKUserIsAuthorisedAndIsASuperUser()
+      givenTheGKUserIsAuthorisedAndIsANormalUser()
       Given("a valid form containing a valid file with virus")
       class ComposeEmailServiceTestVirusTest extends ComposeEmailServiceTest{
         override def saveEmail(composeEmailForm: ComposeEmailForm)(implicit hc: HeaderCarrier): Future[OutgoingEmail] =
@@ -224,14 +218,14 @@ class ComposeEmailControllerSpec extends ControllerBaseSpec with Matchers with M
         files    = Seq(filePart),
         badParts = Nil
       )
-
+      verifyZeroInteractions(mockGatekeeperEmailService)
       val uploadRequest = FakeRequest().withBody(formDataBody).withCSRFToken
       val result = controller.upload()(uploadRequest)
       status(result) shouldBe 200
     }
 
     "preview a successfully POSTed form and show error for file with file size above allowed limit" in new Setup {
-      givenTheGKUserIsAuthorisedAndIsASuperUser()
+      givenTheGKUserIsAuthorisedAndIsANormalUser()
       Given("a valid form containing a valid file with virus")
       class ComposeEmailServiceTestInvalidFile extends ComposeEmailServiceTest{
         override def saveEmail(composeEmailForm: ComposeEmailForm)(implicit hc: HeaderCarrier): Future[OutgoingEmail] =
@@ -251,7 +245,7 @@ class ComposeEmailControllerSpec extends ControllerBaseSpec with Matchers with M
         fileToUpload,
         fileSize = fileToUpload.length()
       )
-
+      verifyZeroInteractions(mockGatekeeperEmailService)
       val formDataBody = new MultipartFormData[TemporaryFile](
         dataParts,
         files    = Seq(filePart),
@@ -267,7 +261,7 @@ class ComposeEmailControllerSpec extends ControllerBaseSpec with Matchers with M
     }
 
     "preview a successfully POSTed form with out a file" in new Setup {
-      givenTheGKUserIsAuthorisedAndIsASuperUser()
+      givenTheGKUserIsAuthorisedAndIsANormalUser()
       Given("a valid form containing a valid file")
 
       val formDataBody = new MultipartFormData[TemporaryFile](
@@ -275,7 +269,7 @@ class ComposeEmailControllerSpec extends ControllerBaseSpec with Matchers with M
         files    = Seq(),
         badParts = Nil
       )
-
+      verifyZeroInteractions(mockGatekeeperEmailService)
       val uploadRequest = FakeRequest().withBody(formDataBody).withCSRFToken
       val result = controller.upload()(uploadRequest)
       status(result) shouldBe 200

@@ -18,13 +18,14 @@ package connectors
 
 import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock
-import com.github.tomakehurst.wiremock.client.WireMock.{aResponse, post, postRequestedFor, stubFor, urlEqualTo, verify => wireMockVerify}
+import com.github.tomakehurst.wiremock.client.WireMock.{aResponse, get, getRequestedFor, post, postRequestedFor, stubFor, urlEqualTo, verify => wireMockVerify}
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration._
 import common.AsyncHmrcSpec
 import config.EmailConnectorConfig
 import controllers.{ComposeEmailForm, EmailPreviewForm}
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
+import play.api.http.Status.{BAD_REQUEST, NOT_FOUND, OK}
 import uk.gov.hmrc.http.{HeaderCarrier, HttpClient, UpstreamErrorResponse}
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -56,7 +57,11 @@ class GatekeeperEmailConnectorSpec extends AsyncHmrcSpec with BeforeAndAfterEach
   val emailAddress = "email@example.com"
   val subject = "Email subject"
   val emailId = "email-uuid"
-  val emailServicePath = s"/gatekeeper-email/send-email/$emailId"
+  val keyRef = "file-key"
+  val emailSendServicePath = s"/gatekeeper-email/send-email/$emailId"
+  val emailSaveServicePath = s"/gatekeeper-email/save-email"
+  val inProgressUploadStatusUrl = s"/gatekeeperemail/insertfileuploadstatus?key=$keyRef"
+  val fetchProgressUploadStatusUrl = s"/gatekeeperemail/fetchfileuploadstatus?key=$keyRef"
   val emailBody = "Body to be used in the email template"
 
   trait Setup {
@@ -91,15 +96,36 @@ class GatekeeperEmailConnectorSpec extends AsyncHmrcSpec with BeforeAndAfterEach
          |    "approvedBy": "auto-emailer"
          |  }
       """.stripMargin
-    stubFor(post(urlEqualTo(emailServicePath)).willReturn(aResponse()
+    val uploadInfo =
+      s"""
+         |{"reference":{"value":"file-key"},
+         |"status":{"_type":"InProgress"}}
+         |
+      """.stripMargin
+    stubFor(post(urlEqualTo(emailSendServicePath)).willReturn(aResponse()
       .withHeader("Content-type", "application/json")
       .withBody(outgoingEmail)
-      .withStatus(200)))
+      .withStatus(OK)))
+    stubFor(post(urlEqualTo(emailSaveServicePath)).willReturn(aResponse()
+      .withHeader("Content-type", "application/json")
+      .withBody(outgoingEmail)
+      .withStatus(OK)))
+    stubFor(get(urlEqualTo(fetchProgressUploadStatusUrl)).willReturn(aResponse()
+      .withHeader("Content-type", "application/json")
+      .withBody(uploadInfo)
+      .withStatus(OK)))
+    stubFor(post(urlEqualTo(inProgressUploadStatusUrl)).willReturn(aResponse()
+      .withHeader("Content-type", "application/json")
+      .withBody(uploadInfo)
+      .withStatus(OK)))
   }
 
   trait FailingHttp {
     self: Setup =>
-    stubFor(post(urlEqualTo(emailServicePath)).willReturn(aResponse().withStatus(404)))
+    stubFor(post(urlEqualTo(emailSendServicePath)).willReturn(aResponse().withStatus(NOT_FOUND)))
+    stubFor(post(urlEqualTo(emailSaveServicePath)).willReturn(aResponse().withStatus(NOT_FOUND)))
+    stubFor(post(urlEqualTo(inProgressUploadStatusUrl)).willReturn(aResponse().withStatus(NOT_FOUND)))
+    stubFor(get(urlEqualTo(fetchProgressUploadStatusUrl)).willReturn(aResponse().withStatus(NOT_FOUND)))
   }
 
   "emailConnector" should {
@@ -108,13 +134,55 @@ class GatekeeperEmailConnectorSpec extends AsyncHmrcSpec with BeforeAndAfterEach
       await(underTest.sendEmail(emailPreviewForm))
 
       wireMockVerify(1, postRequestedFor(
-        urlEqualTo(emailServicePath))
+        urlEqualTo(emailSendServicePath))
       )
     }
 
     "fail to send gatekeeper email" in new Setup with FailingHttp {
       intercept[UpstreamErrorResponse] {
         await(underTest.sendEmail(emailPreviewForm))
+      }
+    }
+
+    "save gatekeeper email" in new Setup with WorkingHttp {
+      await(underTest.saveEmail(composeEmailForm))
+
+      wireMockVerify(1, postRequestedFor(
+        urlEqualTo(emailSaveServicePath))
+      )
+    }
+
+    "fail to save gatekeeper email" in new Setup with FailingHttp {
+      intercept[UpstreamErrorResponse] {
+        await(underTest.saveEmail(composeEmailForm))
+      }
+    }
+
+    "fetch file upload status info" in new Setup with WorkingHttp {
+      await(underTest.fetchFileuploadStatus("file-key"))
+
+      wireMockVerify(1, getRequestedFor(
+        urlEqualTo(fetchProgressUploadStatusUrl))
+      )
+    }
+
+    "fail to fetch  file upload status " in new Setup with FailingHttp {
+      intercept[UpstreamErrorResponse] {
+        await(underTest.fetchFileuploadStatus("file-key"))
+      }
+    }
+
+    "save file upload status info" in new Setup with WorkingHttp {
+      await(underTest.inProgressUploadStatus("file-key"))
+
+      wireMockVerify(1, postRequestedFor(
+        urlEqualTo(inProgressUploadStatusUrl))
+      )
+    }
+
+    "fail to save  file upload status " in new Setup with FailingHttp {
+      intercept[UpstreamErrorResponse] {
+        await(underTest.inProgressUploadStatus("file-key"))
       }
     }
   }

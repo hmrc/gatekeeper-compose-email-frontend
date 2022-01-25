@@ -65,7 +65,7 @@ trait AuthConnectorMock {
 
   def verifyAuthConnectorCalledForUser = {
     verify(mockAuthConnector)
-      .authorise(eqTo(Enrolment(adminRole) or Enrolment(superUserRole) or Enrolment(userRole)), any[Retrieval[~[Option[Name], Enrolments]]])(*, *)
+      .authorise(*, any[Retrieval[~[Option[Name], Enrolments]]])(*, *)
   }
 
   def verifyAuthConnectorCalledForSuperUser = {

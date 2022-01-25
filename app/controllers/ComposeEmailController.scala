@@ -57,10 +57,9 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
                                        httpClient: HttpClient,
                                        proxyRequestor: ProxyRequestor,
                                        override val forbiddenView: ForbiddenView,
-                                       override val authConnector: AuthConnector,
-                                       override val errorTemplate: ErrorTemplate)
+                                       override val authConnector: AuthConnector)
                                       (implicit  val appConfig: AppConfig, val ec: ExecutionContext)
-  extends FrontendController(mcc) with ErrorHelper with GatekeeperAuthWrapper with Logging {
+  extends FrontendController(mcc) with GatekeeperAuthWrapper with Logging {
 
   def email: Action[AnyContent] = requiresAtLeast(GatekeeperRole.USER) { implicit request =>
     for {
