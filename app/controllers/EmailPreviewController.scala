@@ -40,7 +40,6 @@ class EmailPreviewController @Inject()
   def sendEmail(): Action[AnyContent] = Action.async {
     implicit request => {
       def handleValidForm(form: EmailPreviewForm) = {
-        logger.info(s"SEND EMAIL EmailPreviewForm: $form")
         emailConnector.sendEmail(form)
         Future.successful(Redirect(routes.ComposeEmailController.sentEmailConfirmation()))
       }
@@ -56,7 +55,6 @@ class EmailPreviewController @Inject()
   def editEmail(): Action[AnyContent] = Action.async {
     implicit request => {
       def handleValidForm(form: EmailPreviewForm) = {
-        logger.info(s"EDIT EMAIL - EmailPreviewForm: $form")
         for {
           upscanInitiateResponse <- upscanInitiateConnector.initiateV2(None, None)
           _ <- emailConnector.inProgressUploadStatus(upscanInitiateResponse.fileReference.reference)

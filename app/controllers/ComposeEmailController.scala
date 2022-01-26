@@ -67,10 +67,7 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
 
   def upload(): Action[MultipartFormData[TemporaryFile]] = requiresAtLeastForMultiPartFormData(GatekeeperRole.USER) {
     implicit request =>
-      val form = MultipartFormExtractor.extractComposeEmailForm(request.body)
       def handleValidForm(form: ComposeEmailForm) = {
-        logger.info(s"ComposeEmailForm: $form")
-        logger.info(s"Body is ${form.emailBody}, toAddress is ${form.emailRecipient}, subject is ${form.emailSubject}")
         val body = request.body
         logger.info(
           s"Upload form contains dataParts=${summariseDataParts(body.dataParts)} and fileParts=${summariseFileParts(body.files)}")
