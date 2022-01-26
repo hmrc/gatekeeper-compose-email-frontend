@@ -76,7 +76,7 @@ class GatekeeperEmailConnectorSpec extends AsyncHmrcSpec with BeforeAndAfterEach
 
     lazy val underTest = new GatekeeperEmailConnector(httpClient, fakeEmailConnectorConfig)
     val composeEmailForm: ComposeEmailForm = ComposeEmailForm(emailAddress, subject, emailBody)
-    val emailPreviewForm: EmailPreviewForm = EmailPreviewForm(emailId, subject)
+    val emailPreviewForm: EmailPreviewForm = EmailPreviewForm(emailId, composeEmailForm)
   }
 
   trait WorkingHttp {

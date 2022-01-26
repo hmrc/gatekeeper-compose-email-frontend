@@ -17,12 +17,13 @@
 package controllers
 
 import config.AppConfig
-import connectors.GatekeeperEmailConnector
+import connectors.{GatekeeperEmailConnector, UpscanInitiateConnector}
 import play.api.Logging
 import play.api.data.Form
 import play.api.i18n.I18nSupport
 import play.api.mvc.{Action, AnyContent, MessagesControllerComponents}
 import uk.gov.hmrc.play.bootstrap.frontend.controller.FrontendController
+import views.html.ComposeEmail
 
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
@@ -30,6 +31,8 @@ import scala.concurrent.{ExecutionContext, Future}
 @Singleton
 class EmailPreviewController @Inject()
 (mcc: MessagesControllerComponents,
+ composeEmail: ComposeEmail,
+ upscanInitiateConnector : UpscanInitiateConnector,
  emailConnector: GatekeeperEmailConnector)
 (implicit val appConfig: AppConfig, val ec: ExecutionContext)
   extends FrontendController(mcc) with I18nSupport with Logging {
@@ -37,10 +40,25 @@ class EmailPreviewController @Inject()
   def sendEmail(): Action[AnyContent] = Action.async {
     implicit request => {
       def handleValidForm(form: EmailPreviewForm) = {
-        logger.info(s"EmailPreviewForm: $form")
-        logger.info(s"Persisted emailId is ${form.emailId}, subject is ${form.emailSubject}")
         emailConnector.sendEmail(form)
         Future.successful(Redirect(routes.ComposeEmailController.sentEmailConfirmation()))
+      }
+
+      def handleInvalidForm(formWithErrors: Form[EmailPreviewForm]) = {
+        logger.warn(s"Error in form: ${formWithErrors.errors}")
+        Future.successful(BadRequest("Error with EmailPreview form"))
+      }
+      EmailPreviewForm.form.bindFromRequest.fold(handleInvalidForm(_), handleValidForm(_))
+    }
+  }
+
+  def editEmail(): Action[AnyContent] = Action.async {
+    implicit request => {
+      def handleValidForm(form: EmailPreviewForm) = {
+        for {
+          upscanInitiateResponse <- upscanInitiateConnector.initiateV2(None, None)
+          _ <- emailConnector.inProgressUploadStatus(upscanInitiateResponse.fileReference.reference)
+        } yield Ok(composeEmail(upscanInitiateResponse, controllers.ComposeEmailForm.form.fill(form.composeEmailForm)))
       }
 
       def handleInvalidForm(formWithErrors: Form[EmailPreviewForm]) = {

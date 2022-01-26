@@ -18,32 +18,27 @@ package controllers
 
 import akka.stream.scaladsl.Source
 import com.google.common.base.Charsets
-
-import javax.inject.{Inject, Singleton}
-import play.api.Logging
-import play.api.data.Form
-import play.api.mvc.{Action, AnyContent, AnyContentAsMultipartFormData, MessagesControllerComponents, MultipartFormData, Request, RequestHeader, Result}
-
-import scala.concurrent.{ExecutionContext, Future}
 import config.AppConfig
 import connectors.{AuthConnector, UpscanInitiateConnector}
-import controllers.ComposeEmailForm.form
-import models.{ErrorResponse, GatekeeperRole, InProgress, OutgoingEmail, UploadInfo, UploadedFailedWithErrors, UploadedSuccessfully}
+import models._
+import play.api.Logging
+import play.api.data.Form
 import play.api.libs.Files.TemporaryFile
-import play.api.libs.ws.WSClient
 import play.api.mvc.MultipartFormData.DataPart
-import services.{ComposeEmailService, UpscanFileReference, UpscanInitiateResponse}
-import uk.gov.hmrc.http.{HeaderCarrier, HttpClient}
+import play.api.mvc._
+import services.ComposeEmailService
+import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.bootstrap.frontend.controller.FrontendController
 import utils.MultipartFormDataSummaries.{summariseDataParts, summariseFileParts}
 import utils.UploadProxyController.TemporaryFilePart
 import utils.UploadProxyController.TemporaryFilePart.partitionTrys
-import utils.GatekeeperAuthWrapper
-import utils.{ErrorAction, MultipartFormExtractor, ProxyRequestor}
-import views.html.{ComposeEmail, EmailPreview, EmailSentConfirmation, ErrorTemplate, FileSizeMimeChecks, ForbiddenView}
+import utils.{ErrorAction, GatekeeperAuthWrapper, MultipartFormExtractor, ProxyRequestor}
+import views.html._
 
 import java.nio.file.Path
 import java.util.Base64
+import javax.inject.{Inject, Singleton}
+import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
 class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
@@ -53,8 +48,6 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
                                        emailService: ComposeEmailService,
                                        sentEmail: EmailSentConfirmation,
                                        upscanInitiateConnector: UpscanInitiateConnector,
-                                       wsClient: WSClient,
-                                       httpClient: HttpClient,
                                        proxyRequestor: ProxyRequestor,
                                        override val forbiddenView: ForbiddenView,
                                        override val authConnector: AuthConnector)
@@ -74,10 +67,7 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
 
   def upload(): Action[MultipartFormData[TemporaryFile]] = requiresAtLeastForMultiPartFormData(GatekeeperRole.USER) {
     implicit request =>
-      val form = MultipartFormExtractor.extractComposeEmailForm(request.body)
       def handleValidForm(form: ComposeEmailForm) = {
-        logger.info(s"ComposeEmailForm: $form")
-        logger.info(s"Body is ${form.emailBody}, toAddress is ${form.emailRecipient}, subject is ${form.emailSubject}")
         val body = request.body
         logger.info(
           s"Upload form contains dataParts=${summariseDataParts(body.dataParts)} and fileParts=${summariseFileParts(body.files)}")
@@ -135,7 +125,7 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
     val outgoingEmail: Future[OutgoingEmail] = saveEmail(emailForm)
     outgoingEmail.map {  email =>
       Ok(emailPreview(UploadedSuccessfully("", "", "", None, ""), base64Decode(email.htmlEmailBody),
-        controllers.EmailPreviewForm.form.fill(EmailPreviewForm(email.emailId, email.subject))))
+        controllers.EmailPreviewForm.form.fill(EmailPreviewForm(email.emailId, emailForm))))
     }
   }
 
@@ -210,7 +200,7 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
       val errorPath = outgoingEmail.map { email =>
         val errorResponse = errResp.get
         Ok(fileChecksPreview(errorResponse.errorMessage, base64Decode(email.htmlEmailBody),
-          controllers.EmailPreviewForm.form.fill(EmailPreviewForm(email.emailId, email.subject))))
+          controllers.EmailPreviewForm.form.fill(EmailPreviewForm(email.emailId, emailForm))))
       }
       errorPath
     }
@@ -224,7 +214,7 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
         val outgoingEmail: Future[OutgoingEmail] = saveEmail(emailFormModified)
         outgoingEmail.map { email =>
           Ok(emailPreview(info.status, base64Decode(email.htmlEmailBody),
-            controllers.EmailPreviewForm.form.fill(EmailPreviewForm(email.emailId, email.subject))))
+            controllers.EmailPreviewForm.form.fill(EmailPreviewForm(email.emailId, emailForm))))
         }
       }
       result

@@ -6,3 +6,4 @@ GET        /sent-email              controllers.ComposeEmailController.sentEmail
 GET        /assets/*file            controllers.Assets.versioned(path = "/public", file: Asset)
 POST       /upload                  controllers.ComposeEmailController.upload
 POST       /send-email              controllers.EmailPreviewController.sendEmail
+POST       /edit-email              controllers.EmailPreviewController.editEmail
