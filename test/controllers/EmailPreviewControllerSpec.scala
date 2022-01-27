@@ -56,8 +56,8 @@ class EmailPreviewControllerSpec extends ControllerBaseSpec with Matchers {
       s"""
          |  {
          |    "emailId": "emailId",
-         |    "recepientTitle": "Team-Title",
-         |    "recepients": [""],
+         |    "recipientTitle": "Team-Title",
+         |    "recipients": [""],
          |    "attachmentLink": "",
          |    "markdownEmailBody": "",
          |    "htmlEmailBody": "",

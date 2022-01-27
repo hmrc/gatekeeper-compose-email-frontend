@@ -86,8 +86,8 @@ class GatekeeperEmailConnectorSpec extends AsyncHmrcSpec with BeforeAndAfterEach
       s"""
          |  {
          |    "emailId": "$emailId",
-         |    "recepientTitle": "Team-Title",
-         |    "recepients": [""],
+         |    "recipientTitle": "Team-Title",
+         |    "recipients": [""],
          |    "attachmentLink": "",
          |    "markdownEmailBody": "",
          |    "htmlEmailBody": "",

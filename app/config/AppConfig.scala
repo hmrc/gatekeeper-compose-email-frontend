@@ -45,6 +45,7 @@ trait AppConfig {
   def maxFileSize: String
   def approvedFileExtensions: String
   def approvedFileTypes: String
+  def uploadRedirectTargetBase: String
 }
 
 @Singleton
@@ -64,6 +65,7 @@ class AppConfigImpl @Inject()(config: Configuration)
   val approvedFileExtensions = getString("file-formats.approved-file-extensions")
   val approvedFileTypes = getString("file-formats.approved-file-types")
 
+  val uploadRedirectTargetBase = getString("upload-redirect-target-base")
 
   override def gatekeeperSuccessUrl: String = getString("api-gatekeeper-email-success-url")
 
