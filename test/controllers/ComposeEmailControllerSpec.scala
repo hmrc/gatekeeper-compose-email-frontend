@@ -19,8 +19,10 @@ package controllers
 import connectors.GatekeeperEmailConnector
 import org.mockito.{ArgumentMatchersSugar, MockitoSugar}
 import org.scalatest.matchers.should.Matchers
+import play.api.Logging
 import play.api.Play.materializer
 import play.api.http.Status
+import play.api.libs.json.{JsArray, Json}
 import play.api.test.CSRFTokenHelper._
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
@@ -32,7 +34,7 @@ import views.html.{ComposeEmail, EmailSentConfirmation, ErrorTemplate, Forbidden
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-class ComposeEmailControllerSpec extends ControllerBaseSpec with Matchers with MockitoSugar with ArgumentMatchersSugar {
+class ComposeEmailControllerSpec extends ControllerBaseSpec with Matchers with MockitoSugar with ArgumentMatchersSugar with Logging {
 
   trait Setup extends ControllerSetupBase {
     lazy val mockGatekeeperEmailConnector = mock[GatekeeperEmailConnector]
@@ -172,6 +174,23 @@ class ComposeEmailControllerSpec extends ControllerBaseSpec with Matchers with M
       status(result) shouldBe BAD_REQUEST
       verifyAuthConnectorCalledForUser
       verifyZeroInteractions(mockEmailService)
+    }
+  }
+
+  "POST /users" should {
+    "unmarshal the request body" in new Setup {
+      val composeEmailRecipients = """["["{"email":"neil.frow@digital.hmrc.gov.uk","userId":"d8efe602-3ba4-434e-a547-07bba424797f","firstName":"Neil","lastName":"Frow","verified":true,"mfaEnabled":false}]"]"""
+      givenTheGKUserIsAuthorisedAndIsANormalUser()
+      val fakeRequest = FakeRequest("POST", "/process-recipients ")
+        .withSession(csrfToken, authToken, userToken)
+        .withFormUrlEncodedBody("email-recipients" -> composeEmailRecipients)
+        .withCSRFToken
+      val result = controller.processRecipients()(fakeRequest)
+      status(result) shouldBe SEE_OTHER
+      redirectLocation(result) shouldBe Some("/api-gatekeeper/compose-email/email")
+      session(result).isEmpty shouldBe false
+      val recipientsAsJson = Json.parse(session(result).get("emailRecipients").get)
+      recipientsAsJson shouldNot be (null)
     }
   }
 }

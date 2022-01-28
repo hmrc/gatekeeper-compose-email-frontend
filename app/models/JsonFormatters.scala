@@ -16,18 +16,10 @@
 
 package models
 
-import java.util.UUID
+import play.api.libs.json.Json
 
-import uk.gov.hmrc.http.SessionKeys
+object JsonFormatters {
 
-object GatekeeperRole extends Enumeration {
-  type GatekeeperRole = Value
-  val USER, SUPERUSER, ADMIN = Value
+  implicit val formatUser = Json.format[User]
+
 }
-
-object GatekeeperSessionKeys {
-  val LoggedInUser = "LoggedInUser"
-  val AuthToken = SessionKeys.authToken
-}
-
-case class User (email: String, userId: UUID, firstName: String, lastName: String)

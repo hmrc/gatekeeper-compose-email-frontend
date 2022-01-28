@@ -26,6 +26,7 @@ import config.AppConfig
 import connectors.AuthConnector
 import controllers.ComposeEmailForm.form
 import models.GatekeeperRole
+import play.api.libs.json.Json
 import services.ComposeEmailService
 import uk.gov.hmrc.play.bootstrap.frontend.controller.FrontendController
 import util.GatekeeperAuthWrapper
@@ -44,6 +45,7 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
   extends FrontendController(mcc) with ErrorHelper with GatekeeperAuthWrapper with Logging {
 
   def email: Action[AnyContent] = requiresAtLeast(GatekeeperRole.USER) { implicit request =>
+    println(s"""Session cookie has for value 'emailRecipients': ${request.session.get("emailRecipients")}""")
     Future.successful(Ok(composeEmail(form.fill(ComposeEmailForm("","","")))))
   }
 
@@ -69,5 +71,10 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
 
       ComposeEmailForm.form.bindFromRequest.fold(handleInvalidForm(_), handleValidForm(_))
     }
+  }
+
+  def processRecipients: Action[AnyContent] =  Action.async { implicit request =>
+    val emailRecipients: String = Json.stringify(Json.toJson(request.body.asFormUrlEncoded.map(p => p.get("email-recipients"))))
+    Future.successful(Redirect("/api-gatekeeper/compose-email/email").addingToSession("emailRecipients" -> emailRecipients))
   }
 }
