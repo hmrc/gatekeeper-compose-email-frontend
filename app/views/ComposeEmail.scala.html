@@ -57,7 +57,7 @@
     <div id="email-body-hint" class="govuk-hint">
       Supports some markdown: this, that, and the other
     </div>
-    <textarea class="govuk-textarea" id="emailBody" name="emailBody" rows="5"
+    <textarea class="govuk-textarea dynamic-text-area" id="emailBody" name="emailBody" rows="8" oninput="auto_grow(this)"
               aria-describedby="email-body-hint">@form.data.getOrElse("emailBody", "")</textarea>
   </div>
 
@@ -84,3 +84,7 @@
     </div>
   }
 }
+<script src='@routes.Assets.versioned("javascripts/resize-textarea.js")' type="text/javascript"></script>
+<link type="text/css" href='@routes.Assets.versioned("stylesheets/application.scss")'/>
+
+<!--<script src='@routes.Assets.versioned("stylesheets/application.scss")' type="text/css"></script>-->
