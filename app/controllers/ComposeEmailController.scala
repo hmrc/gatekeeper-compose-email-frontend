@@ -34,12 +34,13 @@ import utils.UploadProxyController.TemporaryFilePart
 import utils.UploadProxyController.TemporaryFilePart.partitionTrys
 import utils.{ErrorAction, GatekeeperAuthWrapper, MultipartFormExtractor, ProxyRequestor}
 import views.html._
+import play.api.libs.json.Json
 
 import java.nio.file.Path
 import java.util.Base64
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
-
+import models.JsonFormatters._
 @Singleton
 class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
                                        composeEmail: ComposeEmail,
@@ -55,10 +56,26 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
   extends FrontendController(mcc) with GatekeeperAuthWrapper with Logging {
 
   def email: Action[AnyContent] = requiresAtLeast(GatekeeperRole.USER) { implicit request =>
+    logger.info(s"""Session cookie has for value 'emailRecipients': ${request.session.get("emailRecipients")}""")
+    val userDetails = if(request.session.get("emailRecipients").isDefined){
+      val json = Json.parse(request.session.get("emailRecipients").get)
+      logger.info(s"JSValue is ****************************** ${json}")
+      Some(json.as[List[User]])
+    }
+    else {
+      None
+    }
+    logger.info(s"*******---> UserDetails are: $userDetails")
+
     for {
       upscanInitiateResponse <- upscanInitiateConnector.initiateV2(None, None)
       _ <- emailService.inProgressUploadStatus(upscanInitiateResponse.fileReference.reference)
     } yield Ok(composeEmail(upscanInitiateResponse, controllers.ComposeEmailForm.form.fill(ComposeEmailForm("","",""))))
+  }
+
+  def processRecipients: Action[AnyContent] =  Action.async { implicit request =>
+    val emailRecipients: String = Json.stringify(Json.toJson(request.body.asFormUrlEncoded.map(p => p.get("email-recipients"))))
+    Future.successful(Redirect("/api-gatekeeper/compose-email/email").addingToSession("emailRecipients" -> emailRecipients))
   }
 
   def sentEmailConfirmation: Action[AnyContent] = requiresAtLeast(GatekeeperRole.USER) {

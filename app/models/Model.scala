@@ -18,6 +18,8 @@ package models
 
 import uk.gov.hmrc.http.SessionKeys
 
+import java.util.UUID
+
 object GatekeeperRole extends Enumeration {
   type GatekeeperRole = Value
   val USER, SUPERUSER, ADMIN = Value
@@ -26,4 +28,36 @@ object GatekeeperRole extends Enumeration {
 object GatekeeperSessionKeys {
   val LoggedInUser = "LoggedInUser"
   val AuthToken = SessionKeys.authToken
+}
+
+case class User (email: String, userId: String, firstName: String, lastName: String,
+                 verified: Boolean, organisation: String, mfaEnabled: Boolean)
+
+import java.util.UUID
+
+case class UserId(value: UUID) extends AnyVal {
+  def asText = value.toString
+}
+
+object UserId {
+  import play.api.libs.json.Json
+  implicit val format = Json.valueFormat[UserId]
+  def random = UserId(UUID.randomUUID())
+}
+
+case class RegisteredUser(
+                           email: String,
+                           userId: UserId,
+                           firstName: String,
+                           lastName: String,
+                           verified: Boolean,
+                           organisation: Option[String] = None,
+                           mfaEnabled: Boolean = false) {
+}
+
+object RegisteredUser {
+  import UserId._
+  import play.api.libs.json._
+
+  implicit val registeredUserFormat = Json.format[RegisteredUser]
 }
