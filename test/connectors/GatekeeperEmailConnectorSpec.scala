@@ -59,7 +59,7 @@ class GatekeeperEmailConnectorSpec extends AsyncHmrcSpec with BeforeAndAfterEach
   val emailId = "email-uuid"
   val keyRef = "file-key"
   val emailSendServicePath = s"/gatekeeper-email/send-email/$emailId"
-  val emailSaveServicePath = s"/gatekeeper-email/save-email"
+  val emailSaveServicePath = s"/gatekeeper-email/save-email?key=$keyRef"
   val inProgressUploadStatusUrl = s"/gatekeeperemail/insertfileuploadstatus?key=$keyRef"
   val fetchProgressUploadStatusUrl = s"/gatekeeperemail/fetchfileuploadstatus?key=$keyRef"
   val emailBody = "Body to be used in the email template"
@@ -99,7 +99,8 @@ class GatekeeperEmailConnectorSpec extends AsyncHmrcSpec with BeforeAndAfterEach
     val uploadInfo =
       s"""
          |{"reference":{"value":"file-key"},
-         |"status":{"_type":"InProgress"}}
+         |"status":{"_type":"InProgress"}
+         |}
          |
       """.stripMargin
     stubFor(post(urlEqualTo(emailSendServicePath)).willReturn(aResponse()
@@ -145,7 +146,7 @@ class GatekeeperEmailConnectorSpec extends AsyncHmrcSpec with BeforeAndAfterEach
     }
 
     "save gatekeeper email" in new Setup with WorkingHttp {
-      await(underTest.saveEmail(composeEmailForm))
+      await(underTest.saveEmail(composeEmailForm, "file-key"))
 
       wireMockVerify(1, postRequestedFor(
         urlEqualTo(emailSaveServicePath))
@@ -154,7 +155,7 @@ class GatekeeperEmailConnectorSpec extends AsyncHmrcSpec with BeforeAndAfterEach
 
     "fail to save gatekeeper email" in new Setup with FailingHttp {
       intercept[UpstreamErrorResponse] {
-        await(underTest.saveEmail(composeEmailForm))
+        await(underTest.saveEmail(composeEmailForm, "file-key"))
       }
     }
 

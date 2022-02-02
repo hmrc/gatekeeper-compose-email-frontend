@@ -74,7 +74,7 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
 
         val keyEither: Either[Result, String] = MultipartFormExtractor.extractKey(body)
         val result = if(body.files.isEmpty) {
-          noAttachmentEmail(body)
+          noAttachmentEmail(body, keyEither)
         }
         else {
           attachmentEmail(body, keyEither)
@@ -120,9 +120,11 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
   private def base64Decode(result: String): String =
     new String(Base64.getDecoder.decode(result), Charsets.UTF_8)
 
-  private def noAttachmentEmail(body: MultipartFormData[TemporaryFile])(implicit requestHeader: RequestHeader, request: Request[_]): Future[Result] = {
+  private def noAttachmentEmail(body: MultipartFormData[TemporaryFile],
+                                keyEither: Either[Result, String])
+                               (implicit requestHeader: RequestHeader, request: Request[_]): Future[Result] = {
     val emailForm: ComposeEmailForm = MultipartFormExtractor.extractComposeEmailForm(body)
-    val outgoingEmail: Future[OutgoingEmail] = saveEmail(emailForm)
+    val outgoingEmail: Future[OutgoingEmail] = saveEmail(emailForm, keyEither)
     outgoingEmail.map {  email =>
       Ok(emailPreview(UploadedSuccessfully("", "", "", None, ""), base64Decode(email.htmlEmailBody),
         controllers.EmailPreviewForm.form.fill(EmailPreviewForm(email.emailId, emailForm))))
@@ -196,7 +198,7 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
     val emailForm: ComposeEmailForm = MultipartFormExtractor.extractComposeEmailForm(body)
 
     if(errResp.isDefined) {
-      val outgoingEmail: Future[OutgoingEmail] = saveEmail(emailForm)
+      val outgoingEmail: Future[OutgoingEmail] = saveEmail(emailForm, keyEither)
       val errorPath = outgoingEmail.map { email =>
         val errorResponse = errResp.get
         Ok(fileChecksPreview(errorResponse.errorMessage, base64Decode(email.htmlEmailBody),
@@ -211,7 +213,7 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
           case s: UploadedSuccessfully => emailForm.copy(emailBody = emailForm.emailBody + s"\n\n Attachment URL: **[${s.name}](${s.downloadUrl})**" )
           case _ => emailForm
         }
-        val outgoingEmail: Future[OutgoingEmail] = saveEmail(emailFormModified)
+        val outgoingEmail: Future[OutgoingEmail] = saveEmail(emailFormModified, keyEither)
         outgoingEmail.map { email =>
           Ok(emailPreview(info.status, base64Decode(email.htmlEmailBody),
             controllers.EmailPreviewForm.form.fill(EmailPreviewForm(email.emailId, emailForm))))
@@ -223,8 +225,8 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
 
 
 
-  private def saveEmail(emailForm: ComposeEmailForm)(implicit request: RequestHeader) = {
-    emailService.saveEmail(emailForm)
+  private def saveEmail(emailForm: ComposeEmailForm, keyEither: Either[Result, String])(implicit request: RequestHeader) = {
+    emailService.saveEmail(emailForm, keyEither)
   }
 
   def dataParts(dataPart: Map[String, Seq[String]]): List[DataPart] =
