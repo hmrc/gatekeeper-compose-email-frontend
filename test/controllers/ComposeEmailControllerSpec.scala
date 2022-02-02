@@ -22,7 +22,7 @@ import org.scalatest.matchers.should.Matchers
 import play.api.Play.materializer
 import play.api.http.Status
 import play.api.libs.Files.TemporaryFile
-import play.api.mvc.MultipartFormData
+import play.api.mvc.{MultipartFormData, Result}
 import play.api.test.CSRFTokenHelper._
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
@@ -194,7 +194,7 @@ class ComposeEmailControllerSpec extends ControllerBaseSpec with Matchers with M
       givenTheGKUserIsAuthorisedAndIsANormalUser()
       Given("a valid form containing a valid file with virus")
       class ComposeEmailServiceTestVirusTest extends ComposeEmailServiceTest{
-        override def saveEmail(composeEmailForm: ComposeEmailForm)(implicit hc: HeaderCarrier): Future[OutgoingEmail] =
+        override def saveEmail(composeEmailForm: ComposeEmailForm, key: Either[Result, String])(implicit hc: HeaderCarrier): Future[OutgoingEmail] =
           Future.successful(OutgoingEmail("srinivasalu.munagala@digital.hmrc.gov.uk",
             "Hello", List(""), None,  "*test email body*", "", "", "", None))
 
@@ -227,7 +227,7 @@ class ComposeEmailControllerSpec extends ControllerBaseSpec with Matchers with M
       givenTheGKUserIsAuthorisedAndIsANormalUser()
       Given("a valid form containing a valid file with virus")
       class ComposeEmailServiceTestInvalidFile extends ComposeEmailServiceTest{
-        override def saveEmail(composeEmailForm: ComposeEmailForm)(implicit hc: HeaderCarrier): Future[OutgoingEmail] =
+        override def saveEmail(composeEmailForm: ComposeEmailForm, key: Either[Result, String])(implicit hc: HeaderCarrier): Future[OutgoingEmail] =
           Future.successful(OutgoingEmail("srinivasalu.munagala@digital.hmrc.gov.uk",
             "Hello", List(""), None,  "*test email body*", "", "", "", None))
 

@@ -34,7 +34,7 @@ import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.ws.WSClient
 import play.api.libs.ws.ahc.AhcWSResponse
 import play.api.libs.ws.ahc.cache.{CacheableHttpResponseBodyPart, CacheableHttpResponseStatus}
-import play.api.mvc.MultipartFormData
+import play.api.mvc.{MultipartFormData, Result}
 import play.api.test.CSRFTokenHelper.CSRFFRequestHeader
 import play.api.test.FakeRequest
 import play.api.test.Helpers.{BAD_REQUEST, OK}
@@ -76,7 +76,7 @@ object ComposeEmailControllerSpecHelpers  extends ControllerBaseSpec with Matche
   lazy val httpClient = mock[HttpClient]
 
   class ComposeEmailServiceTest extends ComposeEmailService(mock[GatekeeperEmailConnector]){
-    override def saveEmail(composeEmailForm: ComposeEmailForm)(implicit hc: HeaderCarrier): Future[OutgoingEmail] =
+    override def saveEmail(composeEmailForm: ComposeEmailForm, key: Either[Result, String])(implicit hc: HeaderCarrier): Future[OutgoingEmail] =
       Future.successful(OutgoingEmail("srinivasalu.munagala@digital.hmrc.gov.uk",
         "Hello", List(""), None,  "*test email body*", "", "", "", None))
 
