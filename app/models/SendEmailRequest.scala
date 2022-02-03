@@ -19,9 +19,9 @@ package models
 import controllers.ComposeEmailForm
 import play.api.libs.json.Json
 
-case class EmailData(emailRecipient: String, emailSubject: String, emailBody: String)
+case class EmailData(emailSubject: String, emailBody: String)
 
-case class SendEmailRequest(to: List[String],
+case class SendEmailRequest(to: List[User],
                             templateId: String,
                             emailData: EmailData,
                             force: Boolean = false,
@@ -30,14 +30,24 @@ case class SendEmailRequest(to: List[String],
 
 object SendEmailRequest {
   implicit val emailDataFmt = Json.format[EmailData]
+  implicit val userFmt = Json.format[User]
   implicit val sendEmailRequestFmt = Json.format[SendEmailRequest]
 
-  def createEmailRequest(composeEmailForm: ComposeEmailForm) = {
+  def createEmailRequest(userInfo: List[User]) = {
 
     SendEmailRequest(
-      to = List(composeEmailForm.emailRecipient),
+      to = userInfo,
       templateId = "gatekeeper",
-      EmailData(composeEmailForm.emailRecipient, composeEmailForm.emailSubject, composeEmailForm.emailBody)
+      EmailData("", "")
+    )
+  }
+
+  def updateEmailRequest(composeEmailForm: ComposeEmailForm, user: List[User], keyRef: String) = {
+
+    SendEmailRequest(
+      user,
+      templateId = "gatekeeper",
+      EmailData(composeEmailForm.emailSubject, composeEmailForm.emailBody)
     )
   }
 

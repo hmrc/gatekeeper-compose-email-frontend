@@ -8,4 +8,7 @@ sm --start DATASTREAM AUTH AUTH_LOGIN_API AUTH_LOGIN_STUB TIME_BASED_ONE_TIME_PA
 #sm --start API_PUBLISHER 
 
 
+sm --start UPSCAN_STUB
+sm --start MAILGUN_STUB
+
 ./run_local.sh

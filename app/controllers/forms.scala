@@ -16,16 +16,16 @@
 
 package controllers
 
+import models.User
 import play.api.data.Form
 import play.api.data.Forms.{mapping, text}
 
-case class ComposeEmailForm(emailRecipient: String, emailSubject: String, emailBody: String) {}
+case class ComposeEmailForm(emailSubject: String, emailBody: String) {}
 
 object ComposeEmailForm {
 
   val form: Form[ComposeEmailForm] = Form(
     mapping(
-      "emailRecipient" -> text.verifying("email.recipient.required", _.nonEmpty),
       "emailSubject" -> text.verifying("email.subject.required", _.nonEmpty),
       "emailBody" -> text.verifying("email.body.required", _.nonEmpty)
     )(ComposeEmailForm.apply)(ComposeEmailForm.unapply)
@@ -41,7 +41,6 @@ object EmailPreviewForm {
     mapping(
       "emailId" -> text.verifying("email.id.required", _.nonEmpty),
       "composeEmailForm" -> mapping(
-        "emailRecipient" -> text.verifying("email.recipient.required", _.nonEmpty),
         "emailSubject" -> text.verifying("email.subject.required", _.nonEmpty),
         "emailBody" -> text.verifying("email.body.required", _.nonEmpty)
       )(ComposeEmailForm.apply)(ComposeEmailForm.unapply)

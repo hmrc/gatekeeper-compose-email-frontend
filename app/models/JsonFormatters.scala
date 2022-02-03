@@ -16,13 +16,12 @@
 
 package models
 
-import play.api.libs.json.{Json, OFormat}
+import play.api.libs.json.Json
 
-case class OutgoingEmail(emailId: String, recipientTitle: String, recipients: List[User], attachmentLink: Option[String],
-                         markdownEmailBody: String, htmlEmailBody: String, subject: String,
-                         composedBy: String, approvedBy: Option[String])
+import java.util.UUID
 
-object OutgoingEmail {
-  implicit val userFmt: OFormat[User] = Json.format[User]
-  implicit val emailFmt: OFormat[OutgoingEmail] = Json.format[OutgoingEmail]
+object JsonFormatters {
+  //implicit val uuid = Json.format[UUID]
+  implicit val formatUser = Json.format[User]
+
 }

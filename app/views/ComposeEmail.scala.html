@@ -17,10 +17,10 @@
 @import config.AppConfig
 @import include._
 @import services._
-
+@import models._
 @this(layout: Layout)
 
-@(upscanInitiateResponse : UpscanInitiateResponse, form: Form[ComposeEmailForm])(implicit request: Request[_], messages: Messages, appConfig: AppConfig)
+@(upscanInitiateResponse : UpscanInitiateResponse, emailId: String, form: Form[ComposeEmailForm])(implicit request: Request[_], messages: Messages, appConfig: AppConfig)
 
 @layout(pageTitle = Some(s"${appConfig.title} - Compose Email")) {
   @errorSummary(form)
@@ -28,15 +28,6 @@
   <h1 class="govuk-heading-xl">Compose email</h1>
 @helper.form(routes.ComposeEmailController.upload, Symbol("enctype") -> "multipart/form-data") {
   @helper.CSRF.formField
-  <div class="govuk-form-group @if(form.errors("emailRecipient").nonEmpty) {govuk-form-group--error}">
-    <h1 class="govuk-label-wrapper"><label class="govuk-label govuk-label--l" for="email-recipient">
-      Email recipient
-    </label>
-    </h1>
-    @fieldError(form.errors, "emailRecipient")
-    <input class="govuk-input" id="emailRecipient" name="emailRecipient" type="text"
-           placeholder="muriel.heslop@@porpoisespit.com.au" value="@form.data.getOrElse("emailRecipient", "")">
-  </div>
 
   <div class="govuk-form-group @if(form.errors("emailSubject").nonEmpty) {govuk-form-group--error}">
     <h1 class="govuk-label-wrapper"><label class="govuk-label govuk-label--l" for="email-subject">
@@ -64,6 +55,7 @@
     @for(field <- upscanInitiateResponse.formFields) {
     <input type="hidden" name="@field._1" value="@field._2"/>
     }
+    <input type="hidden" name="emailId" value="@emailId"/>
     <input type="hidden" name="upscan-url" value="@upscanInitiateResponse.postTarget" />
 
     <div class="govuk-form-group govuk-!-margin-top-6">

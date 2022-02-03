@@ -35,6 +35,8 @@ import utils.Implicits.Base64StringOps
 import views.html.{ComposeEmail, EmailSentConfirmation}
 
 import scala.concurrent.Future
+import models.JsonFormatters._
+import play.api.libs.json.Json
 
 class ComposeEmailControllerSpec extends ControllerBaseSpec with Matchers with MockitoSugar with ArgumentMatchersSugar {
 
@@ -69,6 +71,24 @@ class ComposeEmailControllerSpec extends ControllerBaseSpec with Matchers with M
     val controller = buildController(mockGateKeeperService, mockedProxyRequestor, mockAuthConnector)
   }
 
+  "POST /users" should {
+    "unmarshal the request body" in new Setup {
+      val composeEmailRecipients = """[{"email":"neil.frow@digital.hmrc.gov.uk", "userId":"d8efe602-3ba4-434e-a547-07bba424797f", "firstName":"Neil","lastName":"Frow","verified":true, "organisation": "HMRC", "mfaEnabled":false}]""".stripMargin
+      givenTheGKUserIsAuthorisedAndIsANormalUser()
+      val fakeRequest = FakeRequest("POST", "/process-recipients ")
+        .withSession(csrfToken, authToken, userToken)
+        .withFormUrlEncodedBody("email-recipients" -> composeEmailRecipients)
+        .withCSRFToken
+      val result = controller.processRecipients()(fakeRequest)
+      status(result) shouldBe SEE_OTHER
+      redirectLocation(result) shouldBe Some("/api-gatekeeper/compose-email/email")
+      session(result).isEmpty shouldBe false
+      val recipientsAsJson = Json.parse(session(result).get("emailRecipients").get)
+      val su = Seq(User("sawd", "efef", "eff", "efef", true, "efefe", false),
+        User("s2", "e2", "eff2", "efef2", true, "efefe2", false))
+      recipientsAsJson shouldNot be (null)
+    }
+  }
   "GET /email" should {
     "return 200" in new Setup {
       givenTheGKUserIsAuthorisedAndIsANormalUser()

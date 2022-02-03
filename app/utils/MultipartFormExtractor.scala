@@ -17,6 +17,7 @@
 package utils
 
 import controllers.ComposeEmailForm
+import models.User
 import utils.UploadProxyController._
 import play.api.libs.Files.TemporaryFile
 import play.api.libs.json.Json
@@ -63,10 +64,9 @@ object MultipartFormExtractor {
     extractSingletonFormValue(UpscanUrl, multiPartFormData)
 
   def extractComposeEmailForm(multiPartFormData: MultipartFormData[TemporaryFile]): ComposeEmailForm = {
-    val to = extractSingletonFormValue(EmailRecipient, multiPartFormData)
     val subject = extractSingletonFormValue(EmailSubject, multiPartFormData)
     val body = extractSingletonFormValue(EmailBody, multiPartFormData)
-    ComposeEmailForm(to.get, subject.get, body.get)
+    ComposeEmailForm(subject.get, body.get)
   }
   def extractUpscanInitiateResponse(multiPartFormData: MultipartFormData[TemporaryFile]): UpscanInitiateResponse = {
     val keyName = UpscanFileReference(extractSingletonFormValue(KeyName, multiPartFormData).get)

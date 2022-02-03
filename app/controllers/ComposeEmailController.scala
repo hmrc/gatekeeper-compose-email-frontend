@@ -39,6 +39,8 @@ import java.nio.file.Path
 import java.util.Base64
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
+import models.JsonFormatters._
+import play.api.libs.json.Json
 
 @Singleton
 class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
@@ -55,10 +57,28 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
   extends FrontendController(mcc) with GatekeeperAuthWrapper with Logging {
 
   def email: Action[AnyContent] = requiresAtLeast(GatekeeperRole.USER) { implicit request =>
+    logger.info(s"""Session cookie has for value 'emailRecipients': ${request.session.get("emailRecipients")}""")
+    val userDetails = if(request.session.get("emailRecipients").isDefined){
+      val json = Json.parse(request.session.get("emailRecipients").get)
+      logger.info(s"JSValue is ****************************** ${json}")
+      //Some(json.as[List[User]])
+    }
+    else {
+      None
+    }
+    val users = List(User("srinivasalu.munagala@digital.hmrc.gov.uk", "Srinivasalu", "munagala", true),
+      User("siva.isikella@digital.hmrc.gov.uk", "siva", "isikella", true))
+    logger.info(s"*******---> UserDetails are: $userDetails")
     for {
       upscanInitiateResponse <- upscanInitiateConnector.initiateV2(None, None)
       _ <- emailService.inProgressUploadStatus(upscanInitiateResponse.fileReference.reference)
-    } yield Ok(composeEmail(upscanInitiateResponse, controllers.ComposeEmailForm.form.fill(ComposeEmailForm("","",""))))
+      email <- emailService.saveEmail(ComposeEmailForm("", ""), upscanInitiateResponse.fileReference.reference, users)
+    } yield Ok(composeEmail(upscanInitiateResponse, email.emailId, controllers.ComposeEmailForm.form.fill(ComposeEmailForm("",""))))
+  }
+
+  def processRecipients: Action[AnyContent] =  Action.async { implicit request =>
+    val emailRecipients: String = Json.stringify(Json.toJson(request.body.asFormUrlEncoded.map(p => p.get("email-recipients"))))
+    Future.successful(Redirect("/api-gatekeeper/compose-email/email").addingToSession("emailRecipients" -> emailRecipients))
   }
 
   def sentEmailConfirmation: Action[AnyContent] = requiresAtLeast(GatekeeperRole.USER) {
@@ -85,7 +105,7 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
       def handleInvalidForm(formWithErrors: Form[ComposeEmailForm]) = {
         logger.warn(s"Error in form: ${formWithErrors.errors}")
         val upscanInitiateResponse = MultipartFormExtractor.extractUpscanInitiateResponse(request.body)
-        Future.successful(BadRequest(composeEmail(upscanInitiateResponse, formWithErrors)))
+        Future.successful(BadRequest(composeEmail(upscanInitiateResponse, "", formWithErrors)))
       }
       ComposeEmailForm.form.bindFromRequest.fold(handleInvalidForm(_), handleValidForm(_))
   }
@@ -124,7 +144,11 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
                                 keyEither: Either[Result, String])
                                (implicit requestHeader: RequestHeader, request: Request[_]): Future[Result] = {
     val emailForm: ComposeEmailForm = MultipartFormExtractor.extractComposeEmailForm(body)
-    val outgoingEmail: Future[OutgoingEmail] = saveEmail(emailForm, keyEither)
+    //fetch email UID Here
+    val emailUID: String = "fetch from form body part"
+    val fetchEmail: Future[OutgoingEmail] = emailService.fetchEmail(emailUID)
+    val outgoingEmail: Future[OutgoingEmail] = fetchEmail.flatMap(user =>
+      emailService.updateEmail(emailForm, emailUID, user.recipients,keyEither.getOrElse("")))
     outgoingEmail.map {  email =>
       Ok(emailPreview(UploadedSuccessfully("", "", "", None, ""), base64Decode(email.htmlEmailBody),
         controllers.EmailPreviewForm.form.fill(EmailPreviewForm(email.emailId, emailForm))))
@@ -198,7 +222,11 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
     val emailForm: ComposeEmailForm = MultipartFormExtractor.extractComposeEmailForm(body)
 
     if(errResp.isDefined) {
-      val outgoingEmail: Future[OutgoingEmail] = saveEmail(emailForm, keyEither)
+      val emailUID: String = "fetch from form body part"
+      val fetchEmail: Future[OutgoingEmail] = emailService.fetchEmail(emailUID)
+      val outgoingEmail: Future[OutgoingEmail] = fetchEmail.flatMap(user =>
+        emailService.updateEmail(emailForm, emailUID, user.recipients,keyEither.getOrElse("")))
+      //val outgoingEmail: Future[OutgoingEmail] = saveEmail(emailForm, keyEither.getOrElse(""))
       val errorPath = outgoingEmail.map { email =>
         val errorResponse = errResp.get
         Ok(fileChecksPreview(errorResponse.errorMessage, base64Decode(email.htmlEmailBody),
@@ -213,7 +241,10 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
           case s: UploadedSuccessfully => emailForm.copy(emailBody = emailForm.emailBody + s"\n\n Attachment URL: **[${s.name}](${s.downloadUrl})**" )
           case _ => emailForm
         }
-        val outgoingEmail: Future[OutgoingEmail] = saveEmail(emailFormModified, keyEither)
+        val emailUID: String = "fetch from form body part"
+        val fetchEmail: Future[OutgoingEmail] = emailService.fetchEmail(emailUID)
+        val outgoingEmail: Future[OutgoingEmail] = fetchEmail.flatMap(user =>
+          emailService.updateEmail(emailForm, emailUID, user.recipients,keyEither.getOrElse("")))
         outgoingEmail.map { email =>
           Ok(emailPreview(info.status, base64Decode(email.htmlEmailBody),
             controllers.EmailPreviewForm.form.fill(EmailPreviewForm(email.emailId, emailForm))))
@@ -223,11 +254,6 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
     }
   }
 
-
-
-  private def saveEmail(emailForm: ComposeEmailForm, keyEither: Either[Result, String])(implicit request: RequestHeader) = {
-    emailService.saveEmail(emailForm, keyEither)
-  }
 
   def dataParts(dataPart: Map[String, Seq[String]]): List[DataPart] =
     dataPart.flatMap { case (header, body) => body.map(DataPart(header, _)) }.toList
