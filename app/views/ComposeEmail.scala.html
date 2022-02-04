@@ -57,7 +57,7 @@
     <div id="email-body-hint" class="govuk-hint">
       Supports some markdown: this, that, and the other
     </div>
-    <textarea class="govuk-textarea dynamic-text-area" id="emailBody" name="emailBody" rows="8" oninput="auto_grow(this)"
+    <textarea class="govuk-textarea dynamic-text-area" id="emailBody" name="emailBody" style="min-height: 226px;" rows="8" oninput="auto_grow(this)"
               aria-describedby="email-body-hint">@form.data.getOrElse("emailBody", "")</textarea>
   </div>
 

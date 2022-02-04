@@ -35,12 +35,6 @@
 @(pageTitle: Option[String] = None,
         scriptsBlock: Option[Html] = None)(contentBlock: Html)(implicit request: Request[_], messages: Messages)
 
-@head = {
-<!--    <link rel="shortcut icon" href='@routes.Assets.versioned("/lib/govuk-frontend/govuk/assets/images/favicon.ico")' type="image/x-icon" />-->
-<!--    <link rel="shortcut icon" href='@routes.Assets.versioned("lib/accessible-autocomplete/dist/accessible-autocomplete.min.css")' rel="stylesheet" type="text/css" />-->
-<!--    <meta name="format-detection" content="telephone=no" />-->
-    <link href='@controllers.routes.Assets.versioned("stylesheets/application.css")' rel="stylesheet" />
-}
 
 @govukLayout(
  pageTitle = pageTitle,
