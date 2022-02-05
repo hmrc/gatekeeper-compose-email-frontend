@@ -55,7 +55,7 @@
     @for(field <- upscanInitiateResponse.formFields) {
     <input type="hidden" name="@field._1" value="@field._2"/>
     }
-    <input type="hidden" name="emailId" value="@emailId"/>
+    <input type="hidden" name="emailUID" value="@emailId"/>
     <input type="hidden" name="upscan-url" value="@upscanInitiateResponse.postTarget" />
 
     <div class="govuk-form-group govuk-!-margin-top-6">

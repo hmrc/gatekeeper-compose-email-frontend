@@ -73,7 +73,7 @@ object MultipartFormExtractor {
     val postTarget = extractUpscanUrl(multiPartFormData).get
     UpscanInitiateResponse(keyName, postTarget, multiPartFormData.dataParts.mapValues(_(0)))
   }
-  private def extractSingletonFormValue(
+  def extractSingletonFormValue(
                                          key: String,
                                          multiPartFormData: MultipartFormData[TemporaryFile]): Option[String] =
     multiPartFormData.dataParts

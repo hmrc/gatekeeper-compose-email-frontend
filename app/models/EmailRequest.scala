@@ -21,21 +21,21 @@ import play.api.libs.json.Json
 
 case class EmailData(emailSubject: String, emailBody: String)
 
-case class SendEmailRequest(to: List[User],
-                            templateId: String,
-                            emailData: EmailData,
-                            force: Boolean = false,
-                            auditData: Map[String, String] = Map.empty,
-                            eventUrl: Option[String] = None)
+case class EmailRequest(to: List[User],
+                        templateId: String,
+                        emailData: EmailData,
+                        force: Boolean = false,
+                        auditData: Map[String, String] = Map.empty,
+                        eventUrl: Option[String] = None)
 
-object SendEmailRequest {
+object EmailRequest {
   implicit val emailDataFmt = Json.format[EmailData]
   implicit val userFmt = Json.format[User]
-  implicit val sendEmailRequestFmt = Json.format[SendEmailRequest]
+  implicit val sendEmailRequestFmt = Json.format[EmailRequest]
 
   def createEmailRequest(userInfo: List[User]) = {
 
-    SendEmailRequest(
+    EmailRequest(
       to = userInfo,
       templateId = "gatekeeper",
       EmailData("", "")
@@ -44,7 +44,7 @@ object SendEmailRequest {
 
   def updateEmailRequest(composeEmailForm: ComposeEmailForm, user: List[User], keyRef: String) = {
 
-    SendEmailRequest(
+    EmailRequest(
       user,
       templateId = "gatekeeper",
       EmailData(composeEmailForm.emailSubject, composeEmailForm.emailBody)

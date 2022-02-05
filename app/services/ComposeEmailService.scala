@@ -19,7 +19,7 @@ package services
 import connectors.GatekeeperEmailConnector
 import controllers.{ComposeEmailForm, EmailPreviewForm}
 import models.{OutgoingEmail, UploadInfo, User}
-import models.SendEmailRequest.createEmailRequest
+import models.EmailRequest.createEmailRequest
 import play.api.mvc.Result
 import uk.gov.hmrc.http.HeaderCarrier
 
@@ -33,8 +33,8 @@ class ComposeEmailService @Inject()(emailConnector: GatekeeperEmailConnector)
     emailConnector.saveEmail(composeEmailForm, userInfo, key)
   }
 
-  def fetchEmail(emailId: String)(implicit hc: HeaderCarrier): Future[OutgoingEmail] = {
-    emailConnector.fetchEmail(emailId)
+  def fetchEmail(emailUID: String)(implicit hc: HeaderCarrier): Future[OutgoingEmail] = {
+    emailConnector.fetchEmail(emailUID)
   }
 
   def updateEmail(composeEmailForm: ComposeEmailForm, emailUID: String, users: List[User], key: String)(implicit hc: HeaderCarrier): Future[OutgoingEmail] = {

@@ -73,7 +73,7 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
       upscanInitiateResponse <- upscanInitiateConnector.initiateV2(None, None)
       _ <- emailService.inProgressUploadStatus(upscanInitiateResponse.fileReference.reference)
       email <- emailService.saveEmail(ComposeEmailForm("", ""), upscanInitiateResponse.fileReference.reference, users)
-    } yield Ok(composeEmail(upscanInitiateResponse, email.emailId, controllers.ComposeEmailForm.form.fill(ComposeEmailForm("",""))))
+    } yield Ok(composeEmail(upscanInitiateResponse, email.emailUID, controllers.ComposeEmailForm.form.fill(ComposeEmailForm("",""))))
   }
 
   def processRecipients: Action[AnyContent] =  Action.async { implicit request =>
@@ -145,13 +145,14 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
                                (implicit requestHeader: RequestHeader, request: Request[_]): Future[Result] = {
     val emailForm: ComposeEmailForm = MultipartFormExtractor.extractComposeEmailForm(body)
     //fetch email UID Here
-    val emailUID: String = "fetch from form body part"
+    val emailUID: String = MultipartFormExtractor.extractSingletonFormValue("emailUID", body).getOrElse("")
+    logger.info(s"************>>>>>>> emailUID is $emailUID")
     val fetchEmail: Future[OutgoingEmail] = emailService.fetchEmail(emailUID)
     val outgoingEmail: Future[OutgoingEmail] = fetchEmail.flatMap(user =>
       emailService.updateEmail(emailForm, emailUID, user.recipients,keyEither.getOrElse("")))
     outgoingEmail.map {  email =>
       Ok(emailPreview(UploadedSuccessfully("", "", "", None, ""), base64Decode(email.htmlEmailBody),
-        controllers.EmailPreviewForm.form.fill(EmailPreviewForm(email.emailId, emailForm))))
+        controllers.EmailPreviewForm.form.fill(EmailPreviewForm(email.emailUID, emailForm))))
     }
   }
 
@@ -230,7 +231,7 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
       val errorPath = outgoingEmail.map { email =>
         val errorResponse = errResp.get
         Ok(fileChecksPreview(errorResponse.errorMessage, base64Decode(email.htmlEmailBody),
-          controllers.EmailPreviewForm.form.fill(EmailPreviewForm(email.emailId, emailForm))))
+          controllers.EmailPreviewForm.form.fill(EmailPreviewForm(email.emailUID, emailForm))))
       }
       errorPath
     }
@@ -247,7 +248,7 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
           emailService.updateEmail(emailForm, emailUID, user.recipients,keyEither.getOrElse("")))
         outgoingEmail.map { email =>
           Ok(emailPreview(info.status, base64Decode(email.htmlEmailBody),
-            controllers.EmailPreviewForm.form.fill(EmailPreviewForm(email.emailId, emailForm))))
+            controllers.EmailPreviewForm.form.fill(EmailPreviewForm(email.emailUID, emailForm))))
         }
       }
       result

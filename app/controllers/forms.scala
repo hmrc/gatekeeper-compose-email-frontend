@@ -33,7 +33,7 @@ object ComposeEmailForm {
 }
 
 
-case class EmailPreviewForm(emailId: String, composeEmailForm: ComposeEmailForm) {}
+case class EmailPreviewForm(emailUID: String, composeEmailForm: ComposeEmailForm) {}
 
 object EmailPreviewForm {
 
