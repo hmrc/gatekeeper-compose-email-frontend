@@ -36,7 +36,7 @@ import utils.{ErrorAction, GatekeeperAuthWrapper, MultipartFormExtractor, ProxyR
 import views.html._
 
 import java.nio.file.Path
-import java.util.Base64
+import java.util.{Base64, UUID}
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 import models.JsonFormatters._
@@ -69,10 +69,11 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
     val users = List(User("srinivasalu.munagala@digital.hmrc.gov.uk", "Srinivasalu", "munagala", true),
       User("siva.isikella@digital.hmrc.gov.uk", "siva", "isikella", true))
     logger.info(s"*******---> UserDetails are: $userDetails")
+    val emailUID = UUID.randomUUID().toString
     for {
       upscanInitiateResponse <- upscanInitiateConnector.initiateV2(None, None)
       _ <- emailService.inProgressUploadStatus(upscanInitiateResponse.fileReference.reference)
-      email <- emailService.saveEmail(ComposeEmailForm("", ""), upscanInitiateResponse.fileReference.reference, users)
+      email <- emailService.saveEmail(ComposeEmailForm("", ""), emailUID, upscanInitiateResponse.fileReference.reference, users)
     } yield Ok(composeEmail(upscanInitiateResponse, email.emailUID, controllers.ComposeEmailForm.form.fill(ComposeEmailForm("",""))))
   }
 

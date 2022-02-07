@@ -36,8 +36,8 @@ class GatekeeperEmailConnector @Inject()(http: HttpClient, config: EmailConnecto
   val api = API("gatekeeper-email")
   lazy val serviceUrl = config.emailBaseUrl
 
-  def saveEmail(composeEmailForm: ComposeEmailForm, userInfo: List[User], keyReference: String)(implicit hc: HeaderCarrier): Future[OutgoingEmail] = {
-    postSaveEmail(createEmailRequest(userInfo), keyReference)
+  def saveEmail(composeEmailForm: ComposeEmailForm, emailUID: String, userInfo: List[User], keyReference: String)(implicit hc: HeaderCarrier): Future[OutgoingEmail] = {
+    postSaveEmail(createEmailRequest(userInfo), emailUID, keyReference)
   }
 
   def updateEmail(composeEmailForm: ComposeEmailForm, emailUID: String, users: List[User], keyReference: String)(implicit hc: HeaderCarrier): Future[OutgoingEmail] = {
@@ -53,8 +53,8 @@ class GatekeeperEmailConnector @Inject()(http: HttpClient, config: EmailConnecto
     http.POSTEmpty[OutgoingEmail](s"$serviceUrl/gatekeeper-email/send-email/${emailPreviewForm.emailUID}")
   }
 
-  private def postSaveEmail(request: EmailRequest, keyReference: String)(implicit hc: HeaderCarrier) = {
-    http.POST[EmailRequest, Either[UpstreamErrorResponse, OutgoingEmail]](s"$serviceUrl/gatekeeper-email/save-email?key=$keyReference", request)
+  private def postSaveEmail(request: EmailRequest, emailUID: String, keyReference: String)(implicit hc: HeaderCarrier) = {
+    http.POST[EmailRequest, Either[UpstreamErrorResponse, OutgoingEmail]](s"$serviceUrl/gatekeeper-email/save-email?emailUID=$emailUID&key=$keyReference", request)
       .map {
         case resp@Right(_) => resp.right.get
         case Left(err) => throw err
