@@ -39,7 +39,7 @@ object EmailPreviewForm {
 
   val form: Form[EmailPreviewForm] = Form(
     mapping(
-      "emailId" -> text.verifying("email.id.required", _.nonEmpty),
+      "emailUID" -> text.verifying("email.uid.required", _.nonEmpty),
       "composeEmailForm" -> mapping(
         "emailSubject" -> text.verifying("email.subject.required", _.nonEmpty),
         "emailBody" -> text.verifying("email.body.required", _.nonEmpty)

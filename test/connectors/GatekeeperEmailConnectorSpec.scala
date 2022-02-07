@@ -23,6 +23,7 @@ import com.github.tomakehurst.wiremock.core.WireMockConfiguration._
 import common.AsyncHmrcSpec
 import config.EmailConnectorConfig
 import controllers.{ComposeEmailForm, EmailPreviewForm}
+import models.User
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.http.Status.{BAD_REQUEST, NOT_FOUND, OK}
@@ -56,10 +57,10 @@ class GatekeeperEmailConnectorSpec extends AsyncHmrcSpec with BeforeAndAfterEach
   val gatekeeperLink = "http://some.url"
   val emailAddress = "email@example.com"
   val subject = "Email subject"
-  val emailId = "email-uuid"
+  val emailUID = "email-uuid"
   val keyRef = "file-key"
-  val emailSendServicePath = s"/gatekeeper-email/send-email/$emailId"
-  val emailSaveServicePath = s"/gatekeeper-email/save-email?key=$keyRef"
+  val emailSendServicePath = s"/gatekeeper-email/send-email/$emailUID"
+  val emailSaveServicePath = s"/gatekeeper-email/save-email?emailUID=$emailUID&key=$keyRef"
   val inProgressUploadStatusUrl = s"/gatekeeperemail/insertfileuploadstatus?key=$keyRef"
   val fetchProgressUploadStatusUrl = s"/gatekeeperemail/fetchfileuploadstatus?key=$keyRef"
   val emailBody = "Body to be used in the email template"
@@ -75,8 +76,10 @@ class GatekeeperEmailConnectorSpec extends AsyncHmrcSpec with BeforeAndAfterEach
     implicit val hc = HeaderCarrier()
 
     lazy val underTest = new GatekeeperEmailConnector(httpClient, fakeEmailConnectorConfig)
-    val composeEmailForm: ComposeEmailForm = ComposeEmailForm(emailAddress, subject, emailBody)
-    val emailPreviewForm: EmailPreviewForm = EmailPreviewForm(emailId, composeEmailForm)
+    val composeEmailForm: ComposeEmailForm = ComposeEmailForm(subject, emailBody)
+    val emailPreviewForm: EmailPreviewForm = EmailPreviewForm(emailUID, composeEmailForm)
+    val users = List(User("example@example.com", "first name", "last name", true),
+      User("example2@example2.com", "first name2", "last name2", true))
   }
 
   trait WorkingHttp {
@@ -85,9 +88,9 @@ class GatekeeperEmailConnectorSpec extends AsyncHmrcSpec with BeforeAndAfterEach
     val outgoingEmail =
       s"""
          |  {
-         |    "emailId": "$emailId",
+         |    "emailUID": "$emailUID",
          |    "recipientTitle": "Team-Title",
-         |    "recipients": [""],
+         |    "recipients": [{"email": "", "firstName": "", "lastName": "", "verified": true}],
          |    "attachmentLink": "",
          |    "markdownEmailBody": "",
          |    "htmlEmailBody": "",
@@ -103,6 +106,7 @@ class GatekeeperEmailConnectorSpec extends AsyncHmrcSpec with BeforeAndAfterEach
          |}
          |
       """.stripMargin
+
     stubFor(post(urlEqualTo(emailSendServicePath)).willReturn(aResponse()
       .withHeader("Content-type", "application/json")
       .withBody(outgoingEmail)
@@ -142,20 +146,6 @@ class GatekeeperEmailConnectorSpec extends AsyncHmrcSpec with BeforeAndAfterEach
     "fail to send gatekeeper email" in new Setup with FailingHttp {
       intercept[UpstreamErrorResponse] {
         await(underTest.sendEmail(emailPreviewForm))
-      }
-    }
-
-    "save gatekeeper email" in new Setup with WorkingHttp {
-      await(underTest.saveEmail(composeEmailForm, "file-key"))
-
-      wireMockVerify(1, postRequestedFor(
-        urlEqualTo(emailSaveServicePath))
-      )
-    }
-
-    "fail to save gatekeeper email" in new Setup with FailingHttp {
-      intercept[UpstreamErrorResponse] {
-        await(underTest.saveEmail(composeEmailForm, "file-key"))
       }
     }
 

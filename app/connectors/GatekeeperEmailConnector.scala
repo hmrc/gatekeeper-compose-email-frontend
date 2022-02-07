@@ -37,7 +37,7 @@ class GatekeeperEmailConnector @Inject()(http: HttpClient, config: EmailConnecto
   lazy val serviceUrl = config.emailBaseUrl
 
   def saveEmail(composeEmailForm: ComposeEmailForm, emailUID: String, userInfo: List[User], keyReference: String)(implicit hc: HeaderCarrier): Future[OutgoingEmail] = {
-    postSaveEmail(createEmailRequest(userInfo), emailUID, keyReference)
+    postSaveEmail(createEmailRequest(composeEmailForm, userInfo), emailUID, keyReference)
   }
 
   def updateEmail(composeEmailForm: ComposeEmailForm, emailUID: String, users: List[User], keyReference: String)(implicit hc: HeaderCarrier): Future[OutgoingEmail] = {

@@ -24,7 +24,7 @@ import connectors.{AuthConnector, GatekeeperEmailConnector, PreparedUpload, Uplo
 import controllers.{ComposeEmailController, ComposeEmailForm, ControllerSetupBase}
 import mocks.TestRoles.userRole
 import mocks.connector.AuthConnectorMock
-import models.{GatekeeperRole, InProgress, OutgoingEmail, Reference, UploadInfo, UploadedSuccessfully}
+import models.{GatekeeperRole, InProgress, OutgoingEmail, Reference, UploadInfo, UploadedSuccessfully, User}
 import org.mockito.{ArgumentMatchersSugar, MockitoSugar}
 import org.mockito.MockitoSugar.mock
 import org.scalatest.GivenWhenThen
@@ -74,12 +74,20 @@ object ComposeEmailControllerSpecHelpers  extends ControllerBaseSpec with Matche
   lazy val emailSentTemplateView = app.injector.instanceOf[EmailSentConfirmation]
   lazy val fileChecksPreview: FileSizeMimeChecks = app.injector.instanceOf[FileSizeMimeChecks]
   lazy val httpClient = mock[HttpClient]
+  val su = List(User("sawd", "efef", "eff", true))
 
   class ComposeEmailServiceTest extends ComposeEmailService(mock[GatekeeperEmailConnector]){
-    override def saveEmail(composeEmailForm: ComposeEmailForm, key: Either[Result, String])(implicit hc: HeaderCarrier): Future[OutgoingEmail] =
+    override def saveEmail(composeEmailForm: ComposeEmailForm, emailUID: String,  key: String, userInfo: List[User])(implicit hc: HeaderCarrier): Future[OutgoingEmail] =
       Future.successful(OutgoingEmail("srinivasalu.munagala@digital.hmrc.gov.uk",
-        "Hello", List(""), None,  "*test email body*", "", "", "", None))
-
+        "Hello", su, None,  "*test email body*", "", "", "", None))
+    override def fetchEmail(emailUID: String)(implicit hc: HeaderCarrier): Future[OutgoingEmail] = {
+      Future.successful(OutgoingEmail("srinivasalu.munagala@digital.hmrc.gov.uk",
+        "Hello", su, None,  "*test email body*", "", "", "", None))
+    }
+    override def updateEmail(composeEmailForm: ComposeEmailForm, emailUID: String, users: List[User], key: String)(implicit hc: HeaderCarrier): Future[OutgoingEmail] = {
+      Future.successful(OutgoingEmail("srinivasalu.munagala@digital.hmrc.gov.uk",
+        "Hello", su, None,  "*test email body*", "", "", "", None))
+    }
     override def fetchFileuploadStatus(key: String)(implicit hc: HeaderCarrier): Future[UploadInfo] =
       Future.successful(UploadInfo(Reference("fileReference"),
         UploadedSuccessfully("text-to-upload.txt", "txt", "http://localhost/text-to-upload.txt", None, "gatekeeper-email/text-to-upload.txt")))

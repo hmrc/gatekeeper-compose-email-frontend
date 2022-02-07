@@ -55,9 +55,9 @@ class EmailPreviewControllerSpec extends ControllerBaseSpec with Matchers {
     val outgoingEmail =
       s"""
          |  {
-         |    "emailId": "emailId",
+         |    "emailUID": "emailId",
          |    "recipientTitle": "Team-Title",
-         |    "recipients": [""],
+         |    "recipients": [{"email": "", "firstName": "", "lastName": "", "verified": true}],
          |    "attachmentLink": "",
          |    "markdownEmailBody": "",
          |    "htmlEmailBody": "",
@@ -90,15 +90,15 @@ class EmailPreviewControllerSpec extends ControllerBaseSpec with Matchers {
 
     "send an email upon receiving a valid form submission" in new Setup {
       val fakeRequest = FakeRequest("POST", "/send-email")
-        .withFormUrlEncodedBody("emailId"->"emailId", "composeEmailForm.emailSubject"->"emailSubject",
-          "composeEmailForm.emailBody"->"emailBody", "composeEmailForm.emailRecipient"->"emailRecipient")
+        .withFormUrlEncodedBody("emailUID"->"emailId", "composeEmailForm.emailSubject"->"emailSubject",
+          "composeEmailForm.emailBody"->"emailBody")
       val result = controller.sendEmail()(fakeRequest)
       status(result) shouldBe Status.SEE_OTHER
     }
 
     "send an email upon receiving an invalid form submission" in new Setup {
       val fakeRequest = FakeRequest("POST", "/send-email")
-        .withFormUrlEncodedBody("emailId"->"emailId")
+        .withFormUrlEncodedBody("emailUID"->"emailId")
       val result = controller.sendEmail()(fakeRequest)
       status(result) shouldBe Status.BAD_REQUEST
     }
@@ -108,8 +108,8 @@ class EmailPreviewControllerSpec extends ControllerBaseSpec with Matchers {
 
     "edit email submits valid form to compose email" in new Setup {
       val fakeRequest = FakeRequest("POST", "/edit-email")
-        .withFormUrlEncodedBody("emailId"->"emailId", "composeEmailForm.emailSubject"->"emailSubject",
-          "composeEmailForm.emailBody"->"emailBody", "composeEmailForm.emailRecipient"->"emailRecipient")
+        .withFormUrlEncodedBody("emailUID"->"emailId", "composeEmailForm.emailSubject"->"emailSubject",
+          "composeEmailForm.emailBody"->"emailBody")
         .withSession(csrfToken, authToken, userToken).withCSRFToken
 
       val result = controller.editEmail()(fakeRequest)
@@ -118,7 +118,7 @@ class EmailPreviewControllerSpec extends ControllerBaseSpec with Matchers {
 
     "edit email submits invalid form to compose email" in new Setup {
       val fakeRequest = FakeRequest("POST", "/edit-email")
-        .withFormUrlEncodedBody("emailId"->"emailId")
+        .withFormUrlEncodedBody("emailUID"->"emailId")
         .withSession(csrfToken, authToken, userToken).withCSRFToken
 
       val result = controller.editEmail()(fakeRequest)

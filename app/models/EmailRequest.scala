@@ -33,12 +33,12 @@ object EmailRequest {
   implicit val userFmt = Json.format[User]
   implicit val sendEmailRequestFmt = Json.format[EmailRequest]
 
-  def createEmailRequest(userInfo: List[User]) = {
+  def createEmailRequest(form: ComposeEmailForm,userInfo: List[User]) = {
 
     EmailRequest(
       to = userInfo,
       templateId = "gatekeeper",
-      EmailData("", "")
+      EmailData(form.emailSubject, form.emailBody)
     )
   }
 

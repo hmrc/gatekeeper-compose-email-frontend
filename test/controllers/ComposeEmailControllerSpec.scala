@@ -41,6 +41,8 @@ import play.api.libs.json.Json
 class ComposeEmailControllerSpec extends ControllerBaseSpec with Matchers with MockitoSugar with ArgumentMatchersSugar {
 
   trait Setup extends ControllerSetupBase {
+    val su = List(User("sawd", "efef", "eff", true))
+
     lazy val mockGatekeeperEmailService = mock[ComposeEmailService]
     val csrfToken: (String, String) = "csrfToken" -> app.injector.instanceOf[TokenProvider].generateToken
 
@@ -65,7 +67,7 @@ class ComposeEmailControllerSpec extends ControllerBaseSpec with Matchers with M
       "emailRecipient"          -> Seq("srinivasalu.munagala@digital.hmrc.gov.uk"),
       "upscan-url"              -> Seq("http://upscan-s3/")
     )
-    val composeEmailForm: ComposeEmailForm = ComposeEmailForm("fsadfas%40adfas.com", "dfasd", "asdfasf")
+    val composeEmailForm: ComposeEmailForm = ComposeEmailForm("dfasd", "asdfasf")
     val composeEmail: ComposeEmail = fakeApplication.injector.instanceOf[ComposeEmail]
     val emailSentConfirmation: EmailSentConfirmation = fakeApplication.injector.instanceOf[EmailSentConfirmation]
     val controller = buildController(mockGateKeeperService, mockedProxyRequestor, mockAuthConnector)
@@ -84,8 +86,6 @@ class ComposeEmailControllerSpec extends ControllerBaseSpec with Matchers with M
       redirectLocation(result) shouldBe Some("/api-gatekeeper/compose-email/email")
       session(result).isEmpty shouldBe false
       val recipientsAsJson = Json.parse(session(result).get("emailRecipients").get)
-      val su = Seq(User("sawd", "efef", "eff", "efef", true, "efefe", false),
-        User("s2", "e2", "eff2", "efef2", true, "efefe2", false))
       recipientsAsJson shouldNot be (null)
     }
   }
@@ -143,20 +143,6 @@ class ComposeEmailControllerSpec extends ControllerBaseSpec with Matchers with M
 
 
   "POST /upload" should {
-    "reject a form submission with missing emailRecipient" in new Setup {
-      givenTheGKUserIsAuthorisedAndIsANormalUser()
-      val formDataBody = new MultipartFormData[TemporaryFile](
-        dataParts.filter(x => x._1 != "emailRecipient") + ("emailRecipient" -> Seq("")),
-        files    = Seq(),
-        badParts = Nil
-      )
-      val uploadRequest = FakeRequest().withBody(formDataBody).withCSRFToken
-
-      val result = controller.upload()(uploadRequest)
-      status(result) shouldBe BAD_REQUEST
-      verifyAuthConnectorCalledForUser
-      verifyZeroInteractions(mockGatekeeperEmailService)
-    }
 
     "reject a form submission with missing emailSubject" in new Setup {
       givenTheGKUserIsAuthorisedAndIsANormalUser()
@@ -214,9 +200,10 @@ class ComposeEmailControllerSpec extends ControllerBaseSpec with Matchers with M
       givenTheGKUserIsAuthorisedAndIsANormalUser()
       Given("a valid form containing a valid file with virus")
       class ComposeEmailServiceTestVirusTest extends ComposeEmailServiceTest{
-        override def saveEmail(composeEmailForm: ComposeEmailForm, key: Either[Result, String])(implicit hc: HeaderCarrier): Future[OutgoingEmail] =
+        override def saveEmail(composeEmailForm: ComposeEmailForm, emailUID: String,  key: String, userInfo: List[User])
+                              (implicit hc: HeaderCarrier): Future[OutgoingEmail] =
           Future.successful(OutgoingEmail("srinivasalu.munagala@digital.hmrc.gov.uk",
-            "Hello", List(""), None,  "*test email body*", "", "", "", None))
+            "Hello", su.toList, None,  "*test email body*", "", "", "", None))
 
         override def fetchFileuploadStatus(key: String)(implicit hc: HeaderCarrier): Future[UploadInfo] =
           Future.successful(UploadInfo(Reference("fileReference"),
@@ -247,9 +234,10 @@ class ComposeEmailControllerSpec extends ControllerBaseSpec with Matchers with M
       givenTheGKUserIsAuthorisedAndIsANormalUser()
       Given("a valid form containing a valid file with virus")
       class ComposeEmailServiceTestInvalidFile extends ComposeEmailServiceTest{
-        override def saveEmail(composeEmailForm: ComposeEmailForm, key: Either[Result, String])(implicit hc: HeaderCarrier): Future[OutgoingEmail] =
+        override def saveEmail(composeEmailForm: ComposeEmailForm, emailUID: String,  key: String, userInfo: List[User])
+                              (implicit hc: HeaderCarrier): Future[OutgoingEmail] =
           Future.successful(OutgoingEmail("srinivasalu.munagala@digital.hmrc.gov.uk",
-            "Hello", List(""), None,  "*test email body*", "", "", "", None))
+            "Hello", su.toList, None,  "*test email body*", "", "", "", None))
 
         override def fetchFileuploadStatus(key: String)(implicit hc: HeaderCarrier): Future[UploadInfo] =
           Future.successful(UploadInfo(Reference("fileReference"),
