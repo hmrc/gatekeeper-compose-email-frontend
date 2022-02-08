@@ -20,7 +20,7 @@
 @import models._
 @this(layout: Layout)
 
-@(upscanInitiateResponse : UpscanInitiateResponse, emailId: String, form: Form[ComposeEmailForm])(implicit request: Request[_], messages: Messages, appConfig: AppConfig)
+@(upscanInitiateResponse : UpscanInitiateResponse, emailUID: String, form: Form[ComposeEmailForm])(implicit request: Request[_], messages: Messages, appConfig: AppConfig)
 
 @layout(pageTitle = Some(s"${appConfig.title} - Compose Email")) {
   @errorSummary(form)
@@ -55,7 +55,7 @@
     @for(field <- upscanInitiateResponse.formFields) {
     <input type="hidden" name="@field._1" value="@field._2"/>
     }
-    <input type="hidden" name="emailUID" value="@emailId"/>
+    <input type="hidden" name="emailUID" value="@emailUID"/>
     <input type="hidden" name="upscan-url" value="@upscanInitiateResponse.postTarget" />
 
     <div class="govuk-form-group govuk-!-margin-top-6">
