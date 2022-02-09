@@ -2,47 +2,44 @@ package controllers
 
 import play.api.i18n.Messages
 import play.api.mvc.{Action, AnyContent, Call, MessagesControllerComponents, Request}
-import config.UploadDocumentsConfig
-import config.AppConfig
+import config.{AppConfig, FileUploadConfig, UploadDocumentsConfig, ViewConfig}
 import connectors.UploadDocumentsConnector
-import controllers.JourneyControllerComponents
-import models.UploadDocumentsCallback
-import models.UploadDocumentsSessionConfig
-import models.upscan.{UploadDocumentType, UploadDocumentsSessionConfig}
-import views.html.rejectedgoods.upload_files_description
+import models.{GatekeeperRole, UploadDocumentsCallback}
+import models.upscan.UploadDocumentType.AirWayBill
+import models.upscan.{UploadDocumentType, UploadDocumentsSessionConfig, UploadedFile}
 
 import java.util.Locale
 import javax.inject.Inject
 import javax.inject.Singleton
 import scala.concurrent.ExecutionContext
-import config.FileUploadConfig
-import models.Nonce
 import play.api.Logging
 import uk.gov.hmrc.play.bootstrap.frontend.controller.FrontendController
 import utils.GatekeeperAuthWrapper
+
+import java.time.ZonedDateTime
 
 @Singleton
 class UploadFilesController @Inject() (
                                         val mcc: MessagesControllerComponents,
                                         uploadDocumentsConnector: UploadDocumentsConnector,
                                         uploadDocumentsConfig: UploadDocumentsConfig,
-                                        fileUploadConfig: FileUploadConfig,
-                                        upload_files_description: upload_files_description
-                                      )(implicit val ec: ExecutionContext, appConfig: AppConfig)
-  extends FrontendController(mcc) with Logging {
+                                        fileUploadConfig: FileUploadConfig
+                                      )(implicit val ec: ExecutionContext, appConfig: ViewConfig)
+  extends FrontendController(mcc) with GatekeeperAuthWrapper with Logging {
 
-  final val selfUrl: String = mcc.servicesConfig.getString("self.url")
+  final val selfUrl: String = "http://localhost:9000/api-gatekeeper/"
 
   final val selectDocumentTypePageAction: Call = routes.ComposeEmailController.email()
   final val callbackAction: Call               = routes.UploadFilesController.submit()
 
-  final def uploadDocumentsSessionConfig(documentType: UploadDocumentType, continueUrl: String)(implicit
-                                                                                                              request: Request[_],
-                                                                                                              messages: Messages
+  final def uploadDocumentsSessionConfig(continueUrl: String)
+                                        (implicit
+                                                        request: Request[_],
+                                                        messages: Messages
   ): UploadDocumentsSessionConfig =
     UploadDocumentsSessionConfig(
       continueUrl = continueUrl,
-      continueWhenFullUrl = selfUrl + checkYourAnswers.url,
+      continueWhenFullUrl = selfUrl + routes.EmailPreviewController.sendEmail().url,
       backlinkUrl = selfUrl + selectDocumentTypePageAction.url,
       callbackUrl = uploadDocumentsConfig.callbackUrlPrefix + callbackAction.url,
       minimumNumberOfFiles = 0, // user can skip uploading the file
@@ -51,24 +48,19 @@ class UploadFilesController @Inject() (
       maximumFileSizeBytes = fileUploadConfig.readMaxFileSize("supporting-evidence"),
       allowedContentTypes = "application/pdf,image/jpeg,image/png",
       allowedFileExtensions = "*.pdf,*.png,*.jpg,*.jpeg",
-      cargo = documentType,
-      newFileDescription = documentTypeDescription(documentType),
-      content = uploadDocumentsContent(documentType)
+      cargo = AirWayBill,
+      newFileDescription = documentTypeDescription(AirWayBill),
+      content = uploadDocumentsContent(AirWayBill)
     )
 
   final def uploadDocumentsContent(dt: UploadDocumentType)(implicit
                                                            request: Request[_],
                                                            messages: Messages
   ): UploadDocumentsSessionConfig.Content = {
-    val descriptionHtml = upload_files_description(
-      "choose-files.rejected-goods",
-      documentTypeDescription(dt).toLowerCase(Locale.ENGLISH)
-    ).body
 
     UploadDocumentsSessionConfig.Content(
       serviceName = messages("service.title"),
       title = messages("choose-files.rejected-goods.title"),
-      descriptionHtml = descriptionHtml,
       serviceUrl = appConfig.homePageUrl,
       accessibilityStatementUrl = appConfig.accessibilityStatementUrl,
       phaseBanner = "alpha",
@@ -87,25 +79,16 @@ class UploadFilesController @Inject() (
   final def documentTypeDescription(dt: UploadDocumentType)(implicit messages: Messages): String =
     messages(s"choose-file-type.file-type.${UploadDocumentType.keyOf(dt)}")
 
-  final val show: Action[AnyContent] =  implicit request =>
-    journey.answers.selectedDocumentType match {
-      case None =>
-        Redirect(selectDocumentTypePageAction).asFuture
-
-      case Some(documentType) =>
-        val continueUrl =
-          if (journey.answers.checkYourAnswersChangeMode)
-            selfUrl + checkYourAnswers.url
-          else
-            selfUrl + selectDocumentTypePageAction.url
+  final val show: Action[AnyContent] = requiresAtLeast(GatekeeperRole.USER)  {
+    implicit request =>
+      val continueUrl = selfUrl + routes.EmailPreviewController.sendEmail().url
 
         uploadDocumentsConnector
           .initialize(
             UploadDocumentsConnector
               .Request(
-                uploadDocumentsSessionConfig(journey.answers.nonce, documentType, continueUrl),
-                journey.answers.supportingEvidences
-                  .map(file => file.copy(description = file.documentType.map(documentTypeDescription _)))
+                uploadDocumentsSessionConfig( continueUrl),
+                Seq(UploadedFile("", "", ZonedDateTime.now(), "", "", "", None, None, None))
               )
           )
           .map {
@@ -119,7 +102,8 @@ class UploadFilesController @Inject() (
   }
 
   @SuppressWarnings(Array("org.wartremover.warts.AsInstanceOf"))
-  final val submit: Action[AnyContent] =  implicit request =>
+  final val submit: Action[AnyContent] = requiresAtLeast(GatekeeperRole.USER) {
+    implicit request => {
       request.asInstanceOf[Request[AnyContent]].body.asJson.map(_.as[UploadDocumentsCallback]) match {
         case None =>
           logger.warn("missing or invalid callback payload")
@@ -128,15 +112,9 @@ class UploadFilesController @Inject() (
         case Some(callback) =>
           logger.warn(s"*****Recieved Callback $callback")
 
-            .receiveUploadedFiles(
-              callback.documentType,
-              callback.nonce,
-              callback.uploadedFiles.map(_.copy(description = None))
-            )
-            .fold(
-              error => (journey, BadRequest(error)),
-              modifiedJourney => (modifiedJourney, NoContent)
-            )
       }
+    }
+  }
+
  }
 

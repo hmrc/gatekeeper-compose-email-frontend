@@ -1,0 +1,123 @@
+package config
+
+import play.api.Configuration
+import play.api.i18n.Lang
+import play.api.mvc.Call
+import controllers.{routes => baseRoutes}
+import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
+
+import javax.inject.Inject
+import javax.inject.Singleton
+import scala.concurrent.duration.Duration
+
+@Singleton
+class ViewConfig @Inject() (config: Configuration, servicesConfig: ServicesConfig) {
+
+  private def getString(key: String): String     = servicesConfig.getString(key)
+  private def getDuration(key: String): Duration = servicesConfig.getDuration(key)
+
+  val en: String            = "en"
+  val cy: String            = "cy"
+  val defaultLanguage: Lang = Lang(en)
+
+  val selfBaseUrl: String = getString("self.url")
+
+  val homePageUrl: String = selfBaseUrl + getString("home-page")
+
+  val ggCreateAccountUrl: String = "/bas-gateway?accountType=individual&continueUrl=" +
+    "%2Fclaim-for-reimbursement-of-import-duties%2Fstart&origin=cds-reimbursement-claim-frontend"
+
+  val signOutUrl: String = getString("bas-gateway.signOutUrl")
+
+  val ggTimeoutSeconds: Long =
+    servicesConfig.getDuration("gg.timeout").toSeconds
+
+  val ggCountdownSeconds: Long =
+    servicesConfig.getDuration("gg.countdown").toSeconds
+
+  val ggKeepAliveUrl: String =
+    s"$selfBaseUrl/claim-for-reimbursement-of-import-duties" + baseRoutes.ComposeEmailController.email().url
+
+  val ggTimedOutUrl: String =
+    signOutUrl + s"?continue=$selfBaseUrl/claim-for-reimbursement-of-import-duties" + baseRoutes.ComposeEmailController
+
+
+  val ggSignOut: String =
+    signOutUrl + s"?continue=$selfBaseUrl/claim-for-reimbursement-of-import-duties" + baseRoutes.ComposeEmailController
+      .email()
+      .url
+
+  val serviceFeedBackUrl: String = {
+    val baseUrl = config.get[String]("microservice.services.feedback.url")
+    val path    = config.get[String]("microservice.services.feedback.source")
+    s"$baseUrl$path"
+  }
+
+  val govUkUrl: String = getString("external-url.gov-uk")
+
+  val enableLanguageSwitching: Boolean = servicesConfig.getBoolean("enable-language-switching")
+
+  private val contactFormServiceIdentifier = "CDSRC"
+
+  def pageTitleWithServiceName(pageTitle: String, serviceName: String, hasErrors: Boolean): String =
+    if (hasErrors)
+      s"ERROR: $pageTitle - $serviceName - GOV.UK"
+    else
+      s"$pageTitle - $serviceName - GOV.UK"
+
+  val reportAProblemPartialUrl: String =
+    s"/contact/problem_reports_ajax?service=$contactFormServiceIdentifier"
+
+  val reportAProblemNonJSUrl: String =
+    s"/contact/problem_reports_nonjs?service=$contactFormServiceIdentifier"
+
+  val accessibilityStatementUrl: String = getString("external-url.accessibility-statement")
+
+  lazy val contactHmrcUrl: String = {
+    val baseUrl     = servicesConfig.baseUrl("contact-frontend")
+    val contactPath = servicesConfig.getString(s"microservice.services.contact-frontend.contact-hmrc-url")
+    s"$baseUrl$contactPath"
+  }
+
+  val eoriNumberHelpUrl: String = getString("external-url.eori-number-help")
+
+  val abilityNetUrl: String = getString("external-url.ability-net")
+
+  val webStandardUrl: String = getString("external-url.web-standard")
+
+  val taxServiceUrl: String = getString("external-url.tax-service")
+
+  val equalityServiceUrl: String = getString("external-url.equality-service")
+
+  val equalityOrgUrl: String = getString("external-url.equality-org")
+
+  val contactUsUrl: String = getString("external-url.contact-us")
+
+  val accessibilityCentreUrl: String = getString("external-url.accessibility-centre")
+
+  val capitalGainsUrl: String = getString("external-url.capital-gains")
+
+  val mrnGuideUrl: String = getString("external-url.mrn-guide")
+
+  val contactCdsTeamUrl: String = getString("external-url.contact-cds-team")
+
+  val importExportUrl: String = getString("external-url.import-export")
+
+  val ukTradeTariffGuidance: String = getString("external-url.uk-trade-tariff-guidance")
+
+  val footerLinkItems: Seq[String] = config.getOptional[Seq[String]]("footerLinkItems").getOrElse(Seq())
+
+  lazy val timeout: Int = getDuration("gg.timeout").toSeconds.toInt
+
+  lazy val countdown: Int = getDuration("gg.countdown").toSeconds.toInt
+
+  def buildCompleteSelfUrl(call: Call): String = buildCompleteSelfUrl(call.url)
+
+  def buildCompleteSelfUrl(path: String): String = s"$selfBaseUrl$path"
+
+  def languageMap: Map[String, Lang] = Map("english" -> Lang("en"), "cymraeg" -> Lang("cy"))
+
+//  def routeToSwitchLanguage: String => Call = (lang: String) =>
+//    baseRoutes.LanguageSwitchController.switchToLanguage(lang)
+}
+

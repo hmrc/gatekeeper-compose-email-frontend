@@ -56,6 +56,9 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
                                       (implicit  val appConfig: AppConfig, val ec: ExecutionContext)
   extends FrontendController(mcc) with GatekeeperAuthWrapper with Logging {
 
+  val submitAction: Call          = routes.ComposeEmailController.upload()
+  val chooseFilesPageAction: Call = routes.UploadFilesController.show()
+
   def email: Action[AnyContent] = requiresAtLeast(GatekeeperRole.USER) { implicit request =>
     logger.info(s"""Session cookie has for value 'emailRecipients': ${request.session.get("emailRecipients")}""")
     val userDetails = if(request.session.get("emailRecipients").isDefined){

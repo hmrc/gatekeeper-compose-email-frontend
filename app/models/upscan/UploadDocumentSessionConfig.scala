@@ -27,7 +27,6 @@ object UploadDocumentsSessionConfig {
   final case class Content(
                             serviceName: String,
                             title: String,
-                            descriptionHtml: String,
                             serviceUrl: String,
                             accessibilityStatementUrl: String,
                             phaseBanner: String,

@@ -52,22 +52,7 @@
               aria-describedby="email-body-hint">@form.data.getOrElse("emailBody", "")</textarea>
   </div>
 
-    @for(field <- upscanInitiateResponse.formFields) {
-    <input type="hidden" name="@field._1" value="@field._2"/>
-    }
-    <input type="hidden" name="emailUID" value="@emailUID"/>
-    <input type="hidden" name="upscan-url" value="@upscanInitiateResponse.postTarget" />
 
-    <div class="govuk-form-group govuk-!-margin-top-6">
-        <label class="govuk-label" for="email-attachments">
-            Attach a file
-        </label>
-        <input class="govuk-file-upload"
-               id="email-attachments"
-               name="file"
-               type="file"
-               accept=".pdf,.doc,.docx,.xlsx,.xls,.png,.jpeg,.jpg,.txt">
-    </div>
 
     <div class="govuk-button-group">
         <button class="govuk-button" data-module="govuk-button">
