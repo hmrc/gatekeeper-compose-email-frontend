@@ -1,0 +1,119 @@
+@*
+ * Copyright 2022 HM Revenue & Customs
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *@
+
+@import config.AppConfig
+@import include._
+@import services._
+
+@this(layout: Layout, appConfig: AppConfig)
+
+@(status: UploadStatus, emailPreview: String, form: Form[EmailPreviewForm])(implicit request: Request[_], messages: Messages)
+
+@layout(pageTitle = Some(s"${appConfig.title} - Email preview")) {
+@errorSummary(form)
+
+<main class="govuk-main-wrapper " id="main-content" role="main">
+    <div class="govuk-width-container">
+        <div class="govuk-grid-row">
+            <div class="govuk-grid-column-two-thirds">
+                <h1 class="govuk-heading-l">Email preview</h1>
+                @helper.form(routes.EmailPreviewController.sendEmail) {
+                @helper.CSRF.formField
+                    <input type="hidden" name="emailId" value="@form.data.getOrElse("emailId", "")" />
+                    <input type="hidden" name="composeEmailForm.emailSubject" value="@form.data.getOrElse("composeEmailForm.emailSubject", "")" />
+                    <input type="hidden" name="composeEmailForm.emailBody" value="@form.data.getOrElse("composeEmailForm.emailBody", "")" />
+                    <input type="hidden" name="composeEmailForm.emailRecipient" value="@form.data.getOrElse("composeEmailForm.emailRecipient", "")" />
+                    <div class="govuk-grid-column-one-half govuk-!-padding-left-0">
+                        <div class="govuk-button-group">
+                            <button class="govuk-button" data-module="govuk-button" value="send">
+                                Send email
+                            </button>
+                        </div>
+                    </div>
+                }
+
+                <div class="govuk-grid-column-one-half govuk-!-padding-right-0">
+                    <div class="govuk-button-group">
+                        @helper.form(action = routes.EmailPreviewController.editEmail) {
+                        @helper.CSRF.formField
+                        <input type="hidden" name="emailId" value="@form.data.getOrElse("emailId", "")" />
+                        <input type="hidden" name="composeEmailForm.emailSubject" value="@form.data.getOrElse("composeEmailForm.emailSubject", "")" />
+                        <input type="hidden" name="composeEmailForm.emailBody" value="@form.data.getOrElse("composeEmailForm.emailBody", "")" />
+                        <input type="hidden" name="composeEmailForm.emailRecipient" value="@form.data.getOrElse("composeEmailForm.emailRecipient", "")" />
+
+                        <button draggable="false"
+                               class="govuk-button govuk-button--secondary govuk-!-width-full"
+                               data-module="govuk-button">
+                            Edit email
+                        </button>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <div class="govuk-grid-column-two-thirds">
+                <div class="email-preview">
+
+                    <dl class="govuk-summary-list">
+                        <div class="govuk-summary-list__row">
+                            <dt class="govuk-summary-list__key email-header">
+                                Tax regime
+                            </dt>
+                            <dd class="govuk-summary-list__value">
+                                Customs
+                            </dd>
+                        </div>
+                        <div class="govuk-summary-list__row">
+                            <dt class="govuk-summary-list__key email-header">
+                                Topic
+                            </dt>
+                            <dd class="govuk-summary-list__value">
+                                Business and policy
+                            </dd>
+                        </div>
+                        <div class="govuk-summary-list__row">
+                            <dt class="govuk-summary-list__key email-header">
+                                Subject
+                            </dt>
+                            <dd class="govuk-summary-list__value">
+                                @form.data.getOrElse("composeEmailForm.emailSubject", "")
+                            </dd>
+                        </div>
+                    </dl>
+
+                    <div class="email-content">
+                        @Html(emailPreview)
+                    </div>
+                </div>
+                @status match {
+                case InProgress => { Waiting for the file to be scanned }
+                case s : UploadedSuccessfully => { }
+                case f: UploadedFailedWithErrors => { <b><FONT COLOR="RED">File has been rejected because of @f.errorMessage, please click on Edit email and reattach a valid file. </b>}
+                }
+
+                <br>
+
+                <div>
+                    <a href="./are-you-sure" class="govuk-button govuk-button--secondary">
+                        Delete email
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+}

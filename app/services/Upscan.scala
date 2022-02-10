@@ -14,19 +14,11 @@
  * limitations under the License.
  */
 
-package utils
+package services
 
-import config.AppConfig
-import play.api.i18n.Messages
-import play.api.mvc.Results.InternalServerError
-import play.api.mvc.{Request, Result}
-import views.html.ErrorTemplate
+case class UpscanFileReference(reference: String)
 
-trait ErrorHelper {
-  val errorTemplate: ErrorTemplate
-
-  def technicalDifficulties(implicit request: Request[_], messagesProvider: Messages, appConfig: AppConfig) : Result = {
-    InternalServerError(errorTemplate("Technical difficulties", "Technical difficulties",
-      "Sorry, we are experiencing technical difficulties"))
-  }
-}
+case class UpscanInitiateResponse(
+                                   fileReference: UpscanFileReference,
+                                   postTarget: String,
+                                   formFields: Map[String, String])

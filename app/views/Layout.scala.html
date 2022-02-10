@@ -35,6 +35,7 @@
 @(pageTitle: Option[String] = None,
         scriptsBlock: Option[Html] = None)(contentBlock: Html)(implicit request: Request[_], messages: Messages)
 
+
 @govukLayout(
  pageTitle = pageTitle,
  headBlock = Some(hmrcHead()),
@@ -45,3 +46,4 @@
  assetPath = None,
  cspNonce = None
 )(contentBlock)
+
