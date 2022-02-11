@@ -28,8 +28,8 @@ object UploadDocumentsWrapper {
                     searched: Boolean,
                     multipleUpload: Boolean
                    )(implicit appConfig: AppConfig): UploadDocumentsWrapper = {
-    val continueUrl = controllers.routes.FileUploadController.continue(emailUID)
-    val backLinkUrl = controllers.routes.ComposeEmailController.email(emailUID)
+    val continueUrl = controllers.routes.ComposeEmailController.emailPreview(emailUID)
+    val backLinkUrl = controllers.routes.ComposeEmailController.upload(emailUID)
     val callBack = controllers.routes.FileUploadController.updateFiles()
 
     UploadDocumentsWrapper(

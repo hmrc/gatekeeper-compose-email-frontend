@@ -55,10 +55,7 @@ class EmailPreviewController @Inject()
   def editEmail(): Action[AnyContent] = Action.async {
     implicit request => {
       def handleValidForm(form: EmailPreviewForm) = {
-        for {
-          upscanInitiateResponse <- upscanInitiateConnector.initiateV2(None, None)
-          _ <- emailConnector.inProgressUploadStatus(upscanInitiateResponse.fileReference.reference)
-        } yield Ok(composeEmail(form.emailUID, controllers.ComposeEmailForm.form.fill(form.composeEmailForm)))
+       Future.successful(Ok(composeEmail(form.emailUID, controllers.ComposeEmailForm.form.fill(form.composeEmailForm))))
       }
 
       def handleInvalidForm(formWithErrors: Form[EmailPreviewForm]) = {

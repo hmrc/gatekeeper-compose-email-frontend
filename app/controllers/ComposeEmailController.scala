@@ -67,6 +67,15 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
     implicit request => Future.successful(Ok(sentEmail()))
   }
 
+  def emailPreview(emailUID: String): Action[AnyContent] = requiresAtLeast(GatekeeperRole.USER) {
+    implicit request =>
+      val fetchEmail: Future[OutgoingEmail] = emailService.fetchEmail(emailUID)
+      fetchEmail.map { email =>
+        Ok(emailPreview(base64Decode(email.htmlEmailBody),
+          controllers.EmailPreviewForm.form.fill(EmailPreviewForm(email.emailUID, ComposeEmailForm(email.subject, email.markdownEmailBody)))))
+      }
+  }
+
   def upload(emailUID: String): Action[AnyContent] = requiresAtLeast(GatekeeperRole.USER) {
     implicit request =>
       def handleValidForm(form: ComposeEmailForm) = {
