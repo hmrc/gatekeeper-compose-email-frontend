@@ -29,16 +29,16 @@ import scala.concurrent.{ExecutionContext, Future}
 class ComposeEmailService @Inject()(emailConnector: GatekeeperEmailConnector)
                          (implicit val ec: ExecutionContext){
 
-  def saveEmail(composeEmailForm: ComposeEmailForm, emailUID: String,  key: String, userInfo: List[User])(implicit hc: HeaderCarrier): Future[OutgoingEmail] = {
-    emailConnector.saveEmail(composeEmailForm, emailUID, userInfo, key)
+  def saveEmail(composeEmailForm: ComposeEmailForm, emailUID: String,  userInfo: List[User])(implicit hc: HeaderCarrier): Future[OutgoingEmail] = {
+    emailConnector.saveEmail(composeEmailForm, emailUID, userInfo)
   }
 
   def fetchEmail(emailUID: String)(implicit hc: HeaderCarrier): Future[OutgoingEmail] = {
     emailConnector.fetchEmail(emailUID)
   }
 
-  def updateEmail(composeEmailForm: ComposeEmailForm, emailUID: String, users: List[User], key: String)(implicit hc: HeaderCarrier): Future[OutgoingEmail] = {
-    emailConnector.updateEmail(composeEmailForm, emailUID, users, key)
+  def updateEmail(composeEmailForm: ComposeEmailForm, emailUID: String, users: List[User])(implicit hc: HeaderCarrier): Future[OutgoingEmail] = {
+    emailConnector.updateEmail(composeEmailForm, emailUID, users)
   }
 
   def inProgressUploadStatus(keyReference: String)(implicit hc: HeaderCarrier): Future[UploadInfo] = {

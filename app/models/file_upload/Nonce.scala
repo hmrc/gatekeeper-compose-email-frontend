@@ -14,19 +14,21 @@
  * limitations under the License.
  */
 
-package models.upscan
+package models.file_upload
 
-import play.api.libs.json.{Json, OFormat}
+import play.api.libs.json.Format
 
-import java.time.LocalDateTime
+import scala.util.Random
 
-final case class UpscanUpload(
-  uploadReference: UploadReference,
-  upscanUploadMeta: UpscanUploadMeta,
-  uploadedOn: LocalDateTime,
-  upscanCallBack: Option[UpscanCallBack]
-)
+case class Nonce(value: Int) {
+  override def equals(o: Any): Boolean =
+    o match {
+      case nonce: Nonce => nonce.value == value
+      case _ => false
+    }
+}
 
-object UpscanUpload {
-  implicit val format: OFormat[UpscanUpload] = Json.format[UpscanUpload]
+object Nonce {
+  final def random: Nonce = Nonce(Random.nextInt())
+  implicit final val formats: Format[Nonce] = SimpleDecimalFormat[Nonce](s => Nonce(s.toIntExact), n => BigDecimal(n.value))
 }

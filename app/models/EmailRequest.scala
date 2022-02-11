@@ -42,7 +42,7 @@ object EmailRequest {
     )
   }
 
-  def updateEmailRequest(composeEmailForm: ComposeEmailForm, user: List[User], keyRef: String) = {
+  def updateEmailRequest(composeEmailForm: ComposeEmailForm, user: List[User]) = {
 
     EmailRequest(
       user,

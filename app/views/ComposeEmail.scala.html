@@ -20,13 +20,13 @@
 @import models._
 @this(layout: Layout)
 
-@(upscanInitiateResponse : UpscanInitiateResponse, emailUID: String, form: Form[ComposeEmailForm])(implicit request: Request[_], messages: Messages, appConfig: AppConfig)
+@(emailUID: String, form: Form[ComposeEmailForm])(implicit request: Request[_], messages: Messages, appConfig: AppConfig)
 
 @layout(pageTitle = Some(s"${appConfig.title} - Compose Email")) {
   @errorSummary(form)
 
   <h1 class="govuk-heading-xl">Compose email</h1>
-@helper.form(routes.ComposeEmailController.upload, Symbol("enctype") -> "multipart/form-data") {
+@helper.form(routes.ComposeEmailController.upload(emailUID), Symbol("enctype") -> "multipart/form-data") {
   @helper.CSRF.formField
 
   <div class="govuk-form-group @if(form.errors("emailSubject").nonEmpty) {govuk-form-group--error}">

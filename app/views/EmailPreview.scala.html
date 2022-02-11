@@ -20,7 +20,7 @@
 
 @this(layout: Layout, appConfig: AppConfig)
 
-@(status: UploadStatus, emailPreview: String, form: Form[EmailPreviewForm])(implicit request: Request[_], messages: Messages)
+@(emailPreview: String, form: Form[EmailPreviewForm])(implicit request: Request[_], messages: Messages)
 
 @layout(pageTitle = Some(s"${appConfig.title} - Email preview")) {
 @errorSummary(form)
@@ -35,7 +35,6 @@
                     <input type="hidden" name="emailUID" value="@form.data.getOrElse("emailUID", "")" />
                     <input type="hidden" name="composeEmailForm.emailSubject" value="@form.data.getOrElse("composeEmailForm.emailSubject", "")" />
                     <input type="hidden" name="composeEmailForm.emailBody" value="@form.data.getOrElse("composeEmailForm.emailBody", "")" />
-                    <input type="hidden" name="composeEmailForm.emailRecipient" value="@form.data.getOrElse("composeEmailForm.emailRecipient", "")" />
                     <div class="govuk-grid-column-one-half govuk-!-padding-left-0">
                         <div class="govuk-button-group">
                             <button class="govuk-button" data-module="govuk-button" value="send">
@@ -98,12 +97,6 @@
                         @Html(emailPreview)
                     </div>
                 </div>
-                @status match {
-                case InProgress => { Waiting for the file to be scanned }
-                case s : UploadedSuccessfully => { }
-                case f: UploadedFailedWithErrors => { <b><FONT COLOR="RED">File has been rejected because of @f.errorMessage, please click on Edit email and reattach a valid file. </b>}
-                }
-
                 <br>
 
                 <div>

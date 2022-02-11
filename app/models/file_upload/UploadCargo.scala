@@ -14,18 +14,12 @@
  * limitations under the License.
  */
 
-package models.upscan
+package models.file_upload
 
 import play.api.libs.json.{Json, OFormat}
 
-final case class UpscanInitiateRequest(
-  callbackUrl: String,
-  successRedirect: String,
-  errorRedirect: String,
-  minimumFileSize: Long,
-  maximumFileSize: Long
-)
+case class UploadCargo(emailUID: String)
 
-object UpscanInitiateRequest {
-  implicit val format: OFormat[UpscanInitiateRequest] = Json.format[UpscanInitiateRequest]
+object UploadCargo {
+  implicit val format: OFormat[UploadCargo] = Json.format[UploadCargo]
 }

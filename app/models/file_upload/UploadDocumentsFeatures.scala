@@ -14,15 +14,12 @@
  * limitations under the License.
  */
 
-package models.upscan
+package models.file_upload
 
 import play.api.libs.json.{Json, OFormat}
 
-final case class UploadRequest(
-  href: String,
-  fields: Map[String, String]
-)
+case class UploadDocumentsFeatures(showUploadMultiple: Option[Boolean])
 
-object UploadRequest {
-  implicit val format: OFormat[UploadRequest] = Json.format[UploadRequest]
+object UploadDocumentsFeatures {
+  implicit val format: OFormat[UploadDocumentsFeatures] = Json.format[UploadDocumentsFeatures]
 }

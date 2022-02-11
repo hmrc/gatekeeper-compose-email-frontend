@@ -14,25 +14,12 @@
  * limitations under the License.
  */
 
-package models.upscan
+package models.file_upload
 
-import cats.Eq
-import models.upscan.UpscanCallBack.UpscanSuccess
 import play.api.libs.json.{Json, OFormat}
 
-import java.time.LocalDateTime
+case class UploadedFileMetadata(nonce: Nonce, uploadedFiles: Seq[UploadedFile], cargo: Option[UploadCargo])
 
-final case class UploadDocument(
-  uploadReference: UploadReference,
-  upscanUploadMeta: UpscanUploadMeta,
-  uploadedOn: LocalDateTime,
-  upscanSuccess: UpscanSuccess,
-  fileName: String,
-  documentType: Option[UploadDocumentType]
-)
-
-object UploadDocument {
-
-  implicit val equality: Eq[UploadDocument]    = Eq.fromUniversalEquals
-  implicit val format: OFormat[UploadDocument] = Json.format
+object UploadedFileMetadata {
+  implicit val format: OFormat[UploadedFileMetadata] = Json.format[UploadedFileMetadata]
 }

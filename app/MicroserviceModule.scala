@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import config.{AppConfigImpl, EmailConnectorConfig}
+import config.{AppConfig, EmailConnectorConfig}
 import play.api.inject.Binding
 import play.api.{Configuration, Environment}
 
@@ -32,7 +32,7 @@ class MicroserviceModule(val environment: Environment, val configuration: Config
   override def bindings(environment: Environment,
                         configuration: Configuration): Seq[Binding[_]] = {
     Seq(
-      bind[EmailConnectorConfig].to[AppConfigImpl]
+      bind[EmailConnectorConfig].to[AppConfig]
     )
   }
 }

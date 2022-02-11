@@ -14,15 +14,19 @@
  * limitations under the License.
  */
 
-package models.upscan
+package models.file_upload
 
-import play.api.libs.json.{Json, OFormat}
+import play.api.libs.json._
 
-final case class UpscanUploadMeta(
-  reference: String,
-  uploadRequest: UploadRequest
-)
+object SimpleDecimalFormat {
 
-object UpscanUploadMeta {
-  implicit val format: OFormat[UpscanUploadMeta] = Json.format[UpscanUploadMeta]
+  def apply[A](from: BigDecimal => A, to: A => BigDecimal): Format[A] =
+    Format(
+      Reads {
+        case JsNumber(value) => JsSuccess(from(value))
+        case json            => JsError(s"Expected json number but got ${json.getClass.getSimpleName}")
+      },
+      Writes.apply(entity => JsNumber(to(entity)))
+    )
+
 }
