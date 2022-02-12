@@ -46,8 +46,8 @@ class FileUploadController @Inject()(
       uploadDocumentsConnector.initializeNewFileUpload(emailUID, searched, multipleUpload)
         .map(relativeUrl =>
           relativeUrl match {
-            case Some(url) => Redirect(s"$url")
-            case None => Redirect(s"")
+            case Some(url) => Redirect(s"${appConfig.fileUploadPublicUrl}$url")
+            case None => Redirect(s"${appConfig.fileUploadPublicUrl}/upload-documents/choose-files")
           })
   }
 

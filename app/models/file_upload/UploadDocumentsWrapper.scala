@@ -36,20 +36,22 @@ object UploadDocumentsWrapper {
       config = UploadDocumentsConfig(
         nonce = nonce,
         initialNumberOfEmptyRows = Some(1),
-        continueUrl = s"${appConfig.selfUrl}$continueUrl",
-        backlinkUrl = s"${appConfig.selfUrl}$backLinkUrl",
+        continueUrl = s"http://localhost:9692$continueUrl",
+        backlinkUrl = s"http://localhost:9692$backLinkUrl",
         callbackUrl = s"${appConfig.fileUploadCallbackUrlPrefix}$callBack",
         cargo = UploadCargo(emailUID),
-        content = Some(UploadDocumentsContent(
-          serviceName = Some(appConfig.fileUploadServiceName),
-          serviceUrl = Some(appConfig.homepage),
-          accessibilityStatementUrl = Some(appConfig.fileUploadAccessibilityUrl),
-          phaseBanner = Some(appConfig.fileUploadPhase),
-          phaseBannerUrl = Some(appConfig.fileUploadPhaseUrl),
-          userResearchBannerUrl = Some(appConfig.helpMakeGovUkBetterUrl),
-          contactFrontendServiceId = Some(appConfig.contactFrontendServiceId)
-        )),
-        features = Some(UploadDocumentsFeatures(Some(multipleUpload)))
+//        content = Some(UploadDocumentsContent(
+//          serviceName = Some(appConfig.fileUploadServiceName),
+//          serviceUrl = Some(appConfig.homepage),
+//          accessibilityStatementUrl = Some(appConfig.fileUploadAccessibilityUrl),
+//          phaseBanner = Some(appConfig.fileUploadPhase),
+//          phaseBannerUrl = Some(appConfig.fileUploadPhaseUrl),
+//          userResearchBannerUrl = Some(appConfig.helpMakeGovUkBetterUrl),
+//          contactFrontendServiceId = Some(appConfig.contactFrontendServiceId)
+//        )),
+        content = None,
+//        features = Some(UploadDocumentsFeatures(Some(multipleUpload)))
+        features = None
       )
     )
   }

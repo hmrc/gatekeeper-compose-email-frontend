@@ -39,10 +39,15 @@ class UploadDocumentsConnector @Inject()(httpClient: HttpClient,
   }
 
   private def sendRequest(uploadDocumentsWrapper: UploadDocumentsWrapper)(implicit hc: HeaderCarrier): Future[Option[String]] = {
+    println(s"*******>>>> ${appConfig.fileUploadInitializationUrl}")
     httpClient.POST[UploadDocumentsWrapper, HttpResponse](appConfig.fileUploadInitializationUrl, uploadDocumentsWrapper).map { response =>
       response.status match {
-        case CREATED => response.header("Location")
-        case _ => None
+        case CREATED =>
+          println(s"*********>>>>>>   $response")
+          response.header("Location")
+        case _ =>
+          println(s"*********>>>>>>   ${response.header("Location")}")
+          None
       }
     }.recover { case _ => None }
   }
