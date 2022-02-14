@@ -49,7 +49,7 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
   extends FrontendController(mcc) with GatekeeperAuthWrapper with Logging {
 
   def email(emailUID: String): Action[AnyContent] = requiresAtLeast(GatekeeperRole.USER) { implicit request =>
-    Future.successful(Ok(composeEmail(emailUID, controllers.ComposeEmailForm.form.fill(ComposeEmailForm("","")))))
+    Future.successful(Ok(composeEmail(emailUID, controllers.ComposeEmailForm.form.fill(ComposeEmailForm("","", true)))))
   }
 
   def processRecipients: Action[AnyContent] =  Action.async { implicit request =>
@@ -57,7 +57,7 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
     val users = List(User("srinivasalu.munagala@digital.hmrc.gov.uk", "Srinivasalu", "munagala", true),
       User("siva.isikella@digital.hmrc.gov.uk", "siva", "isikella", true))
     val emailUID = UUID.randomUUID().toString
-     emailService.saveEmail(ComposeEmailForm("", ""), emailUID, users).map(emailRec =>
+     emailService.saveEmail(ComposeEmailForm("", "", true), emailUID, users).map(emailRec =>
       Redirect(routes.ComposeEmailController.email(emailRec.emailUID)))
   }
 
@@ -72,7 +72,7 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
         //Redirect(controllers.routes.FileUploadController.start(emailUID, false, true))
         println(s"*>>>>> ${email.subject}")
         Ok(emailPreview(base64Decode(email.htmlEmailBody),
-          controllers.EmailPreviewForm.form.fill(EmailPreviewForm(email.emailUID, ComposeEmailForm(email.subject, email.markdownEmailBody)))))
+          controllers.EmailPreviewForm.form.fill(EmailPreviewForm(email.emailUID, ComposeEmailForm(email.subject, email.markdownEmailBody, true)))))
       }
   }
 

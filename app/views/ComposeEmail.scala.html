@@ -26,7 +26,7 @@
   @errorSummary(form)
 
   <h1 class="govuk-heading-xl">Compose email</h1>
-@helper.form(routes.ComposeEmailController.upload(emailUID), Symbol("enctype") -> "multipart/form-data") {
+@helper.form(routes.ComposeEmailController.upload(emailUID)) {
   @helper.CSRF.formField
 
   <div class="govuk-form-group @if(form.errors("emailSubject").nonEmpty) {govuk-form-group--error}">
@@ -52,7 +52,22 @@
               aria-describedby="email-body-hint">@form.data.getOrElse("emailBody", "")</textarea>
   </div>
 
-
+    <div class="govuk-form-group">
+        <fieldset class="govuk-fieldset">
+            <legend class="govuk-fieldset__legend govuk-body">
+                Attaching files
+            </legend>
+            <div class="govuk-checkboxes"
+                 data-module="govuk-checkboxes">
+                <div class="govuk-checkboxes__item">
+                    <input class="govuk-checkboxes__input" id="attachFiles" name="attachFiles" type="checkbox" value="true">
+                    <label class="govuk-label govuk-checkboxes__label" for="attachFiles">
+                        I need to attach files
+                    </label>
+                </div>
+            </div>
+        </fieldset>
+    </div>
 
     <div class="govuk-button-group">
         <button class="govuk-button" data-module="govuk-button">

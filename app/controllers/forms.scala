@@ -18,16 +18,17 @@ package controllers
 
 import models.User
 import play.api.data.Form
-import play.api.data.Forms.{mapping, text}
+import play.api.data.Forms.{boolean, default, mapping, text}
 
-case class ComposeEmailForm(emailSubject: String, emailBody: String) {}
+case class ComposeEmailForm(emailSubject: String, emailBody: String, attachFiles: Boolean) {}
 
 object ComposeEmailForm {
 
   val form: Form[ComposeEmailForm] = Form(
     mapping(
       "emailSubject" -> text.verifying("email.subject.required", _.nonEmpty),
-      "emailBody" -> text.verifying("email.body.required", _.nonEmpty)
+      "emailBody" -> text.verifying("email.body.required", _.nonEmpty),
+      "attachFiles" -> default(boolean, false)
     )(ComposeEmailForm.apply)(ComposeEmailForm.unapply)
   )
 }
@@ -42,7 +43,8 @@ object EmailPreviewForm {
       "emailUID" -> text.verifying("email.uid.required", _.nonEmpty),
       "composeEmailForm" -> mapping(
         "emailSubject" -> text.verifying("email.subject.required", _.nonEmpty),
-        "emailBody" -> text.verifying("email.body.required", _.nonEmpty)
+        "emailBody" -> text.verifying("email.body.required", _.nonEmpty),
+        "attachFiles" -> default(boolean, false)
       )(ComposeEmailForm.apply)(ComposeEmailForm.unapply)
     )(EmailPreviewForm.apply)(EmailPreviewForm.unapply)
   )

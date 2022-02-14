@@ -45,7 +45,7 @@ class EmailPreviewController @Inject()
     implicit request => {
       val fetchEmail: Future[OutgoingEmail] = emailService.fetchEmail(emailUID)
       fetchEmail.map { email =>
-        emailConnector.sendEmail(EmailPreviewForm(emailUID, ComposeEmailForm(email.subject, email.htmlEmailBody)))
+        emailConnector.sendEmail(EmailPreviewForm(emailUID, ComposeEmailForm(email.subject, email.htmlEmailBody, true)))
         Redirect(routes.ComposeEmailController.sentEmailConfirmation())
       }
     }
@@ -55,7 +55,7 @@ class EmailPreviewController @Inject()
     implicit request => {
       val fetchEmail: Future[OutgoingEmail] = emailService.fetchEmail(emailUID)
       fetchEmail.map { email =>
-        Ok(composeEmail(emailUID, controllers.ComposeEmailForm.form.fill(ComposeEmailForm(email.subject, base64Decode(email.markdownEmailBody)))))
+        Ok(composeEmail(emailUID, controllers.ComposeEmailForm.form.fill(ComposeEmailForm(email.subject, base64Decode(email.markdownEmailBody), true))))
       }
     }
   }

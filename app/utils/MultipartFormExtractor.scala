@@ -66,7 +66,7 @@ object MultipartFormExtractor {
   def extractComposeEmailForm(multiPartFormData: MultipartFormData[TemporaryFile]): ComposeEmailForm = {
     val subject = extractSingletonFormValue(EmailSubject, multiPartFormData)
     val body = extractSingletonFormValue(EmailBody, multiPartFormData)
-    ComposeEmailForm(subject.get, body.get)
+    ComposeEmailForm(subject.get, body.get, true)
   }
   def extractUpscanInitiateResponse(multiPartFormData: MultipartFormData[TemporaryFile]): UpscanInitiateResponse = {
     val keyName = UpscanFileReference(extractSingletonFormValue(KeyName, multiPartFormData).get)
