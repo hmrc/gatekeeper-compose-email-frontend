@@ -16,15 +16,19 @@
 
 package controllers
 
+import com.google.common.base.Charsets
 import config.AppConfig
 import connectors.{GatekeeperEmailConnector, UpscanInitiateConnector}
+import models.OutgoingEmail
 import play.api.Logging
 import play.api.data.Form
 import play.api.i18n.I18nSupport
 import play.api.mvc.{Action, AnyContent, MessagesControllerComponents}
+import services.ComposeEmailService
 import uk.gov.hmrc.play.bootstrap.frontend.controller.FrontendController
 import views.html.ComposeEmail
 
+import java.util.Base64
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -32,37 +36,30 @@ import scala.concurrent.{ExecutionContext, Future}
 class EmailPreviewController @Inject()
 (mcc: MessagesControllerComponents,
  composeEmail: ComposeEmail,
- upscanInitiateConnector : UpscanInitiateConnector,
+ emailService: ComposeEmailService,
  emailConnector: GatekeeperEmailConnector)
 (implicit val appConfig: AppConfig, val ec: ExecutionContext)
   extends FrontendController(mcc) with I18nSupport with Logging {
 
-  def sendEmail(): Action[AnyContent] = Action.async {
+  def sendEmail(emailUID: String): Action[AnyContent] = Action.async {
     implicit request => {
-      def handleValidForm(form: EmailPreviewForm) = {
-        emailConnector.sendEmail(form)
-        Future.successful(Redirect(routes.ComposeEmailController.sentEmailConfirmation()))
+      val fetchEmail: Future[OutgoingEmail] = emailService.fetchEmail(emailUID)
+      fetchEmail.map { email =>
+        emailConnector.sendEmail(EmailPreviewForm(emailUID, ComposeEmailForm(email.subject, email.htmlEmailBody)))
+        Redirect(routes.ComposeEmailController.sentEmailConfirmation())
       }
-
-      def handleInvalidForm(formWithErrors: Form[EmailPreviewForm]) = {
-        logger.warn(s"Error in form: ${formWithErrors.errors}")
-        Future.successful(BadRequest("Error with EmailPreview form"))
-      }
-      EmailPreviewForm.form.bindFromRequest.fold(handleInvalidForm(_), handleValidForm(_))
     }
   }
 
-  def editEmail(): Action[AnyContent] = Action.async {
+  def editEmail(emailUID: String): Action[AnyContent] = Action.async {
     implicit request => {
-      def handleValidForm(form: EmailPreviewForm) = {
-       Future.successful(Ok(composeEmail(form.emailUID, controllers.ComposeEmailForm.form.fill(form.composeEmailForm))))
+      val fetchEmail: Future[OutgoingEmail] = emailService.fetchEmail(emailUID)
+      fetchEmail.map { email =>
+        Ok(composeEmail(emailUID, controllers.ComposeEmailForm.form.fill(ComposeEmailForm(email.subject, base64Decode(email.markdownEmailBody)))))
       }
-
-      def handleInvalidForm(formWithErrors: Form[EmailPreviewForm]) = {
-        logger.warn(s"Error in form: ${formWithErrors.errors}")
-        Future.successful(BadRequest("Error with EmailPreview form"))
-      }
-      EmailPreviewForm.form.bindFromRequest.fold(handleInvalidForm(_), handleValidForm(_))
     }
   }
+
+  private def base64Decode(result: String): String =
+    new String(Base64.getDecoder.decode(result), Charsets.UTF_8)
 }

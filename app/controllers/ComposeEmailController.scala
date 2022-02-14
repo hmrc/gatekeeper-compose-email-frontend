@@ -57,7 +57,6 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
     val users = List(User("srinivasalu.munagala@digital.hmrc.gov.uk", "Srinivasalu", "munagala", true),
       User("siva.isikella@digital.hmrc.gov.uk", "siva", "isikella", true))
     val emailUID = UUID.randomUUID().toString
-    println(s"******>>>> emailUID created is $emailUID")
      emailService.saveEmail(ComposeEmailForm("", ""), emailUID, users).map(emailRec =>
       Redirect(routes.ComposeEmailController.email(emailRec.emailUID)))
   }
@@ -70,7 +69,8 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
     implicit request =>
       val fetchEmail: Future[OutgoingEmail] = emailService.fetchEmail(emailUID)
       fetchEmail.map { email =>
-        Redirect(controllers.routes.FileUploadController.start(emailUID, false, true))
+        //Redirect(controllers.routes.FileUploadController.start(emailUID, false, true))
+        println(s"*>>>>> ${email.subject}")
         Ok(emailPreview(base64Decode(email.htmlEmailBody),
           controllers.EmailPreviewForm.form.fill(EmailPreviewForm(email.emailUID, ComposeEmailForm(email.subject, email.markdownEmailBody)))))
       }

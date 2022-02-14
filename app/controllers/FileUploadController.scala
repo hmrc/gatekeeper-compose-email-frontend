@@ -47,13 +47,17 @@ class FileUploadController @Inject()(
         .map(relativeUrl =>
           relativeUrl match {
             case Some(url) => Redirect(s"${appConfig.fileUploadPublicUrl}$url")
-            case None => Redirect("")
+            case None => Redirect(s"")
           })
   }
 
   def updateFiles(): Action[UploadedFileMetadata] = Action.async(parse.json[UploadedFileMetadata]) { implicit request =>
     request.body.cargo match {
-      case Some(value) =>  Future.successful(NoContent)
+      case Some(value) =>  {
+        println(s"Cargo is $value")
+        println(s"${request.body}")
+        Future.successful(NoContent)
+      }
       case None => Future.successful(BadRequest)
     }
   }

@@ -30,7 +30,7 @@
         <div class="govuk-grid-row">
             <div class="govuk-grid-column-two-thirds">
                 <h1 class="govuk-heading-l">Email preview</h1>
-                @helper.form(routes.EmailPreviewController.sendEmail) {
+                @helper.form(routes.EmailPreviewController.sendEmail(form.data.getOrElse("emailUID", ""))) {
                 @helper.CSRF.formField
                     <input type="hidden" name="emailUID" value="@form.data.getOrElse("emailUID", "")" />
                     <input type="hidden" name="composeEmailForm.emailSubject" value="@form.data.getOrElse("composeEmailForm.emailSubject", "")" />
@@ -46,9 +46,9 @@
 
                 <div class="govuk-grid-column-one-half govuk-!-padding-right-0">
                     <div class="govuk-button-group">
-                        @helper.form(action = routes.EmailPreviewController.editEmail) {
+                        @helper.form(action = routes.EmailPreviewController.editEmail(form.data.getOrElse("emailUID", ""))) {
                         @helper.CSRF.formField
-                        <input type="hidden" name="emailId" value="@form.data.getOrElse("emailId", "")" />
+                        <input type="hidden" name="emailId" value="@form.data.getOrElse("emailUID", "")" />
                         <input type="hidden" name="composeEmailForm.emailSubject" value="@form.data.getOrElse("composeEmailForm.emailSubject", "")" />
                         <input type="hidden" name="composeEmailForm.emailBody" value="@form.data.getOrElse("composeEmailForm.emailBody", "")" />
 
