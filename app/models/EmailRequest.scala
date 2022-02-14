@@ -17,7 +17,8 @@
 package models
 
 import controllers.ComposeEmailForm
-import play.api.libs.json.Json
+import models.file_upload.{UploadCargo, UploadedFile}
+import play.api.libs.json.{Json, OFormat}
 
 case class EmailData(emailSubject: String, emailBody: String)
 
@@ -26,11 +27,14 @@ case class EmailRequest(to: List[User],
                         emailData: EmailData,
                         force: Boolean = false,
                         auditData: Map[String, String] = Map.empty,
-                        eventUrl: Option[String] = None)
+                        eventUrl: Option[String] = None,
+                        attachmentDetails: Option[Seq[UploadedFile]] = None)
 
 object EmailRequest {
   implicit val emailDataFmt = Json.format[EmailData]
   implicit val userFmt = Json.format[User]
+  implicit val format: OFormat[UploadCargo] = Json.format[UploadCargo]
+  implicit val attachmentDetailsFormat: OFormat[UploadedFile] = Json.format[UploadedFile]
   implicit val sendEmailRequestFmt = Json.format[EmailRequest]
 
   def createEmailRequest(form: ComposeEmailForm,userInfo: List[User]) = {

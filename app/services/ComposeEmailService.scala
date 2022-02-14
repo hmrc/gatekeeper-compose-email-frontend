@@ -41,11 +41,4 @@ class ComposeEmailService @Inject()(emailConnector: GatekeeperEmailConnector)
     emailConnector.updateEmail(composeEmailForm, emailUID, users)
   }
 
-  def inProgressUploadStatus(keyReference: String)(implicit hc: HeaderCarrier): Future[UploadInfo] = {
-    emailConnector.inProgressUploadStatus(keyReference)
-  }
-
-  def fetchFileuploadStatus(key: String)(implicit hc: HeaderCarrier) = {
-    emailConnector.fetchFileuploadStatus(key)
-  }
 }

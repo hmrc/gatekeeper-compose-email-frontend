@@ -52,14 +52,15 @@ class FileUploadController @Inject()(
   }
 
   def updateFiles(): Action[UploadedFileMetadata] = Action.async(parse.json[UploadedFileMetadata]) { implicit request =>
-    request.body.cargo match {
-      case Some(value) =>  {
-        println(s"Cargo is $value")
-        println(s"${request.body}")
+    request.body match {
+      case value =>  {
+        println(s"Cargo is ${value.cargo}")
+        println(s"******$value")
         Future.successful(NoContent)
       }
-      case None => Future.successful(BadRequest)
+      case _ => Future.successful(BadRequest)
     }
+
   }
 
   def continue(emailUID: String): Action[AnyContent] = requiresAtLeast(GatekeeperRole.USER)  { implicit request =>

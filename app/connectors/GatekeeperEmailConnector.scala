@@ -69,13 +69,4 @@ class GatekeeperEmailConnector @Inject()(http: HttpClient, config: EmailConnecto
       }
   }
 
-
-  def inProgressUploadStatus(keyReference: String)(implicit hc: HeaderCarrier): Future[UploadInfo] = {
-    http.POSTEmpty[UploadInfo](s"$serviceUrl/gatekeeperemail/insertfileuploadstatus?key=$keyReference")
-  }
-
-  def fetchFileuploadStatus(key: String)(implicit hc: HeaderCarrier) = {
-    val url = s"$serviceUrl/gatekeeperemail/fetchfileuploadstatus"
-    http.GET[UploadInfo](url, Seq(("key", key)))
-  }
 }
