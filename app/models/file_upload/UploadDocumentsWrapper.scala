@@ -17,20 +17,28 @@
 package models.file_upload
 
 import config.AppConfig
+import connectors.UploadDocumentsConnector
 import play.api.libs.json.{Json, OFormat}
+import uk.gov.hmrc.http.Request
 
-case class UploadDocumentsWrapper(config: UploadDocumentsConfig)
-
+case class UploadDocumentsWrapper(config: UploadDocumentsConfig, existingFiles: Seq[UploadedFile])
+import connectors.UploadDocumentsConnector.Request
 object UploadDocumentsWrapper {
 
   def createPayload(nonce: Nonce,
                     emailUID: String,
                     searched: Boolean,
-                    multipleUpload: Boolean
+                    multipleUpload: Boolean,
+                    attachmentDetails: Option[Seq[UploadedFile]]
                    )(implicit appConfig: AppConfig): UploadDocumentsWrapper = {
     val continueUrl = controllers.routes.ComposeEmailController.emailPreview(emailUID)
     val backLinkUrl = controllers.routes.ComposeEmailController.upload(emailUID)
     val callBack = controllers.routes.FileUploadController.updateFiles()
+
+    val attachments =
+      if(attachmentDetails.isDefined) {
+        attachmentDetails.get
+      } else Seq.empty
 
     UploadDocumentsWrapper(
       config = UploadDocumentsConfig(
@@ -52,7 +60,8 @@ object UploadDocumentsWrapper {
         content = None,
 //        features = Some(UploadDocumentsFeatures(Some(multipleUpload)))
         features = None
-      )
+      ),
+        existingFiles = attachments
     )
   }
 

@@ -17,29 +17,34 @@
 package connectors
 
 import config.AppConfig
-import models.file_upload.{Nonce, UploadDocumentsWrapper}
+import connectors.UploadDocumentsConnector.Request
+import models.file_upload.{Nonce, UploadDocumentsWrapper, UploadedFile}
 import play.api.http.Status.CREATED
+import play.api.libs.json.{Format, Json}
+import services.ComposeEmailService
 import uk.gov.hmrc.http.{HeaderCarrier, HttpClient, HttpResponse}
 
 import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
 
 class UploadDocumentsConnector @Inject()(httpClient: HttpClient,
+                                         emailService: ComposeEmailService
                                         )(implicit executionContext: ExecutionContext, appConfig: AppConfig) {
 
 
 
   def initializeNewFileUpload(emailUID: String, searched: Boolean, multipleUpload: Boolean)(implicit hc: HeaderCarrier): Future[Option[String]] = {
     val nonce = Nonce.random
-    val payload = UploadDocumentsWrapper.createPayload(nonce, emailUID, searched, multipleUpload)
+//    val payload = UploadDocumentsWrapper.createPayload(nonce, emailUID, searched, multipleUpload)
     for {
-
+      emailInfo <- emailService.fetchEmail(emailUID)
+      payload = UploadDocumentsWrapper.createPayload(nonce, emailUID, searched, multipleUpload, emailInfo.attachmentDetails)
       result <- sendRequest(payload)
     } yield result
   }
 
-  private def sendRequest(uploadDocumentsWrapper: UploadDocumentsWrapper)(implicit hc: HeaderCarrier): Future[Option[String]] = {
-    httpClient.POST[UploadDocumentsWrapper, HttpResponse](appConfig.fileUploadInitializationUrl, uploadDocumentsWrapper).map { response =>
+  private def sendRequest(request: UploadDocumentsWrapper)(implicit hc: HeaderCarrier): Future[Option[String]] = {
+    httpClient.POST[UploadDocumentsWrapper, HttpResponse](appConfig.fileUploadInitializationUrl, request).map { response =>
       response.status match {
         case CREATED =>
           response.header("Location")
@@ -50,4 +55,16 @@ class UploadDocumentsConnector @Inject()(httpClient: HttpClient,
   }
 
 
+}
+
+object UploadDocumentsConnector {
+
+  type Response = Option[String]
+
+  final case class Request(
+                            config: UploadDocumentsWrapper,
+                            existingFiles: Seq[UploadedFile]
+                          )
+
+  implicit val requestFormat: Format[Request] = Json.format[Request]
 }

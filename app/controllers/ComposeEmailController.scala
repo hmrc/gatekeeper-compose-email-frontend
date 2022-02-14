@@ -81,7 +81,7 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
       def handleValidForm(form: ComposeEmailForm) = {
         val fetchEmail: Future[OutgoingEmail] = emailService.fetchEmail(emailUID)
         val outgoingEmail: Future[OutgoingEmail] = fetchEmail.flatMap(user =>
-          emailService.updateEmail(form, emailUID, user.recipients))
+          emailService.updateEmail(form, emailUID, user.recipients, user.attachmentDetails))
         outgoingEmail.map {  email =>
           Redirect(controllers.routes.FileUploadController.start(emailUID, false, true))
 //          Ok(emailPreview(base64Decode(email.htmlEmailBody), controllers.EmailPreviewForm.form.fill(EmailPreviewForm(email.emailUID, form))))
