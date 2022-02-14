@@ -8,3 +8,4 @@ GET        /assets/*file            controllers.Assets.versioned(path = "/public
 POST       /upload                  controllers.ComposeEmailController.upload
 POST       /send-email              controllers.EmailPreviewController.sendEmail
 POST       /edit-email              controllers.EmailPreviewController.editEmail
+POST       /process-recipients      controllers.ComposeEmailController.processRecipients

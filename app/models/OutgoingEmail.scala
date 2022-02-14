@@ -18,10 +18,11 @@ package models
 
 import play.api.libs.json.{Json, OFormat}
 
-case class OutgoingEmail(emailId: String, recipientTitle: String, recipients: List[String], attachmentLink: Option[String],
+case class OutgoingEmail(emailUID: String, recipientTitle: String, recipients: List[User], attachmentLink: Option[String],
                          markdownEmailBody: String, htmlEmailBody: String, subject: String,
                          composedBy: String, approvedBy: Option[String])
 
 object OutgoingEmail {
+  implicit val userFmt: OFormat[User] = Json.format[User]
   implicit val emailFmt: OFormat[OutgoingEmail] = Json.format[OutgoingEmail]
 }

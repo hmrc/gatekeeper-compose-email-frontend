@@ -30,4 +30,6 @@ object GatekeeperSessionKeys {
   val AuthToken = SessionKeys.authToken
 }
 
-case class User (email: String, userId: UUID, firstName: String, lastName: String)
+//case class User (email: String, userId: UUID, firstName: String, lastName: String)
+case class User (email: String, firstName: String, lastName: String,
+                 verified: Boolean)

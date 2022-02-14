@@ -58,7 +58,7 @@ class EmailPreviewController @Inject()
         for {
           upscanInitiateResponse <- upscanInitiateConnector.initiateV2(None, None)
           _ <- emailConnector.inProgressUploadStatus(upscanInitiateResponse.fileReference.reference)
-        } yield Ok(composeEmail(upscanInitiateResponse, controllers.ComposeEmailForm.form.fill(form.composeEmailForm)))
+        } yield Ok(composeEmail(upscanInitiateResponse, form.emailUID, controllers.ComposeEmailForm.form.fill(form.composeEmailForm)))
       }
 
       def handleInvalidForm(formWithErrors: Form[EmailPreviewForm]) = {

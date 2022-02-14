@@ -36,7 +36,6 @@ object UploadProxyController {
 
   val KeyName = "key"
   val UpscanUrl = "upscan-url"
-  val EmailRecipient = "emailRecipient"
   val EmailSubject = "emailSubject"
   val EmailBody = "emailBody"
 
