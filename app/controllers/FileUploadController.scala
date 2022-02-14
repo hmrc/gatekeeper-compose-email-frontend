@@ -47,7 +47,7 @@ class FileUploadController @Inject()(
         .map(relativeUrl =>
           relativeUrl match {
             case Some(url) => Redirect(s"${appConfig.fileUploadPublicUrl}$url")
-            case None => Redirect(s"${appConfig.fileUploadPublicUrl}/upload-documents/choose-files")
+            case None => Redirect("")
           })
   }
 
