@@ -20,6 +20,7 @@ import connectors.GatekeeperEmailConnector
 import controllers.{ComposeEmailForm, EmailPreviewForm}
 import models.{OutgoingEmail, UploadInfo, User}
 import models.EmailRequest.createEmailRequest
+import models.file_upload.UploadedFile
 import play.api.mvc.Result
 import uk.gov.hmrc.http.HeaderCarrier
 
@@ -37,8 +38,9 @@ class ComposeEmailService @Inject()(emailConnector: GatekeeperEmailConnector)
     emailConnector.fetchEmail(emailUID)
   }
 
-  def updateEmail(composeEmailForm: ComposeEmailForm, emailUID: String, users: List[User])(implicit hc: HeaderCarrier): Future[OutgoingEmail] = {
-    emailConnector.updateEmail(composeEmailForm, emailUID, users)
+  def updateEmail(composeEmailForm: ComposeEmailForm, emailUID: String, users: List[User], attachmentDetails: Option[Seq[UploadedFile]] = None)
+                 (implicit hc: HeaderCarrier): Future[OutgoingEmail] = {
+    emailConnector.updateEmail(composeEmailForm, emailUID, users, attachmentDetails)
   }
 
 }

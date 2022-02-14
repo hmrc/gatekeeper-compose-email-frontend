@@ -18,11 +18,12 @@ package controllers
 
 import config.AppConfig
 import connectors.{AuthConnector, UploadDocumentsConnector}
-import models.GatekeeperRole
+import models.{GatekeeperRole, OutgoingEmail}
 import models.file_upload.UploadedFileMetadata
 import play.api.Logging
 import play.api.i18n.I18nSupport
 import play.api.mvc._
+import services.ComposeEmailService
 import uk.gov.hmrc.play.bootstrap.frontend.controller.FrontendController
 import utils.GatekeeperAuthWrapper
 import views.html.{ComposeEmail, EmailPreview, ForbiddenView}
@@ -35,6 +36,7 @@ class FileUploadController @Inject()(
                                       override val forbiddenView: ForbiddenView,
                                       override val authConnector: AuthConnector,
                                       uploadDocumentsConnector: UploadDocumentsConnector,
+                                      emailService: ComposeEmailService,
                                       composeEmail: ComposeEmail,
                                       emailPreview: EmailPreview
                                     )(implicit executionContext: ExecutionContext, appConfig: AppConfig)
@@ -56,7 +58,11 @@ class FileUploadController @Inject()(
       case value =>  {
         println(s"Cargo is ${value.cargo}")
         println(s"******$value")
-        Future.successful(NoContent)
+        val fetchEmail: Future[OutgoingEmail] = emailService.fetchEmail(emailUID = value.cargo.get.emailUID)
+        fetchEmail.map { email =>
+          emailService.updateEmail(ComposeEmailForm(email.subject, email.markdownEmailBody, true), email.emailUID, email.recipients, Some(value.uploadedFiles) )
+          NoContent
+        }
       }
       case _ => Future.successful(BadRequest)
     }

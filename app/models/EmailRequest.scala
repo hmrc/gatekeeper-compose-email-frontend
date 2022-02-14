@@ -46,12 +46,13 @@ object EmailRequest {
     )
   }
 
-  def updateEmailRequest(composeEmailForm: ComposeEmailForm, user: List[User]) = {
+  def updateEmailRequest(composeEmailForm: ComposeEmailForm, user: List[User], attachmentDetails: Option[Seq[UploadedFile]] = None) = {
 
     EmailRequest(
       user,
       templateId = "gatekeeper",
-      EmailData(composeEmailForm.emailSubject, composeEmailForm.emailBody)
+      EmailData(composeEmailForm.emailSubject, composeEmailForm.emailBody),
+      attachmentDetails = attachmentDetails
     )
   }
 

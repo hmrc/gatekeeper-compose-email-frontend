@@ -69,6 +69,7 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
     implicit request =>
       val fetchEmail: Future[OutgoingEmail] = emailService.fetchEmail(emailUID)
       fetchEmail.map { email =>
+
         //Redirect(controllers.routes.FileUploadController.start(emailUID, false, true))
         Ok(emailPreview(base64Decode(email.htmlEmailBody),
           controllers.EmailPreviewForm.form.fill(EmailPreviewForm(email.emailUID, ComposeEmailForm(email.subject, email.markdownEmailBody, true)))))
