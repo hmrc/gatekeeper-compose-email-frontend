@@ -33,7 +33,7 @@ object UploadDocumentsWrapper {
                    )(implicit appConfig: AppConfig): UploadDocumentsWrapper = {
     val continueUrl = controllers.routes.ComposeEmailController.emailPreview(emailUID)
     val backLinkUrl = controllers.routes.ComposeEmailController.upload(emailUID)
-    val callBack = controllers.routes.FileUploadController.updateFiles()
+    val callBack = "/gatekeeperemail/updatefiles"
 
     val attachments =
       if(attachmentDetails.isDefined) {
@@ -44,8 +44,8 @@ object UploadDocumentsWrapper {
       config = UploadDocumentsConfig(
         nonce = nonce,
         initialNumberOfEmptyRows = Some(1),
-        continueUrl = s"${appConfig.fileUploadCallbackUrlPrefix}$continueUrl",
-        backlinkUrl = s"${appConfig.fileUploadCallbackUrlPrefix}$backLinkUrl",
+        continueUrl = s"https://admin.qa.tax.service.gov.uk$continueUrl",
+        backlinkUrl = s"https://admin.qa.tax.service.gov.uk$backLinkUrl",
         callbackUrl = s"${appConfig.fileUploadCallbackUrlPrefix}$callBack",
         cargo = UploadCargo(emailUID),
 //        content = Some(UploadDocumentsContent(
