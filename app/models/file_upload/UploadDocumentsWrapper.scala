@@ -44,8 +44,8 @@ object UploadDocumentsWrapper {
       config = UploadDocumentsConfig(
         nonce = nonce,
         initialNumberOfEmptyRows = Some(1),
-        continueUrl = s"https://admin.qa.tax.service.gov.uk$continueUrl",
-        backlinkUrl = s"https://admin.qa.tax.service.gov.uk$backLinkUrl",
+        continueUrl = s"${appConfig.fileUploadContinueUrlPrefix}$continueUrl",
+        backlinkUrl = s"${appConfig.fileUploadContinueUrlPrefix}$backLinkUrl",
         callbackUrl = s"${appConfig.fileUploadCallbackUrlPrefix}$callBack",
         cargo = UploadCargo(emailUID),
 //        content = Some(UploadDocumentsContent(

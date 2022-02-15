@@ -73,6 +73,8 @@ class AppConfig @Inject()(config: Configuration, servicesConfig: ServicesConfig)
     servicesConfig.baseUrl("upload-documents-frontend")
   lazy val fileUploadCallbackUrlPrefix: String =
     servicesConfig.getConfString("upload-documents-frontend.callback-url-prefix", "")
+  lazy val fileUploadContinueUrlPrefix: String =
+    servicesConfig.getConfString("upload-documents-frontend.continue-url-prefix", "")
   lazy val fileUploadContextPath: String =
     servicesConfig.getConfString("upload-documents-frontend.context-path", "/upload-documents")
   lazy val fileUploadPublicUrl: String =
