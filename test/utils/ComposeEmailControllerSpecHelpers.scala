@@ -24,6 +24,7 @@ import connectors.{AuthConnector, GatekeeperEmailConnector, PreparedUpload, Uplo
 import controllers.{ComposeEmailController, ComposeEmailForm, ControllerSetupBase}
 import mocks.TestRoles.userRole
 import mocks.connector.AuthConnectorMock
+import models.file_upload.UploadedFile
 import models.{GatekeeperRole, InProgress, OutgoingEmail, Reference, UploadInfo, UploadedSuccessfully, User}
 import org.mockito.{ArgumentMatchersSugar, MockitoSugar}
 import org.mockito.MockitoSugar.mock
@@ -43,7 +44,7 @@ import play.shaded.ahc.org.asynchttpclient.uri.Uri
 import services.ComposeEmailService
 import uk.gov.hmrc.http.{HeaderCarrier, HttpClient}
 import utils.ProxyRequestor
-import views.html.{ComposeEmail, EmailPreview, EmailSentConfirmation, ErrorTemplate, FileSizeMimeChecks, ForbiddenView}
+import views.html.{ComposeEmail, EmailPreview, EmailSentConfirmation, ErrorTemplate, ForbiddenView}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{ExecutionContext, Future}
@@ -72,28 +73,22 @@ object ComposeEmailControllerSpecHelpers  extends ControllerBaseSpec with Matche
   lazy val composeEmailTemplateView = app.injector.instanceOf[ComposeEmail]
   lazy val emailPreviewTemplateView = app.injector.instanceOf[EmailPreview]
   lazy val emailSentTemplateView = app.injector.instanceOf[EmailSentConfirmation]
-  lazy val fileChecksPreview: FileSizeMimeChecks = app.injector.instanceOf[FileSizeMimeChecks]
   lazy val httpClient = mock[HttpClient]
   val su = List(User("sawd", "efef", "eff", true))
 
   class ComposeEmailServiceTest extends ComposeEmailService(mock[GatekeeperEmailConnector]){
-    override def saveEmail(composeEmailForm: ComposeEmailForm, emailUID: String,  key: String, userInfo: List[User])(implicit hc: HeaderCarrier): Future[OutgoingEmail] =
+    override def saveEmail(composeEmailForm: ComposeEmailForm, emailUID: String,  userInfo: List[User])(implicit hc: HeaderCarrier): Future[OutgoingEmail] =
       Future.successful(OutgoingEmail("srinivasalu.munagala@digital.hmrc.gov.uk",
         "Hello", su, None,  "*test email body*", "", "", "", None))
     override def fetchEmail(emailUID: String)(implicit hc: HeaderCarrier): Future[OutgoingEmail] = {
       Future.successful(OutgoingEmail("srinivasalu.munagala@digital.hmrc.gov.uk",
         "Hello", su, None,  "*test email body*", "", "", "", None))
     }
-    override def updateEmail(composeEmailForm: ComposeEmailForm, emailUID: String, users: List[User], key: String)(implicit hc: HeaderCarrier): Future[OutgoingEmail] = {
+    override def updateEmail(composeEmailForm: ComposeEmailForm, emailUID: String, users: List[User],
+                             attachmentDetails: Option[Seq[UploadedFile]])(implicit hc: HeaderCarrier): Future[OutgoingEmail] = {
       Future.successful(OutgoingEmail("srinivasalu.munagala@digital.hmrc.gov.uk",
         "Hello", su, None,  "*test email body*", "", "", "", None))
     }
-    override def fetchFileuploadStatus(key: String)(implicit hc: HeaderCarrier): Future[UploadInfo] =
-      Future.successful(UploadInfo(Reference("fileReference"),
-        UploadedSuccessfully("text-to-upload.txt", "txt", "http://localhost/text-to-upload.txt", None, "gatekeeper-email/text-to-upload.txt")))
-
-    override def inProgressUploadStatus(keyReference: String)(implicit hc: HeaderCarrier): Future[UploadInfo] =
-      Future.successful(UploadInfo(Reference(keyReference), InProgress))
   }
   val mockGateKeeperService = new ComposeEmailServiceTest
 
@@ -125,11 +120,8 @@ object ComposeEmailControllerSpecHelpers  extends ControllerBaseSpec with Matche
       mcc,
       composeEmailTemplateView,
       emailPreviewTemplateView,
-      fileChecksPreview,
       mockGateKeeperService,
       emailSentTemplateView,
-      mockUpscanInitiateConnectorTest,
-      mockedProxyRequestor,
       forbiddenView, mockAuthConnector)
   }
 

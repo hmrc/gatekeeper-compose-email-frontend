@@ -31,6 +31,6 @@ trait ControllerBaseSpec extends HmrcSpec with GuiceOneAppPerSuite {
   override def fakeApplication(): Application =
     GuiceApplicationBuilder()
       .configure("metrics.jvm" -> false)
-      .overrides(bind[AppConfig].to[FakeAppConfigImpl])
+      .overrides(bind[AppConfig].to[FakeAppConfig])
       .build()
 }

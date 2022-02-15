@@ -44,22 +44,10 @@ class ComposeEmailServiceSpec extends AnyWordSpec with Matchers with GuiceOneApp
 
   "sendEmail" should {
     "handle sending an email successfully" in new Setup {
-      when(mockEmailConnector.saveEmail(*, *, *, *)(*)).thenReturn(Future.successful(OutgoingEmail("", "", su, None, "", "", "", "", None)))
-      val result = await(underTest.saveEmail(new ComposeEmailForm("", ""), "", "", su))
+      when(mockEmailConnector.saveEmail(*, *, *)(*)).thenReturn(Future.successful(OutgoingEmail("", "", su, None, "", "", "", "", None)))
+      val result = await(underTest.saveEmail(new ComposeEmailForm("", "", true), "", su))
       result shouldBe OutgoingEmail("", "", su, None, "", "", "", "", None)
     }
 
-    "handle sending an initial file upload status successfully" in new Setup {
-      when(mockEmailConnector.inProgressUploadStatus(*)(*)).thenReturn(Future.successful(UploadInfo(Reference("ref"), InProgress)))
-      val result = await(underTest.inProgressUploadStatus("ref"))
-      result shouldBe UploadInfo(Reference("ref"), InProgress)
-    }
-
-    "handle fetching a file upload status successfully" in new Setup {
-      when(mockEmailConnector.fetchFileuploadStatus(*)(*))
-        .thenReturn(Future.successful(UploadInfo(Reference("ref"), UploadedSuccessfully("", "", "", None, ""))))
-      val result = await(underTest.fetchFileuploadStatus("ref"))
-      result shouldBe UploadInfo(Reference("ref"), UploadedSuccessfully("", "", "", None, ""))
-    }
   }
 }

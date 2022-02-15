@@ -44,8 +44,8 @@ object UploadDocumentsWrapper {
       config = UploadDocumentsConfig(
         nonce = nonce,
         initialNumberOfEmptyRows = Some(1),
-        continueUrl = s"http://localhost:9692$continueUrl",
-        backlinkUrl = s"http://localhost:9692$backLinkUrl",
+        continueUrl = s"${appConfig.fileUploadCallbackUrlPrefix}$continueUrl",
+        backlinkUrl = s"${appConfig.fileUploadCallbackUrlPrefix}$backLinkUrl",
         callbackUrl = s"${appConfig.fileUploadCallbackUrlPrefix}$callBack",
         cargo = UploadCargo(emailUID),
 //        content = Some(UploadDocumentsContent(

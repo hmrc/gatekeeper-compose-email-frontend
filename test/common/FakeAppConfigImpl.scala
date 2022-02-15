@@ -17,14 +17,15 @@
 package common
 
 import com.google.inject.Singleton
-import config.{AppConfig, AppConfigImpl}
+import config.AppConfig
 import play.api.Configuration
+import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 
 import javax.inject.Inject
 
 @Singleton
-class FakeAppConfigImpl @Inject()(config: Configuration)
-  extends AppConfigImpl(config) {
+class FakeAppConfig @Inject()(config: Configuration, servicesConfig: ServicesConfig)
+  extends AppConfig(config, servicesConfig) {
 
 
   override val emailBaseUrl = "https://mock-gatekeeper-frontend/gatekeeper-email/insertfileuploadstatus?key=fileReference"
