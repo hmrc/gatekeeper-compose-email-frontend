@@ -55,7 +55,10 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
   def processRecipients: Action[AnyContent] =  Action.async { implicit request =>
     val emailRecipients: String = Json.stringify(Json.toJson(request.body.asFormUrlEncoded.map(p => p.get("email-recipients"))))
     val users = List(User("srinivasalu.munagala@digital.hmrc.gov.uk", "Srinivasalu", "munagala", true),
-      User("siva.isikella@digital.hmrc.gov.uk", "siva", "isikella", true))
+      User("siva.isikella@digital.hmrc.gov.uk", "siva", "isikella", true),
+      User("imran.akram@digital.hmrc.gov.uk", "Imran", "Akram", true),
+      User("neil.frow@digital.hmrc.gov.uk", "Neil", "Frow", true),
+      User("gareth.chapman@digital.hmrc.gov.uk", "Gareth", "Chapman", true))
     val emailUID = UUID.randomUUID().toString
      emailService.saveEmail(ComposeEmailForm("", "", true), emailUID, users).map(emailRec =>
       Redirect(routes.ComposeEmailController.email(emailRec.emailUID)))
