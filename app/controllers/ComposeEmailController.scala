@@ -83,8 +83,10 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
         val outgoingEmail: Future[OutgoingEmail] = fetchEmail.flatMap(user =>
           emailService.updateEmail(form, emailUID, user.recipients, user.attachmentDetails))
         outgoingEmail.map {  email =>
-          Redirect(controllers.routes.FileUploadController.start(emailUID, false, true))
-//          Ok(emailPreview(base64Decode(email.htmlEmailBody), controllers.EmailPreviewForm.form.fill(EmailPreviewForm(email.emailUID, form))))
+          if(form.attachFiles) {
+            Redirect(controllers.routes.FileUploadController.start(emailUID, false, true))
+          }
+          else Ok(emailPreview(base64Decode(email.htmlEmailBody), controllers.EmailPreviewForm.form.fill(EmailPreviewForm(email.emailUID, form))))
         }
       }
 
