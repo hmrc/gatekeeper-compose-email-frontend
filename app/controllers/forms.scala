@@ -20,7 +20,7 @@ import models.User
 import play.api.data.Form
 import play.api.data.Forms.{boolean, default, mapping, text}
 
-case class ComposeEmailForm(emailSubject: String, emailBody: String, attachFiles: Boolean) {}
+case class ComposeEmailForm(emailSubject: String, emailBody: String, attachFiles: Boolean = false) {}
 
 object ComposeEmailForm {
 

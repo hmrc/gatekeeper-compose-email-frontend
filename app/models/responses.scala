@@ -16,16 +16,18 @@
 
 package models
 
-import uk.gov.hmrc.http.SessionKeys
+import play.api.libs.json.Json.JsValueWrapper
+import play.api.libs.json.{JsObject, Json}
 
-object GatekeeperRole extends Enumeration {
-  type GatekeeperRole = Value
-  val USER, SUPERUSER, ADMIN = Value
+object ErrorCode extends Enumeration {
+  type ErrorCode = Value
+  val INVALID_REQUEST_PAYLOAD = Value("INVALID_REQUEST_PAYLOAD")
 }
 
-object GatekeeperSessionKeys {
-  val LoggedInUser = "LoggedInUser"
-  val AuthToken = SessionKeys.authToken
+object JsErrorResponse {
+  def apply(errorCode: ErrorCode.Value, message: JsValueWrapper): JsObject =
+    Json.obj(
+      "code" -> errorCode.toString,
+      "message" -> message
+    )
 }
-
-case class User (email: String, firstName: String, lastName: String, verified: Boolean)

@@ -27,7 +27,7 @@ import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
 
 class ComposeEmailService @Inject()(emailConnector: GatekeeperEmailConnector)
-                         (implicit val ec: ExecutionContext){
+                                   (implicit val ec: ExecutionContext){
 
   def saveEmail(composeEmailForm: ComposeEmailForm, emailUID: String,  key: String, userInfo: List[User])(implicit hc: HeaderCarrier): Future[OutgoingEmail] = {
     emailConnector.saveEmail(composeEmailForm, emailUID, userInfo, key)

@@ -20,8 +20,7 @@ import config.AppConfig
 import models.GatekeeperRole.GatekeeperRole
 import models._
 import play.api.i18n.I18nSupport
-import play.api.libs.Files.TemporaryFile
-import play.api.mvc.{Action, AnyContent, MessagesRequest, MultipartFormData, Request, Result}
+import play.api.mvc.{Action, AnyContent, Request, Result}
 import uk.gov.hmrc.auth.core._
 import uk.gov.hmrc.auth.core.authorise.Predicate
 import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals
@@ -53,6 +52,22 @@ trait GatekeeperAuthWrapper extends I18nSupport{
         case _: InsufficientEnrolments         => Future.successful(Forbidden(forbiddenView()))
       }
   }
+
+  /*def requiresAtLeastForFormUrlEncoded(minimumRoleRequired: GatekeeperRole)(body: LoggedInRequest[AnyContent] => Future[Result])
+                     (implicit ec: ExecutionContext, appConfig: AppConfig) = Action.async {
+  implicit request =>
+
+      val predicate = authPredicate(minimumRoleRequired)
+      val retrieval = Retrievals.name and Retrievals.authorisedEnrolments
+
+      authConnector.authorise(predicate, retrieval) flatMap {
+        case Some(name) ~ authorisedEnrolments => body(LoggedInRequest(name.name, authorisedEnrolments, request))
+        case None ~ authorisedEnrolments       => Future.successful(Forbidden(forbiddenView()))
+      } recoverWith {
+        case _: NoActiveSession                => Future.successful(toStrideLogin)
+        case _: InsufficientEnrolments         => Future.successful(Forbidden(forbiddenView()))
+      }
+  }*/
 
 //  def requiresAtLeastForMultiPartFormData(minimumRoleRequired: GatekeeperRole)(body: LoggedInRequest[MultipartFormData[TemporaryFile]] => Future[Result])
 //                                         (implicit ec: ExecutionContext, appConfig: AppConfig): Action[MultipartFormData[TemporaryFile]] =

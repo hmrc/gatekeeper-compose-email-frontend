@@ -16,41 +16,32 @@
 
 package controllers
 
+import java.nio.file.Path
+import java.util.{Base64, UUID}
+
 import akka.stream.scaladsl.Source
 import com.google.common.base.Charsets
 import config.AppConfig
 import connectors.{AuthConnector, UpscanInitiateConnector}
-import models._
+import javax.inject.{Inject, Singleton}
+import models.JsonFormatters._
+import models.{GatekeeperRole, _}
 import play.api.Logging
-import play.api.data.Form
-import play.api.libs.json.JsValue
-import play.api.mvc.{Action, AnyContent, MessagesControllerComponents}
-
-import scala.concurrent.{ExecutionContext, Future}
-import config.AppConfig
-import connectors.AuthConnector
-import controllers.ComposeEmailForm.form
-import models.GatekeeperRole
-import play.api.libs.json.Json
 import play.api.libs.Files.TemporaryFile
+import play.api.data.Form
+import play.api.libs.json._
 import play.api.mvc.MultipartFormData.DataPart
-import play.api.mvc._
-import services.ComposeEmailService
+import play.api.mvc.{Action, AnyContent, MessagesControllerComponents, _}
 import services.{ComposeEmailService, UpscanFileReference, UpscanInitiateResponse}
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.bootstrap.frontend.controller.FrontendController
-import utils.MultipartFormDataSummaries.{summariseDataParts, summariseFileParts}
 import utils.UploadProxyController.TemporaryFilePart
 import utils.UploadProxyController.TemporaryFilePart.partitionTrys
 import utils.{ErrorAction, GatekeeperAuthWrapper, MultipartFormExtractor, ProxyRequestor}
 import views.html._
 
-import java.nio.file.Path
-import java.util.{Base64, UUID}
-import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
-import models.JsonFormatters._
-import play.api.libs.json.Json
+import scala.util.control.NonFatal
 
 @Singleton
 class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
@@ -66,30 +57,10 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
                                       (implicit  val appConfig: AppConfig, val ec: ExecutionContext)
   extends FrontendController(mcc) with GatekeeperAuthWrapper with Logging {
 
-  def email: Action[AnyContent] = requiresAtLeast(GatekeeperRole.USER) { implicit request =>
-    logger.info(s"""Session cookie has for value 'emailRecipients': ${request.session.get("emailRecipients")}""")
-    val userDetails = if(request.session.get("emailRecipients").isDefined){
-      val json = Json.parse(request.session.get("emailRecipients").get)
-      logger.info(s"JSValue is ****************************** ${json}")
-      //Some(json.as[List[User]])
-    }
-    else {
-      None
-    }
-    val users = List()
-    logger.info(s"*******---> UserDetails are: $userDetails")
-    val emailUID = UUID.randomUUID().toString
-    for {
-      upscanInitiateResponse <- upscanInitiateConnector.initiateV2(None, None)
-      _ <- emailService.inProgressUploadStatus(upscanInitiateResponse.fileReference.reference)
-      email <- emailService.saveEmail(ComposeEmailForm("", "", false), emailUID, upscanInitiateResponse.fileReference.reference, users)
-    } yield Ok(composeEmail(upscanInitiateResponse, email.emailUID, controllers.ComposeEmailForm.form.fill(ComposeEmailForm("","", false))))
-  }
+  /*def email: Action[AnyContent] = requiresAtLeast(GatekeeperRole.USER) { implicit request =>
 
-  def processRecipients: Action[AnyContent] =  Action.async { implicit request =>
-    val emailRecipients: String = Json.stringify(Json.toJson(request.body.asFormUrlEncoded.map(p => p.get("email-recipients"))))
-    Future.successful(Redirect("/api-gatekeeper/compose-email/email").addingToSession("emailRecipients" -> emailRecipients))
-  }
+    Ok(composeEmail(new UpscanInitiateResponse(), email.emailUID, controllers.ComposeEmailForm.form.fill(ComposeEmailForm("","", false))))
+  }*/
 
   def sentEmailConfirmation: Action[AnyContent] = requiresAtLeast(GatekeeperRole.USER) {
     implicit request => Future.successful(Ok(sentEmail()))
@@ -141,10 +112,9 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
     uploadInfo
   }
 
-  private def base64Decode(result: String): String =
-    new String(Base64.getDecoder.decode(result), Charsets.UTF_8)
+  private def base64Decode(result: String): String = new String(Base64.getDecoder.decode(result), Charsets.UTF_8)
 
-  private def noAttachmentEmail(body: MultipartFormData[TemporaryFile],
+  /*private def noAttachmentEmail(body: MultipartFormData[TemporaryFilePart],
                                 keyEither: Either[Result, String])
                                (implicit requestHeader: RequestHeader, request: Request[_]): Future[Result] = {
     val emailForm: ComposeEmailForm = MultipartFormExtractor.extractComposeEmailForm(body)
@@ -159,12 +129,51 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
         controllers.EmailPreviewForm.form.fill(EmailPreviewForm(email.emailUID, emailForm))))
     }
   }
+*/
+  def initialiseEmail: Action[AnyContent] = requiresAtLeast(GatekeeperRole.USER) { implicit request =>
+    def convertRequestToListUsers(users: String) = Json.parse(users).validate[List[User]]
 
-  def processRecipients: Action[AnyContent] =  Action.async { implicit request =>
-    val emailRecipients: String = Json.stringify(Json.toJson(request.body.asFormUrlEncoded.map(p => p.get("email-recipients"))))
-    val emailRecipientsJson: JsValue = Json.toJson(request.body.asFormUrlEncoded.map(p => p.get("email-recipients")))
+    def persistEmailDetails(users: List[User]) = {
+      implicit val userFormat = Json.reads[User]
+      val emailUID = UUID.randomUUID().toString
+      for {
+        upscanInitiateResponse <- upscanInitiateConnector.initiateV2(None, None)
+        _ <- emailService.inProgressUploadStatus(upscanInitiateResponse.fileReference.reference)
+        email <- emailService.saveEmail(ComposeEmailForm("", "", false), emailUID, upscanInitiateResponse.fileReference.reference, users)
+      } yield Ok(composeEmail(upscanInitiateResponse, email.emailUID, controllers.ComposeEmailForm.form.fill(ComposeEmailForm("",""))))
+    }
 
-    Future.successful(Redirect("/api-gatekeeper/compose-email/email").addingToSession("emailRecipients" -> emailRecipients))
+    try {
+      val body: Option[Map[String, Seq[String]]] = request.body.asInstanceOf[AnyContentAsFormUrlEncoded].asFormUrlEncoded
+      body.map(elems => elems.get("email-recipients")).head match {
+        case Some(recipients) => try {
+          Json.parse(recipients.head).validate[List[User]] match {
+            case JsSuccess(value: Seq[User], _) => persistEmailDetails(value)
+            case JsError(errors) => Future.successful(Ok(errors.mkString(", ")))
+          }
+        } catch {
+          case NonFatal(e) => {
+            logger.error("Email recipients not valid JSON", e)
+            Future.successful(BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, s"Request payload does not appear to be JSON: ${e.getMessage}"))
+            )
+          }
+          case _ => Future.successful(BadRequest("Unknown error"))
+        }
+        case None => Future.successful(BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, s"Request payload does not contain any email recipients")))
+      }
+    }catch{
+      case e => {
+        logger.error("Error")
+        Future.successful(BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, "Request payload was not a URL encoded form")))
+
+      }
+    }
+  }
+
+  private def recovery: PartialFunction[Throwable, Result] = {
+    case e: IllegalArgumentException =>
+      logger.info(s"Invalid request due to ${e.getMessage}")
+      BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, e.getMessage))
   }
 
   def attachmentEmail(body: MultipartFormData[TemporaryFile], keyEither: Either[Result, String])
@@ -197,8 +206,7 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
   private def fetchFileErrorResponse(body: MultipartFormData[TemporaryFile], errorAction: ErrorAction,
                                      fileAdoptionSuccesses: Seq[MultipartFormData.FilePart[Path]],
                                      fileAdoptionFailures: Seq[String])
-                                    (implicit requestHeader: RequestHeader, request: Request[_])
-  : Future[Option[ErrorResponse]] = {
+                                    (implicit requestHeader: RequestHeader, request: Request[_]): Future[Option[ErrorResponse]] = {
 
     val errorResponse = fileAdoptionFailures.headOption.fold {
       val uploadBody = Source(dataParts(body.dataParts) ++ fileAdoptionSuccesses.map(TemporaryFilePart.toUploadSource))
@@ -238,7 +246,6 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
       val fetchEmail: Future[OutgoingEmail] = emailService.fetchEmail(emailUID)
       val outgoingEmail: Future[OutgoingEmail] = fetchEmail.flatMap(user =>
         emailService.updateEmail(emailForm, emailUID, user.recipients,keyEither.getOrElse("")))
-      //val outgoingEmail: Future[OutgoingEmail] = saveEmail(emailForm, keyEither.getOrElse(""))
       val errorPath = outgoingEmail.map { email =>
         val errorResponse = errResp.get
         Ok(fileChecksPreview(errorResponse.errorMessage, base64Decode(email.htmlEmailBody),
@@ -265,8 +272,6 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
       result
     }
   }
-
-
 
   def dataParts(dataPart: Map[String, Seq[String]]): List[DataPart] =
     dataPart.flatMap { case (header, body) => body.map(DataPart(header, _)) }.toList
