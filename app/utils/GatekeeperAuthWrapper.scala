@@ -53,38 +53,6 @@ trait GatekeeperAuthWrapper extends I18nSupport{
       }
   }
 
-  /*def requiresAtLeastForFormUrlEncoded(minimumRoleRequired: GatekeeperRole)(body: LoggedInRequest[AnyContent] => Future[Result])
-                     (implicit ec: ExecutionContext, appConfig: AppConfig) = Action.async {
-  implicit request =>
-
-      val predicate = authPredicate(minimumRoleRequired)
-      val retrieval = Retrievals.name and Retrievals.authorisedEnrolments
-
-      authConnector.authorise(predicate, retrieval) flatMap {
-        case Some(name) ~ authorisedEnrolments => body(LoggedInRequest(name.name, authorisedEnrolments, request))
-        case None ~ authorisedEnrolments       => Future.successful(Forbidden(forbiddenView()))
-      } recoverWith {
-        case _: NoActiveSession                => Future.successful(toStrideLogin)
-        case _: InsufficientEnrolments         => Future.successful(Forbidden(forbiddenView()))
-      }
-  }*/
-
-//  def requiresAtLeastForMultiPartFormData(minimumRoleRequired: GatekeeperRole)(body: LoggedInRequest[MultipartFormData[TemporaryFile]] => Future[Result])
-//                                         (implicit ec: ExecutionContext, appConfig: AppConfig): Action[MultipartFormData[TemporaryFile]] =
-//    Action.async(parse.multipartFormData) {
-//    implicit request: Request[MultipartFormData[TemporaryFile]] =>
-//      val predicate = authPredicate(minimumRoleRequired)
-//      val retrieval = Retrievals.name and Retrievals.authorisedEnrolments
-//
-//      authConnector.authorise(predicate, retrieval) flatMap {
-//        case Some(name) ~ authorisedEnrolments => body(LoggedInRequest(name.name, authorisedEnrolments, request))
-//        case None ~ authorisedEnrolments       => Future.successful(Forbidden(forbiddenView()))
-//      } recoverWith {
-//        case _: NoActiveSession                => Future.successful(toStrideLogin)
-//        case _: InsufficientEnrolments         => Future.successful(Forbidden(forbiddenView()))
-//      }
-//  }
-
   private def toStrideLogin(implicit appConfig: AppConfig): Result = {
     Redirect(
       appConfig.strideLoginUrl,

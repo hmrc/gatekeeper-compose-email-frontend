@@ -129,6 +129,19 @@ class ComposeEmailControllerSpec extends ControllerBaseSpec with Matchers with M
       (contentAsJson(result) \ "message").as[String] should startWith("Request payload does not appear to be JSON: Unrecognized token")
     }
 
+  "handle a form which contains the recipients attribute which contains valid JSON but which does not represent user entities" in new Setup {
+    val composeEmailRecipients = """[{"key":"value"}]"""
+      givenTheGKUserIsAuthorisedAndIsANormalUser()
+      val fakeRequest = FakeRequest("POST", "/email")
+        .withSession(csrfToken, authToken, userToken)
+        .withFormUrlEncodedBody("email-recipients" -> composeEmailRecipients)
+        .withCSRFToken
+      val result = controller.initialiseEmail()(fakeRequest)
+      status(result) shouldBe BAD_REQUEST
+      (contentAsJson(result) \ "code").as[String] shouldBe "INVALID_REQUEST_PAYLOAD"
+      (contentAsJson(result) \ "message").as[String] should startWith("Request payload does not contain gatekeeper users")
+    }
+
     "handle a request payload which doesn't contain the expected recipients attribute" in new Setup {
       givenTheGKUserIsAuthorisedAndIsANormalUser()
       val fakeRequest = FakeRequest("POST", "/email")

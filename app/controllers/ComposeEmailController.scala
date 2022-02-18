@@ -114,7 +114,7 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
 
   private def base64Decode(result: String): String = new String(Base64.getDecoder.decode(result), Charsets.UTF_8)
 
-  /*private def noAttachmentEmail(body: MultipartFormData[TemporaryFilePart],
+  private def noAttachmentEmail(body: MultipartFormData[TemporaryFile],
                                 keyEither: Either[Result, String])
                                (implicit requestHeader: RequestHeader, request: Request[_]): Future[Result] = {
     val emailForm: ComposeEmailForm = MultipartFormExtractor.extractComposeEmailForm(body)
@@ -129,9 +129,8 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
         controllers.EmailPreviewForm.form.fill(EmailPreviewForm(email.emailUID, emailForm))))
     }
   }
-*/
+
   def initialiseEmail: Action[AnyContent] = requiresAtLeast(GatekeeperRole.USER) { implicit request =>
-    def convertRequestToListUsers(users: String) = Json.parse(users).validate[List[User]]
 
     def persistEmailDetails(users: List[User]) = {
       implicit val userFormat = Json.reads[User]
@@ -149,7 +148,8 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
         case Some(recipients) => try {
           Json.parse(recipients.head).validate[List[User]] match {
             case JsSuccess(value: Seq[User], _) => persistEmailDetails(value)
-            case JsError(errors) => Future.successful(Ok(errors.mkString(", ")))
+            case JsError(errors) => Future.successful(BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD,
+              s"""Request payload does not contain gatekeeper users: ${errors.mkString(", ")}""")))
           }
         } catch {
           case NonFatal(e) => {
@@ -157,23 +157,16 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
             Future.successful(BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, s"Request payload does not appear to be JSON: ${e.getMessage}"))
             )
           }
-          case _ => Future.successful(BadRequest("Unknown error"))
         }
         case None => Future.successful(BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, s"Request payload does not contain any email recipients")))
       }
-    }catch{
+    } catch {
       case e => {
         logger.error("Error")
         Future.successful(BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, "Request payload was not a URL encoded form")))
 
       }
     }
-  }
-
-  private def recovery: PartialFunction[Throwable, Result] = {
-    case e: IllegalArgumentException =>
-      logger.info(s"Invalid request due to ${e.getMessage}")
-      BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, e.getMessage))
   }
 
   def attachmentEmail(body: MultipartFormData[TemporaryFile], keyEither: Either[Result, String])
