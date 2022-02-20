@@ -92,7 +92,7 @@ class EmailPreviewControllerSpec extends ControllerBaseSpec with Matchers {
       .build()
   }
 
-  "POST /email" should {
+  "POST /send-email" should {
 
     "send an email upon receiving a valid form submission" in new Setup {
       val fakeRequest = FakeRequest("POST", s"/send-email/$emailUID")

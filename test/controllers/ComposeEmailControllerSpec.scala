@@ -50,6 +50,7 @@ class ComposeEmailControllerSpec extends ControllerBaseSpec with Matchers with M
     val notLoggedInRequest = FakeRequest("GET", "/email").withCSRFToken
     val loggedInRequest = FakeRequest("GET", "/email").withSession(csrfToken, authToken, userToken).withCSRFToken
     val fakeConfirmationGetRequest = FakeRequest("GET", "/sent-email").withSession(csrfToken, authToken, userToken).withCSRFToken
+    val fakeConfirmationEmailPreviewRequest = FakeRequest("GET", "/emailpreview").withSession(csrfToken, authToken, userToken).withCSRFToken
     val fakePostFormRequest = FakeRequest("POST", "/email").withSession(csrfToken, authToken, userToken).withCSRFToken
 
     implicit val hc: HeaderCarrier = HeaderCarrier()
@@ -126,6 +127,24 @@ class ComposeEmailControllerSpec extends ControllerBaseSpec with Matchers with M
     "return HTML" in new Setup {
       givenTheGKUserIsAuthorisedAndIsANormalUser()
       val result = controller.sentEmailConfirmation(fakeConfirmationGetRequest)
+      contentType(result) shouldBe Some("text/html")
+      charset(result) shouldBe Some("utf-8")
+      verifyZeroInteractions(mockGatekeeperEmailService)
+    }
+  }
+
+  "GET /emailpreview/emailUID" should {
+    "return 200" in new Setup {
+      givenTheGKUserIsAuthorisedAndIsANormalUser()
+      val result = controller.emailPreview(emailUID)(loggedInRequest)
+      verifyAuthConnectorCalledForUser
+      status(result) shouldBe OK
+      verifyZeroInteractions(mockGatekeeperEmailService)
+    }
+
+    "return HTML" in new Setup {
+      givenTheGKUserIsAuthorisedAndIsANormalUser()
+      val result = controller.emailPreview(emailUID)(loggedInRequest)
       contentType(result) shouldBe Some("text/html")
       charset(result) shouldBe Some("utf-8")
       verifyZeroInteractions(mockGatekeeperEmailService)
