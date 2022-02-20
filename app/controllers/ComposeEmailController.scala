@@ -27,7 +27,7 @@ import play.api.libs.Files.TemporaryFile
 import play.api.mvc._
 import services.ComposeEmailService
 import uk.gov.hmrc.play.bootstrap.frontend.controller.FrontendController
-import utils.{ErrorAction, GatekeeperAuthWrapper, MultipartFormExtractor}
+import utils.GatekeeperAuthWrapper
 import views.html._
 
 import java.nio.file.Path

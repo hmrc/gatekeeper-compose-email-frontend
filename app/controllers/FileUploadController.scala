@@ -46,33 +46,13 @@ class FileUploadController @Inject()(
   def start(emailUID: String, searched: Boolean = false, multipleUpload: Boolean = true): Action[AnyContent] =
     requiresAtLeast(GatekeeperRole.USER) { implicit request =>
       uploadDocumentsConnector.initializeNewFileUpload(emailUID, searched, multipleUpload)
-        .map(relativeUrl =>
-          relativeUrl match {
-            case Some(url) =>
-              println(s"*************** ${appConfig.fileUploadPublicUrl}    ->  $url  ")
-              Redirect(s"${appConfig.fileUploadPublicUrl}$url")
-            case None => Redirect(s"")
-          })
-  }
-
-  def updateFiles(): Action[UploadedFileMetadata] = Action.async(parse.json[UploadedFileMetadata]) { implicit request =>
-    request.body match {
-      case value =>  {
-        println(s"Cargo is ${value.cargo}")
-        println(s"******$value")
-        val fetchEmail: Future[OutgoingEmail] = emailService.fetchEmail(emailUID = value.cargo.get.emailUID)
-        fetchEmail.map { email =>
-          emailService.updateEmail(ComposeEmailForm(email.subject, email.markdownEmailBody, true), email.emailUID, email.recipients, Some(value.uploadedFiles) )
-          NoContent
+        .map {
+          case Some(url) => Redirect(s"${appConfig.fileUploadPublicUrl}$url")
+          case None => BadRequest
         }
-      }
-      case _ => Future.successful(BadRequest)
-    }
-
   }
 
   def continue(emailUID: String): Action[AnyContent] = requiresAtLeast(GatekeeperRole.USER)  { implicit request =>
-    //TODO integrate with DEC64 for file upload
     Future.successful(NoContent)
   }
 }

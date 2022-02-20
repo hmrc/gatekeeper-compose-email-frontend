@@ -18,7 +18,7 @@ package controllers
 
 import com.google.common.base.Charsets
 import config.AppConfig
-import connectors.{GatekeeperEmailConnector, UpscanInitiateConnector}
+import connectors.GatekeeperEmailConnector
 import models.OutgoingEmail
 import play.api.Logging
 import play.api.data.Form

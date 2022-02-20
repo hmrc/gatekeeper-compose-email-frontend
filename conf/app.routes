@@ -7,11 +7,9 @@ GET        /assets/*file            controllers.Assets.versioned(path = "/public
 POST       /upload/:emailUID        controllers.ComposeEmailController.upload(emailUID: String)
 GET        /emailpreview/:emailUID  controllers.ComposeEmailController.emailPreview(emailUID: String)
 POST       /send-email/:emailUID    controllers.EmailPreviewController.sendEmail(emailUID: String)
-POST       /edit-email/:emailUID              controllers.EmailPreviewController.editEmail(emailUID: String)
+POST       /edit-email/:emailUID    controllers.EmailPreviewController.editEmail(emailUID: String)
 POST       /process-recipients      controllers.ComposeEmailController.processRecipients
 
 GET         /start-file-upload/:emailUID        controllers.FileUploadController.start(emailUID: String, searched: Boolean, multipleUpload: Boolean)
 GET         /upload-confirmation/:emailUID      controllers.FileUploadController.continue(emailUID: String)
 
-+ nocsrf
-POST        /update-files                               controllers.FileUploadController.updateFiles()

@@ -18,7 +18,7 @@ package services
 
 import connectors.GatekeeperEmailConnector
 import controllers.{ComposeEmailForm, EmailPreviewForm}
-import models.{InProgress, OutgoingEmail, Reference, UploadInfo, UploadedSuccessfully, User}
+import models.{OutgoingEmail, User}
 import org.mockito.ArgumentMatchersSugar
 import org.mockito.scalatest.MockitoSugar
 import org.scalatest.matchers.should.Matchers
@@ -39,15 +39,30 @@ class ComposeEmailServiceSpec extends AnyWordSpec with Matchers with GuiceOneApp
     val mockEmailConnector = mock[GatekeeperEmailConnector]
     val underTest = new ComposeEmailService(mockEmailConnector)
     val su = List(User("sawd", "efef", "eff", true))
-
+    val emailUID = "emailUID"
   }
 
-  "sendEmail" should {
-    "handle sending an email successfully" in new Setup {
+  "saveEmail" should {
+    "handle saving an email successfully" in new Setup {
       when(mockEmailConnector.saveEmail(*, *, *)(*)).thenReturn(Future.successful(OutgoingEmail("", "", su, None, "", "", "", "", None)))
       val result = await(underTest.saveEmail(new ComposeEmailForm("", "", true), "", su))
       result shouldBe OutgoingEmail("", "", su, None, "", "", "", "", None)
     }
+  }
 
+  "fetchEmail" should {
+    "handle fetching an email successfully" in new Setup {
+      when(mockEmailConnector.fetchEmail(*)(*)).thenReturn(Future.successful(OutgoingEmail("", "", su, None, "", "", "", "", None)))
+      val result = await(underTest.fetchEmail(emailUID = emailUID))
+      result shouldBe OutgoingEmail("", "", su, None, "", "", "", "", None)
+    }
+  }
+
+  "updateEmail" should {
+    "handle updating an email successfully" in new Setup {
+      when(mockEmailConnector.updateEmail(*, *, *, *)(*)).thenReturn(Future.successful(OutgoingEmail("", "", su, None, "", "", "", "", None)))
+      val result = await(underTest.updateEmail(new ComposeEmailForm("", "", true), "", su))
+      result shouldBe OutgoingEmail("", "", su, None, "", "", "", "", None)
+    }
   }
 }

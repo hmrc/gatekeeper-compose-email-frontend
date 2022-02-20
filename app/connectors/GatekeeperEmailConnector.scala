@@ -20,7 +20,7 @@ import config.EmailConnectorConfig
 import controllers.{ComposeEmailForm, EmailPreviewForm}
 import models.EmailRequest.{createEmailRequest, updateEmailRequest}
 import models.file_upload.UploadedFile
-import models.{EmailRequest, OutgoingEmail, UploadInfo, User}
+import models.{EmailRequest, OutgoingEmail, User}
 import uk.gov.hmrc.http.HttpReads.Implicits._
 import uk.gov.hmrc.http.{HeaderCarrier, HttpClient, HttpErrorFunctions, UpstreamErrorResponse}
 import uk.gov.hmrc.play.http.metrics.common.API

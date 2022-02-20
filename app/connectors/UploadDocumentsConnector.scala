@@ -44,7 +44,7 @@ class UploadDocumentsConnector @Inject()(httpClient: HttpClient,
   }
 
   private def sendRequest(request: UploadDocumentsWrapper)(implicit hc: HeaderCarrier): Future[Option[String]] = {
-    httpClient.POST[UploadDocumentsWrapper, HttpResponse](appConfig.fileUploadInitializationUrl, request).map { response =>
+    actualPost(request).map { response =>
       response.status match {
         case CREATED =>
           response.header("Location")
@@ -52,6 +52,10 @@ class UploadDocumentsConnector @Inject()(httpClient: HttpClient,
           None
       }
     }.recover { case _ => None }
+  }
+
+  def actualPost(request: UploadDocumentsWrapper)(implicit hc: HeaderCarrier) = {
+    httpClient.POST[UploadDocumentsWrapper, HttpResponse](appConfig.fileUploadInitializationUrl, request)
   }
 
 

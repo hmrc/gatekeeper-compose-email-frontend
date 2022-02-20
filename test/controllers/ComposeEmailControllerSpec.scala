@@ -30,8 +30,6 @@ import play.filters.csrf.CSRF.TokenProvider
 import services.ComposeEmailService
 import uk.gov.hmrc.http.HeaderCarrier
 import utils.ComposeEmailControllerSpecHelpers._
-import utils.CreateTempFileFromResource
-import utils.Implicits.Base64StringOps
 import views.html.{ComposeEmail, EmailSentConfirmation}
 
 import scala.concurrent.Future
@@ -47,6 +45,7 @@ class ComposeEmailControllerSpec extends ControllerBaseSpec with Matchers with M
     val emailUID = UUID.randomUUID().toString
     lazy val mockGatekeeperEmailService = mock[ComposeEmailService]
     val csrfToken: (String, String) = "csrfToken" -> app.injector.instanceOf[TokenProvider].generateToken
+    implicit val materializer = app.materializer
 
     val notLoggedInRequest = FakeRequest("GET", "/email").withCSRFToken
     val loggedInRequest = FakeRequest("GET", "/email").withSession(csrfToken, authToken, userToken).withCSRFToken
@@ -58,24 +57,28 @@ class ComposeEmailControllerSpec extends ControllerBaseSpec with Matchers with M
     val composeEmailForm: ComposeEmailForm = ComposeEmailForm("dfasd", "asdfasf", true)
     val composeEmail: ComposeEmail = fakeApplication.injector.instanceOf[ComposeEmail]
     val emailSentConfirmation: EmailSentConfirmation = fakeApplication.injector.instanceOf[EmailSentConfirmation]
-    val controller = buildController(mockGateKeeperService, mockedProxyRequestor, mockAuthConnector)
+    val controller = buildController(mockGateKeeperService, mockAuthConnector)
   }
 
   "POST /users" should {
-//    "unmarshal the request body" in new Setup {
-//      val composeEmailRecipients = """[{"email":"neil.frow@digital.hmrc.gov.uk", "userId":"d8efe602-3ba4-434e-a547-07bba424797f", "firstName":"Neil","lastName":"Frow","verified":true, "organisation": "HMRC", "mfaEnabled":false}]""".stripMargin
-//      givenTheGKUserIsAuthorisedAndIsANormalUser()
-//      val fakeRequest = FakeRequest("POST", "/process-recipients ")
-//        .withSession(csrfToken, authToken, userToken)
-//        .withFormUrlEncodedBody("email-recipients" -> composeEmailRecipients)
-//        .withCSRFToken
-//      val result = controller.processRecipients()(fakeRequest)
-//      status(result) shouldBe SEE_OTHER
-//      redirectLocation(result) shouldBe Some("/api-gatekeeper/compose-email/email")
-//      session(result).isEmpty shouldBe false
-//      val recipientsAsJson = Json.parse(session(result).get("emailRecipients").get)
-//      recipientsAsJson shouldNot be (null)
-//    }
+    "unmarshal the request body" in new Setup {
+      val composeEmailRecipients =
+        """[{"email":"neil.frow@digital.hmrc.gov.uk",
+          |"userId":"d8efe602-3ba4-434e-a547-07bba424797f",
+          |"firstName":"Neil","lastName":"Frow","verified":true,
+          |"organisation": "HMRC", "mfaEnabled":false}]""".stripMargin
+      givenTheGKUserIsAuthorisedAndIsANormalUser()
+      val fakeRequest = FakeRequest("POST", "/process-recipients ")
+        .withSession(csrfToken, authToken, userToken)
+        .withFormUrlEncodedBody("email-recipients" -> composeEmailRecipients)
+        .withCSRFToken
+      val result = controller.processRecipients()(fakeRequest)
+      status(result) shouldBe SEE_OTHER
+      redirectLocation(result).get contains "/api-gatekeeper/compose-email/email/"
+      session(result).isEmpty shouldBe true
+      //val recipientsAsJson = Json.parse(session(result).get("emailRecipients").get)
+      //recipientsAsJson shouldNot be (null)
+    }
   }
   "GET /email" should {
     "return 200" in new Setup {
@@ -130,37 +133,28 @@ class ComposeEmailControllerSpec extends ControllerBaseSpec with Matchers with M
   }
 
 
-//  "POST /upload" should {
-//
-//    "reject a form submission with missing emailSubject" in new Setup {
-//      givenTheGKUserIsAuthorisedAndIsANormalUser()
-//      val formDataBody = new MultipartFormData[TemporaryFile](
-//        dataParts.filter(x => x._1 != "emailSubject") + ("emailSubject" -> Seq("")),
-//        files    = Seq(),
-//        badParts = Nil
-//      )
-//      val uploadRequest = FakeRequest().withBody(formDataBody).withCSRFToken
-//
-//      val result = controller.upload(emailUID)(uploadRequest)
-//      status(result) shouldBe BAD_REQUEST
-//      verifyAuthConnectorCalledForUser
-//      verifyZeroInteractions(mockGatekeeperEmailService)
-//    }
-//
-//    "reject a form submission with missing emailBody" in new Setup {
-//      givenTheGKUserIsAuthorisedAndIsANormalUser()
-//      val formDataBody = new MultipartFormData[TemporaryFile](
-//        dataParts.filter(x => x._1 != "emailBody") + ("emailBody" -> Seq("")),
-//        files    = Seq(),
-//        badParts = Nil
-//      )
-//      val uploadRequest = FakeRequest().withBody(formDataBody).withCSRFToken
-//
-//      val result = controller.upload()(uploadRequest)
-//      status(result) shouldBe BAD_REQUEST
-//      verifyAuthConnectorCalledForUser
-//      verifyZeroInteractions(mockGatekeeperEmailService)
-//    }
-//
-//  }
+  "POST /upload" should {
+
+    "reject a form submission with missing emailSubject" in new Setup {
+      givenTheGKUserIsAuthorisedAndIsANormalUser()
+      val uploadRequest = FakeRequest().withBody(composeEmailForm).withCSRFToken
+
+      val result = controller.upload(emailUID)(uploadRequest)
+      status(result) shouldBe BAD_REQUEST
+      verifyAuthConnectorCalledForUser
+      verifyZeroInteractions(mockGatekeeperEmailService)
+    }
+
+    "reject a form submission with missing emailBody" in new Setup {
+      givenTheGKUserIsAuthorisedAndIsANormalUser()
+
+      val uploadRequest = FakeRequest().withBody(composeEmailForm).withCSRFToken
+
+      val result = controller.upload(emailUID)(uploadRequest)
+      status(result) shouldBe BAD_REQUEST
+      verifyAuthConnectorCalledForUser
+      verifyZeroInteractions(mockGatekeeperEmailService)
+    }
+
+  }
 }

@@ -17,11 +17,9 @@
 package services
 
 import connectors.GatekeeperEmailConnector
-import controllers.{ComposeEmailForm, EmailPreviewForm}
-import models.{OutgoingEmail, UploadInfo, User}
-import models.EmailRequest.createEmailRequest
+import controllers.ComposeEmailForm
+import models.{OutgoingEmail, User}
 import models.file_upload.UploadedFile
-import play.api.mvc.Result
 import uk.gov.hmrc.http.HeaderCarrier
 
 import javax.inject.Inject

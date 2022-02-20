@@ -54,17 +54,12 @@ class GatekeeperEmailConnectorSpec extends AsyncHmrcSpec with BeforeAndAfterEach
     super.afterAll()
   }
 
-  val gatekeeperLink = "http://some.url"
-  val emailAddress = "email@example.com"
   val subject = "Email subject"
   val emailUID = "email-uuid"
-  val keyRef = "file-key"
   val emailSendServicePath = s"/gatekeeper-email/send-email/$emailUID"
-  val emailSaveServicePath = s"/gatekeeper-email/save-email?emailUID=$emailUID&key=$keyRef"
-  val emailUpdateServicePath = s"/gatekeeper-email/update-email?emailUID=$emailUID&key=$keyRef"
+  val emailSaveServicePath = s"/gatekeeper-email/save-email?emailUID=$emailUID"
+  val emailUpdateServicePath = s"/gatekeeper-email/update-email?emailUID=$emailUID"
   val fetchEmailUrl = s"/gatekeeper-email/fetch-email/$emailUID"
-  val inProgressUploadStatusUrl = s"/gatekeeperemail/insertfileuploadstatus?key=$keyRef"
-  val fetchProgressUploadStatusUrl = s"/gatekeeperemail/fetchfileuploadstatus?key=$keyRef"
   val emailBody = "Body to be used in the email template"
 
   trait Setup {
@@ -101,13 +96,6 @@ class GatekeeperEmailConnectorSpec extends AsyncHmrcSpec with BeforeAndAfterEach
          |    "approvedBy": "auto-emailer"
          |  }
       """.stripMargin
-    val uploadInfo =
-      s"""
-         |{"reference":{"value":"file-key"},
-         |"status":{"_type":"InProgress"}
-         |}
-         |
-      """.stripMargin
 
     stubFor(post(urlEqualTo(emailSendServicePath)).willReturn(aResponse()
       .withHeader("Content-type", "application/json")
@@ -125,22 +113,12 @@ class GatekeeperEmailConnectorSpec extends AsyncHmrcSpec with BeforeAndAfterEach
       .withHeader("Content-type", "application/json")
       .withBody(outgoingEmail)
       .withStatus(OK)))
-    stubFor(get(urlEqualTo(fetchProgressUploadStatusUrl)).willReturn(aResponse()
-      .withHeader("Content-type", "application/json")
-      .withBody(uploadInfo)
-      .withStatus(OK)))
-    stubFor(post(urlEqualTo(inProgressUploadStatusUrl)).willReturn(aResponse()
-      .withHeader("Content-type", "application/json")
-      .withBody(uploadInfo)
-      .withStatus(OK)))
   }
 
   trait FailingHttp {
     self: Setup =>
     stubFor(post(urlEqualTo(emailSendServicePath)).willReturn(aResponse().withStatus(NOT_FOUND)))
     stubFor(post(urlEqualTo(emailSaveServicePath)).willReturn(aResponse().withStatus(NOT_FOUND)))
-    stubFor(post(urlEqualTo(inProgressUploadStatusUrl)).willReturn(aResponse().withStatus(NOT_FOUND)))
-    stubFor(get(urlEqualTo(fetchProgressUploadStatusUrl)).willReturn(aResponse().withStatus(NOT_FOUND)))
   }
 
   "emailConnector" should {
@@ -159,27 +137,27 @@ class GatekeeperEmailConnectorSpec extends AsyncHmrcSpec with BeforeAndAfterEach
       }
     }
 
-//    "save gatekeeper email" in new Setup with WorkingHttp {
-//      await(underTest.saveEmail(composeEmailForm, emailUID, users))
-//
-//      wireMockVerify(1, postRequestedFor(
-//        urlEqualTo(emailSaveServicePath))
-//      )
-//    }
+    "save gatekeeper email" in new Setup with WorkingHttp {
+      await(underTest.saveEmail(composeEmailForm, emailUID, users))
 
-//    "fail to save gatekeeper email" in new Setup with FailingHttp {
-//      intercept[UpstreamErrorResponse] {
-//        await(underTest.saveEmail(composeEmailForm, emailUID, users))
-//      }
-//    }
+      wireMockVerify(1, postRequestedFor(
+        urlEqualTo(emailSaveServicePath))
+      )
+    }
 
-//    "update gatekeeper email" in new Setup with WorkingHttp {
-//      await(underTest.updateEmail(composeEmailForm, emailUID, users))
-//
-//      wireMockVerify(1, postRequestedFor(
-//        urlEqualTo(emailUpdateServicePath))
-//      )
-//    }
+    "fail to save gatekeeper email" in new Setup with FailingHttp {
+      intercept[UpstreamErrorResponse] {
+        await(underTest.saveEmail(composeEmailForm, emailUID, users))
+      }
+    }
+
+    "update gatekeeper email" in new Setup with WorkingHttp {
+      await(underTest.updateEmail(composeEmailForm, emailUID, users))
+
+      wireMockVerify(1, postRequestedFor(
+        urlEqualTo(emailUpdateServicePath))
+      )
+    }
 
     "fail to update gatekeeper email" in new Setup with FailingHttp {
       intercept[UpstreamErrorResponse] {

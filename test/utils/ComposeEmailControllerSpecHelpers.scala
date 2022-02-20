@@ -20,12 +20,12 @@ import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import common.ControllerBaseSpec
 import config.EmailConnectorConfig
-import connectors.{AuthConnector, GatekeeperEmailConnector, PreparedUpload, UploadForm, UpscanInitiateConnector, UpscanInitiateRequestV2}
+import connectors.{AuthConnector, GatekeeperEmailConnector}
 import controllers.{ComposeEmailController, ComposeEmailForm, ControllerSetupBase}
 import mocks.TestRoles.userRole
 import mocks.connector.AuthConnectorMock
 import models.file_upload.UploadedFile
-import models.{GatekeeperRole, InProgress, OutgoingEmail, Reference, UploadInfo, UploadedSuccessfully, User}
+import models.{OutgoingEmail, User}
 import org.mockito.{ArgumentMatchersSugar, MockitoSugar}
 import org.mockito.MockitoSugar.mock
 import org.scalatest.GivenWhenThen
@@ -43,7 +43,6 @@ import play.shaded.ahc.io.netty.handler.codec.http.DefaultHttpHeaders
 import play.shaded.ahc.org.asynchttpclient.uri.Uri
 import services.ComposeEmailService
 import uk.gov.hmrc.http.{HeaderCarrier, HttpClient}
-import utils.ProxyRequestor
 import views.html.{ComposeEmail, EmailPreview, EmailSentConfirmation, ErrorTemplate, ForbiddenView}
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -67,7 +66,6 @@ object ComposeEmailControllerSpecHelpers  extends ControllerBaseSpec with Matche
 
   val fakeGetRequest = FakeRequest("GET", "/email").withCSRFToken
   val fakeConfirmationGetRequest = FakeRequest("GET", "/sent-email").withCSRFToken
-  val mockUpscanInitiateConnector: UpscanInitiateConnector = mock[UpscanInitiateConnector]
   val mockEmailConnector: GatekeeperEmailConnector = mock[GatekeeperEmailConnector]
   val mockWSClient: WSClient = mock[WSClient]
   lazy val composeEmailTemplateView = app.injector.instanceOf[ComposeEmail]
@@ -92,30 +90,7 @@ object ComposeEmailControllerSpecHelpers  extends ControllerBaseSpec with Matche
   }
   val mockGateKeeperService = new ComposeEmailServiceTest
 
-  class ProxyRequestorTest extends ProxyRequestor(mockWSClient) {
-
-    override def post(upscanUrl: String, body: Source[MultipartFormData.Part[Source[ByteString, _]], _]) = {
-      import play.shaded.ahc.org.asynchttpclient.Response
-
-      val respBuilder = new Response.ResponseBuilder()
-      respBuilder.accumulate(new CacheableHttpResponseStatus(Uri.create("http://localhost/gatekeeper-email/email"), OK, "status text", "protocols!"))
-      respBuilder.accumulate(new DefaultHttpHeaders())
-      respBuilder.accumulate(new CacheableHttpResponseBodyPart("my body".getBytes(), true))
-      val resp = new AhcWSResponse(respBuilder.build())
-      Future.successful(resp)
-    }
-  }
-  val mockedProxyRequestor = new ProxyRequestorTest
-
-  class UpscanInitiateConnectorTest extends UpscanInitiateConnector(httpClient, appConfig) {
-    override def post(url: String, request: UpscanInitiateRequestV2)(implicit hc: uk.gov.hmrc.http.HeaderCarrier,
-                                                                     wts: play.api.libs.json.Writes[connectors.UpscanInitiateRequestV2]) = {
-      Future.successful(PreparedUpload(connectors.Reference("url"), UploadForm("", Map()) ))
-    }
-  }
-  val mockUpscanInitiateConnectorTest = new UpscanInitiateConnectorTest
-
-  def buildController(mockGateKeeperService: ComposeEmailService,mockedProxyRequestor: ProxyRequestor, mockAuthConnector: AuthConnector): ComposeEmailController = {
+  def buildController(mockGateKeeperService: ComposeEmailService, mockAuthConnector: AuthConnector): ComposeEmailController = {
     new ComposeEmailController(
       mcc,
       composeEmailTemplateView,
@@ -125,21 +100,4 @@ object ComposeEmailControllerSpecHelpers  extends ControllerBaseSpec with Matche
       forbiddenView, mockAuthConnector)
   }
 
-  class ProxyRequestorTestWrongSize extends ProxyRequestor(mockWSClient) {
-
-    override def post(upscanUrl: String, body: Source[MultipartFormData.Part[Source[ByteString, _]], _]) = {
-      import play.shaded.ahc.org.asynchttpclient.Response
-
-      val respBuilder = new Response.ResponseBuilder()
-      respBuilder.accumulate(new CacheableHttpResponseStatus(Uri.create("http://localhost/gatekeeper-email/email"),
-        BAD_REQUEST, "status text", "protocols!"))
-      respBuilder.accumulate(new DefaultHttpHeaders())
-      respBuilder.accumulate(new CacheableHttpResponseBodyPart(("{\"errorMessage\":\"Your proposed upload exceeds the maximum allowed size\"," +
-        "\"key\":\"3d376736-7853-4b53-88c3-91c3ef8e3ff5\",\"errorCode\":\"EntityTooLarge\",\"errorRequestId\":\"SomeRequestId\"," +
-        "\"errorResource\":\"NoFileReference\"}").getBytes(), true))
-      val resp = new AhcWSResponse(respBuilder.build())
-      Future.successful(resp)
-    }
-
-  }
 }
