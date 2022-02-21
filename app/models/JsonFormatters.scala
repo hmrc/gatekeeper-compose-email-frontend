@@ -18,8 +18,6 @@ package models
 
 import play.api.libs.json.Json
 
-
 object JsonFormatters {
   implicit val formatUser = Json.format[User]
-
 }

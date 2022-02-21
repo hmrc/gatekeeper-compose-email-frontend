@@ -57,11 +57,6 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
                                       (implicit  val appConfig: AppConfig, val ec: ExecutionContext)
   extends FrontendController(mcc) with GatekeeperAuthWrapper with Logging {
 
-  /*def email: Action[AnyContent] = requiresAtLeast(GatekeeperRole.USER) { implicit request =>
-
-    Ok(composeEmail(new UpscanInitiateResponse(), email.emailUID, controllers.ComposeEmailForm.form.fill(ComposeEmailForm("","", false))))
-  }*/
-
   def sentEmailConfirmation: Action[AnyContent] = requiresAtLeast(GatekeeperRole.USER) {
     implicit request => Future.successful(Ok(sentEmail()))
   }
@@ -133,7 +128,7 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
   def initialiseEmail: Action[AnyContent] = requiresAtLeast(GatekeeperRole.USER) { implicit request =>
 
     def persistEmailDetails(users: List[User]) = {
-      implicit val userFormat = Json.reads[User]
+//      implicit val userFormat = Json.reads[User]
       val emailUID = UUID.randomUUID().toString
       for {
         upscanInitiateResponse <- upscanInitiateConnector.initiateV2(None, None)
