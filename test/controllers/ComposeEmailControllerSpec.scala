@@ -61,57 +61,84 @@ class ComposeEmailControllerSpec extends ControllerBaseSpec with Matchers with M
     val controller = buildController(mockGateKeeperService, mockAuthConnector)
   }
 
-  "POST /users" should {
-    "unmarshal the request body" in new Setup {
+  "POST /email" should {
+    "unmarshal the request body when it contains an array of User with one element" in new Setup {
       val composeEmailRecipients =
-        """[{"email":"neil.frow@digital.hmrc.gov.uk",
-          |"userId":"d8efe602-3ba4-434e-a547-07bba424797f",
-          |"firstName":"Neil","lastName":"Frow","verified":true,
-          |"organisation": "HMRC", "mfaEnabled":false}]""".stripMargin
+        """[{"email":"neil.frow@digital.hmrc.gov.uk","userId":"d8efe602-3ba4-434e-a547-07bba424797f","firstName":"Neil","lastName":"Frow","verified":true,"mfaEnabled":false}]"""
       givenTheGKUserIsAuthorisedAndIsANormalUser()
-      val fakeRequest = FakeRequest("POST", "/process-recipients ")
+      val fakeRequest = FakeRequest("POST", "/email")
         .withSession(csrfToken, authToken, userToken)
         .withFormUrlEncodedBody("email-recipients" -> composeEmailRecipients)
         .withCSRFToken
-      val result = controller.processRecipients()(fakeRequest)
-      status(result) shouldBe SEE_OTHER
-      redirectLocation(result).get contains "/api-gatekeeper/compose-email/email/"
-      session(result).isEmpty shouldBe true
-      //val recipientsAsJson = Json.parse(session(result).get("emailRecipients").get)
-      //recipientsAsJson shouldNot be (null)
+      val result = controller.initialiseEmail()(fakeRequest)
+      status(result) shouldBe OK
+      result
     }
-  }
-  "GET /email" should {
-    "return 200" in new Setup {
+
+    "unmarshal the request body when it contains an array of User with two elements" in new Setup {
+      val composeEmailRecipients =
+        """[{"email":"neil.frow@digital.hmrc.gov.uk","userId":"d8efe602-3ba4-434e-a547-07bba424797f",
+          |"firstName":"Neil","lastName":"Frow","verified":true,"mfaEnabled":false},
+          |{"email":"neil.frow@digital.hmrc.gov.uk","userId":"d8efe602-3ba4-434e-a547-07bba424797f",
+          |"firstName":"Neil","lastName":"Frow","verified":true,"mfaEnabled":false}]""".stripMargin
       givenTheGKUserIsAuthorisedAndIsANormalUser()
-      val result = controller.email(emailUID)(loggedInRequest)
-      status(result) shouldBe Status.OK
-      verifyAuthConnectorCalledForUser
-      verifyZeroInteractions(mockGatekeeperEmailService)
+      val fakeRequest = FakeRequest("POST", "/email")
+        .withSession(csrfToken, authToken, userToken)
+        .withFormUrlEncodedBody("email-recipients" -> composeEmailRecipients)
+        .withCSRFToken
+      val result = controller.initialiseEmail()(fakeRequest)
+      status(result) shouldBe OK
+      contentAsString(result).contains("Compose email") shouldBe true
     }
 
-    "redirect to login page for a user that is not authenticated" in new Setup {
-      givenFailedLogin()
-      val result = controller.email(emailUID)(notLoggedInRequest)
-      verifyAuthConnectorCalledForUser
-      status(result) shouldBe Status.SEE_OTHER
-      verifyZeroInteractions(mockGatekeeperEmailService)
-    }
-
-    "deny user with incorrect privileges" in new Setup {
-      givenTheGKUserHasInsufficientEnrolments()
-      val result = controller.email(emailUID)(notLoggedInRequest)
-      verifyAuthConnectorCalledForUser
-      status(result) shouldBe Status.FORBIDDEN
-      verifyZeroInteractions(mockGatekeeperEmailService)
-    }
-
-    "return HTML" in new Setup {
+    "handle a form which contains the recipients attribute but its value is not valid JSON" in new Setup {
+      val composeEmailRecipients = "dummy"
       givenTheGKUserIsAuthorisedAndIsANormalUser()
-      val result = controller.email(emailUID)(loggedInRequest)
-      contentType(result) shouldBe Some("text/html")
-      charset(result) shouldBe Some("utf-8")
-      verifyZeroInteractions(mockGatekeeperEmailService)
+      val fakeRequest = FakeRequest("POST", "/email")
+        .withSession(csrfToken, authToken, userToken)
+        .withFormUrlEncodedBody("email-recipients" -> composeEmailRecipients)
+        .withCSRFToken
+      val result = controller.initialiseEmail()(fakeRequest)
+      status(result) shouldBe BAD_REQUEST
+      (contentAsJson(result) \ "code").as[String] shouldBe "INVALID_REQUEST_PAYLOAD"
+      (contentAsJson(result) \ "message").as[String] should startWith("Request payload does not appear to be JSON: Unrecognized token")
+    }
+
+    "handle a form which contains the recipients attribute which contains valid JSON but which does not represent user entities" in new Setup {
+      val composeEmailRecipients = """[{"key":"value"}]"""
+      givenTheGKUserIsAuthorisedAndIsANormalUser()
+      val fakeRequest = FakeRequest("POST", "/email")
+        .withSession(csrfToken, authToken, userToken)
+        .withFormUrlEncodedBody("email-recipients" -> composeEmailRecipients)
+        .withCSRFToken
+      val result = controller.initialiseEmail()(fakeRequest)
+      status(result) shouldBe BAD_REQUEST
+      (contentAsJson(result) \ "code").as[String] shouldBe "INVALID_REQUEST_PAYLOAD"
+      (contentAsJson(result) \ "message").as[String] should startWith("Request payload does not contain gatekeeper users")
+    }
+
+    "handle a request payload which doesn't contain the expected recipients attribute" in new Setup {
+      givenTheGKUserIsAuthorisedAndIsANormalUser()
+      val fakeRequest = FakeRequest("POST", "/email")
+        .withSession(csrfToken, authToken, userToken)
+        .withFormUrlEncodedBody("dummy" -> "value")
+        .withCSRFToken
+      val result = controller.initialiseEmail()(fakeRequest)
+      status(result) shouldBe BAD_REQUEST
+      (contentAsJson(result) \ "code").as[String] shouldBe "INVALID_REQUEST_PAYLOAD"
+      (contentAsJson(result) \ "message").as[String] should startWith("Request payload does not contain any email recipients")
+
+    }
+
+    "handle a request payload which doesn't contain a form" in new Setup {
+      givenTheGKUserIsAuthorisedAndIsANormalUser()
+      val fakeRequest = FakeRequest("POST", "/email")
+        .withSession(csrfToken, authToken, userToken)
+        .withCSRFToken
+      val result = controller.initialiseEmail()(fakeRequest)
+      status(result) shouldBe BAD_REQUEST
+      (contentAsJson(result) \ "code").as[String] shouldBe "INVALID_REQUEST_PAYLOAD"
+      (contentAsJson(result) \ "message").as[String] shouldBe "Request payload was not a URL encoded form"
     }
   }
 

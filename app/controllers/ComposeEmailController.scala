@@ -35,7 +35,9 @@ import java.util.{Base64, UUID}
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 import models.JsonFormatters._
-import play.api.libs.json.Json
+import play.api.libs.json.{JsError, JsSuccess, Json}
+
+import scala.util.control.NonFatal
 
 @Singleton
 class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
@@ -48,20 +50,46 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
                                       (implicit  val appConfig: AppConfig, val ec: ExecutionContext)
   extends FrontendController(mcc) with GatekeeperAuthWrapper with Logging {
 
-  def email(emailUID: String): Action[AnyContent] = requiresAtLeast(GatekeeperRole.USER) { implicit request =>
-    Future.successful(Ok(composeEmail(emailUID, controllers.ComposeEmailForm.form.fill(ComposeEmailForm("","", true)))))
-  }
+  def initialiseEmail: Action[AnyContent] = requiresAtLeast(GatekeeperRole.USER) { implicit request =>
 
-  def processRecipients: Action[AnyContent] =  Action.async { implicit request =>
-    val emailRecipients: String = Json.stringify(Json.toJson(request.body.asFormUrlEncoded.map(p => p.get("email-recipients"))))
-    val users = List(User("srinivasalu.munagala@digital.hmrc.gov.uk", "Srinivasalu", "munagala", true),
-      User("siva.isikella@digital.hmrc.gov.uk", "siva", "isikella", true),
-      User("imran.akram@digital.hmrc.gov.uk", "Imran", "Akram", true),
-      User("neil.frow@digital.hmrc.gov.uk", "Neil", "Frow", true),
-      User("gareth.chapman@digital.hmrc.gov.uk", "Gareth", "Chapman", true))
-    val emailUID = UUID.randomUUID().toString
-     emailService.saveEmail(ComposeEmailForm("", "", true), emailUID, users).map(emailRec =>
-      Redirect(routes.ComposeEmailController.email(emailRec.emailUID)))
+    def persistEmailDetails(users: List[User]) = {
+      //      implicit val userFormat = Json.reads[User]
+      val usersInTest = List(User("srinivasalu.munagala@digital.hmrc.gov.uk", "Srinivasalu", "munagala", true),
+        User("siva.isikella@digital.hmrc.gov.uk", "siva", "isikella", true),
+        User("imran.akram@digital.hmrc.gov.uk", "Imran", "Akram", true),
+        User("neil.frow@digital.hmrc.gov.uk", "Neil", "Frow", true),
+        User("gareth.chapman@digital.hmrc.gov.uk", "Gareth", "Chapman", true))
+      val emailUID = UUID.randomUUID().toString
+      for {
+        email <- emailService.saveEmail(ComposeEmailForm("", "", false), emailUID, usersInTest)
+      } yield Ok(composeEmail( email.emailUID, controllers.ComposeEmailForm.form.fill(ComposeEmailForm("","", false))))
+    }
+
+    try {
+      val body: Option[Map[String, Seq[String]]] = request.body.asInstanceOf[AnyContentAsFormUrlEncoded].asFormUrlEncoded
+      body.map(elems => elems.get("email-recipients")).head match {
+        case Some(recipients) => try {
+          Json.parse(recipients.head).validate[List[User]] match {
+            case JsSuccess(value: Seq[User], _) => persistEmailDetails(value)
+            case JsError(errors) => Future.successful(BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD,
+              s"""Request payload does not contain gatekeeper users: ${errors.mkString(", ")}""")))
+          }
+        } catch {
+          case NonFatal(e) => {
+            logger.error("Email recipients not valid JSON", e)
+            Future.successful(BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, s"Request payload does not appear to be JSON: ${e.getMessage}"))
+            )
+          }
+        }
+        case None => Future.successful(BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, s"Request payload does not contain any email recipients")))
+      }
+    } catch {
+      case e => {
+        logger.error("Error")
+        Future.successful(BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, "Request payload was not a URL encoded form")))
+
+      }
+    }
   }
 
   def sentEmailConfirmation: Action[AnyContent] = requiresAtLeast(GatekeeperRole.USER) {
