@@ -76,7 +76,7 @@ class AppConfig @Inject()(config: Configuration, servicesConfig: ServicesConfig)
   lazy val fileUploadContinueUrlPrefix: String =
     servicesConfig.getConfString("upload-documents-frontend.continue-url-prefix", "")
   lazy val fileUploadContextPath: String =
-    servicesConfig.getConfString("upload-documents-frontend.context-path", "/upload-documents")
+    servicesConfig.getConfString("upload-documents-frontend.context-path", "/internal")
   lazy val fileUploadPublicUrl: String =
     servicesConfig.getConfString("upload-documents-frontend.public-url", "")
   lazy val fileUploadInitializationUrl: String = s"$fileUploadBaseUrl$fileUploadContextPath/initialize"
