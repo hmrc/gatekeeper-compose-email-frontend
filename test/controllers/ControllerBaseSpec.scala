@@ -17,8 +17,7 @@
 package controllers
 
 import common.AsyncHmrcSpec
-import config.{AppConfig, AppConfigImpl}
-import mocks.config.FakeAppConfigImpl
+import config.{AppConfig}
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.Application
 import play.api.inject.bind
@@ -32,7 +31,7 @@ trait ControllerBaseSpec extends AsyncHmrcSpec with GuiceOneAppPerSuite {
     GuiceApplicationBuilder()
       .configure("metrics.jvm" -> false)
       .configure("metrics.enabled" -> false)
-      .overrides(bind[AppConfig].to[FakeAppConfigImpl])
-      .overrides(bind[AppConfigImpl].to[FakeAppConfigImpl])
+//      .overrides(bind[AppConfig].to[FakeAppConfig])
+//      .overrides(bind[AppConfig].to[FakeAppConfigImpl])
       .build()
 }

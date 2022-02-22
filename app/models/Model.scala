@@ -27,3 +27,6 @@ object GatekeeperSessionKeys {
   val LoggedInUser = "LoggedInUser"
   val AuthToken = SessionKeys.authToken
 }
+
+case class User (email: String, firstName: String, lastName: String,
+                 verified: Boolean)

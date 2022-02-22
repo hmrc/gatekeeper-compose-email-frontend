@@ -14,20 +14,21 @@
  * limitations under the License.
  */
 
-package common
+package models.file_upload
 
-import com.google.inject.Singleton
-import config.AppConfig
-import play.api.Configuration
-import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
+import play.api.libs.json.Format
 
-import javax.inject.Inject
+import scala.util.Random
 
-@Singleton
-class FakeAppConfig @Inject()(config: Configuration, servicesConfig: ServicesConfig)
-  extends AppConfig(config, servicesConfig) {
+case class Nonce(value: Int) {
+  override def equals(o: Any): Boolean =
+    o match {
+      case nonce: Nonce => nonce.value == value
+      case _ => false
+    }
+}
 
-
-  override val emailBaseUrl = "https://mock-gatekeeper-frontend/gatekeeper-email/insertfileuploadstatus?key=fileReference"
-
+object Nonce {
+  final def random: Nonce = Nonce(Random.nextInt())
+  implicit final val formats: Format[Nonce] = SimpleDecimalFormat[Nonce](s => Nonce(s.toIntExact), n => BigDecimal(n.value))
 }

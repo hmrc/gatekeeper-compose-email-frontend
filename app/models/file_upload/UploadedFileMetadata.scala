@@ -14,20 +14,12 @@
  * limitations under the License.
  */
 
-package common
+package models.file_upload
 
-import com.google.inject.Singleton
-import config.AppConfig
-import play.api.Configuration
-import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
+import play.api.libs.json.{Json, OFormat}
 
-import javax.inject.Inject
+case class UploadedFileMetadata(nonce: Nonce, uploadedFiles: Seq[UploadedFile], cargo: Option[UploadCargo])
 
-@Singleton
-class FakeAppConfig @Inject()(config: Configuration, servicesConfig: ServicesConfig)
-  extends AppConfig(config, servicesConfig) {
-
-
-  override val emailBaseUrl = "https://mock-gatekeeper-frontend/gatekeeper-email/insertfileuploadstatus?key=fileReference"
-
+object UploadedFileMetadata {
+  implicit val format: OFormat[UploadedFileMetadata] = Json.format[UploadedFileMetadata]
 }

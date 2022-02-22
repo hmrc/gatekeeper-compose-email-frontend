@@ -18,8 +18,9 @@ package connectors
 
 import config.EmailConnectorConfig
 import controllers.{ComposeEmailForm, EmailPreviewForm}
-import models.SendEmailRequest.createEmailRequest
-import models.{OutgoingEmail, SendEmailRequest, UploadInfo}
+import models.EmailRequest.{createEmailRequest, updateEmailRequest}
+import models.file_upload.UploadedFile
+import models.{EmailRequest, OutgoingEmail, User}
 import uk.gov.hmrc.http.HttpReads.Implicits._
 import uk.gov.hmrc.http.{HeaderCarrier, HttpClient, HttpErrorFunctions, UpstreamErrorResponse}
 import uk.gov.hmrc.play.http.metrics.common.API
@@ -36,28 +37,38 @@ class GatekeeperEmailConnector @Inject()(http: HttpClient, config: EmailConnecto
   val api = API("gatekeeper-email")
   lazy val serviceUrl = config.emailBaseUrl
 
-  def saveEmail(composeEmailForm: ComposeEmailForm, keyReference: String)(implicit hc: HeaderCarrier): Future[OutgoingEmail] = {
-    post(createEmailRequest(composeEmailForm), keyReference)
+  def saveEmail(composeEmailForm: ComposeEmailForm, emailUID: String, userInfo: List[User])(implicit hc: HeaderCarrier): Future[OutgoingEmail] = {
+    postSaveEmail(createEmailRequest(composeEmailForm, userInfo), emailUID)
+  }
+
+  def updateEmail(composeEmailForm: ComposeEmailForm, emailUID: String, users: List[User], attachmentDetails: Option[Seq[UploadedFile]] = None)
+                 (implicit hc: HeaderCarrier): Future[OutgoingEmail] = {
+    postUpdateEmail(updateEmailRequest(composeEmailForm, users, attachmentDetails), emailUID)
+  }
+
+  def fetchEmail(emailUID: String)(implicit hc: HeaderCarrier): Future[OutgoingEmail] = {
+    val url = s"$serviceUrl/gatekeeper-email/fetch-email/$emailUID"
+    http.GET[OutgoingEmail](url)
   }
 
   def sendEmail(emailPreviewForm: EmailPreviewForm)(implicit hc: HeaderCarrier): Future[OutgoingEmail] = {
-    http.POSTEmpty[OutgoingEmail](s"$serviceUrl/gatekeeper-email/send-email/${emailPreviewForm.emailId}")
+    http.POSTEmpty[OutgoingEmail](s"$serviceUrl/gatekeeper-email/send-email/${emailPreviewForm.emailUID}")
   }
 
-  private def post(request: SendEmailRequest, keyReference: String)(implicit hc: HeaderCarrier) = {
-    http.POST[SendEmailRequest, Either[UpstreamErrorResponse, OutgoingEmail]](s"$serviceUrl/gatekeeper-email/save-email?key=$keyReference", request)
+  private def postSaveEmail(request: EmailRequest, emailUID: String)(implicit hc: HeaderCarrier) = {
+    http.POST[EmailRequest, Either[UpstreamErrorResponse, OutgoingEmail]](s"$serviceUrl/gatekeeper-email/save-email?emailUID=$emailUID", request)
       .map {
         case resp@Right(_) => resp.right.get
         case Left(err) => throw err
       }
   }
 
-  def inProgressUploadStatus(keyReference: String)(implicit hc: HeaderCarrier): Future[UploadInfo] = {
-    http.POSTEmpty[UploadInfo](s"$serviceUrl/gatekeeperemail/insertfileuploadstatus?key=$keyReference")
+  private def postUpdateEmail(request: EmailRequest, emailUID: String)(implicit hc: HeaderCarrier) = {
+    http.POST[EmailRequest, Either[UpstreamErrorResponse, OutgoingEmail]](s"$serviceUrl/gatekeeper-email/update-email?emailUID=$emailUID", request)
+      .map {
+        case resp@Right(_) => resp.right.get
+        case Left(err) => throw err
+      }
   }
 
-  def fetchFileuploadStatus(key: String)(implicit hc: HeaderCarrier) = {
-    val url = s"$serviceUrl/gatekeeperemail/fetchfileuploadstatus"
-    http.GET[UploadInfo](url, Seq(("key", key)))
-  }
 }

@@ -14,22 +14,12 @@
  * limitations under the License.
  */
 
-package utils
+package models.file_upload
 
-import org.apache.commons.io.IOUtils
-import play.api.libs.Files.SingletonTemporaryFileCreator
+import play.api.libs.json.{Json, OFormat}
 
-import java.io.{FileOutputStream, InputStream}
+case class UploadCargo(emailUID: String)
 
-object CreateTempFileFromResource {
-
-  def apply(path : String) = {
-
-    val testResource: InputStream = getClass.getResourceAsStream(path)
-    assert(testResource != null, s"Resource $path not found")
-    val tempFile = SingletonTemporaryFileCreator.create("file", "tmp")
-    IOUtils.copy(testResource, new FileOutputStream(tempFile))
-    tempFile
-  }
-
+object UploadCargo {
+  implicit val format: OFormat[UploadCargo] = Json.format[UploadCargo]
 }

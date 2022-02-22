@@ -14,11 +14,20 @@
  * limitations under the License.
  */
 
-package services
+package models
 
-case class UpscanFileReference(reference: String)
+import play.api.libs.json.Json.JsValueWrapper
+import play.api.libs.json.{JsObject, Json}
 
-case class UpscanInitiateResponse(
-                                   fileReference: UpscanFileReference,
-                                   postTarget: String,
-                                   formFields: Map[String, String])
+object ErrorCode extends Enumeration {
+  type ErrorCode = Value
+  val INVALID_REQUEST_PAYLOAD = Value("INVALID_REQUEST_PAYLOAD")
+}
+
+object JsErrorResponse {
+  def apply(errorCode: ErrorCode.Value, message: JsValueWrapper): JsObject =
+    Json.obj(
+      "code" -> errorCode.toString,
+      "message" -> message
+    )
+}

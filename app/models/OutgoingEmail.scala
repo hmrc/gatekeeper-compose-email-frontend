@@ -16,12 +16,16 @@
 
 package models
 
+import models.file_upload.{UploadCargo, UploadedFile}
 import play.api.libs.json.{Json, OFormat}
 
-case class OutgoingEmail(emailId: String, recipientTitle: String, recipients: List[String], attachmentLink: Option[String],
+case class OutgoingEmail(emailUID: String, recipientTitle: String, recipients: List[User], attachmentDetails: Option[Seq[UploadedFile]],
                          markdownEmailBody: String, htmlEmailBody: String, subject: String,
                          composedBy: String, approvedBy: Option[String])
 
 object OutgoingEmail {
+  implicit val userFmt: OFormat[User] = Json.format[User]
+  implicit val format: OFormat[UploadCargo] = Json.format[UploadCargo]
+  implicit val attachmentDetailsFormat: OFormat[UploadedFile] = Json.format[UploadedFile]
   implicit val emailFmt: OFormat[OutgoingEmail] = Json.format[OutgoingEmail]
 }

@@ -16,22 +16,24 @@
 
 package controllers
 
-import connectors.{GatekeeperEmailConnector, UpscanInitiateConnector}
-import models.{InProgress, OutgoingEmail, Reference, UploadInfo}
+import connectors.GatekeeperEmailConnector
+import models.OutgoingEmail
 import org.scalatest.matchers.should.Matchers
 import play.api.Application
-import play.api.http.Status
+import play.api.http.Status.{BAD_REQUEST, OK, SEE_OTHER}
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.Json
+import play.api.mvc.Results.Status
+import play.api.test.CSRFTokenHelper.CSRFFRequestHeader
 import play.api.test.FakeRequest
 import play.api.test.Helpers.status
 import play.filters.csrf.CSRF.TokenProvider
-import services.{UpscanFileReference, UpscanInitiateResponse}
+import services.ComposeEmailService
 import uk.gov.hmrc.http.HeaderCarrier
-import utils.ComposeEmailControllerSpecHelpers.{mcc, mockGateKeeperService, mockedProxyRequestor}
-import views.html.{ComposeEmail}
-import play.api.test.CSRFTokenHelper._
+import utils.ComposeEmailControllerSpecHelpers.{mcc, mockGateKeeperService}
+import views.html.ComposeEmail
 
+import java.util.UUID
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future.successful
 
@@ -39,15 +41,17 @@ class EmailPreviewControllerSpec extends ControllerBaseSpec with Matchers {
   implicit val materializer = app.materializer
 
   trait Setup extends ControllerSetupBase {
+    val emailUID = UUID.randomUUID().toString
+
     val csrfToken: (String, String) = "csrfToken" -> app.injector.instanceOf[TokenProvider].generateToken
     private val mockGatekeeperEmailConnector: GatekeeperEmailConnector = mock[GatekeeperEmailConnector]
-    private val mockUpscanInitiateConnector: UpscanInitiateConnector = mock[UpscanInitiateConnector]
+    private val mockComposeEmailService: ComposeEmailService = mock[ComposeEmailService]
     private lazy val composeEmailTemplateView = app.injector.instanceOf[ComposeEmail]
 
     val controller = new EmailPreviewController(
       mcc,
       composeEmailTemplateView,
-      mockUpscanInitiateConnector,
+      mockComposeEmailService,
       mockGatekeeperEmailConnector
     )
     implicit val hc: HeaderCarrier = HeaderCarrier()
@@ -55,9 +59,9 @@ class EmailPreviewControllerSpec extends ControllerBaseSpec with Matchers {
     val outgoingEmail =
       s"""
          |  {
-         |    "emailId": "emailId",
+         |    "emailUID": "emailId",
          |    "recipientTitle": "Team-Title",
-         |    "recipients": [""],
+         |    "recipients": [{"email": "", "firstName": "", "lastName": "", "verified": true}],
          |    "attachmentLink": "",
          |    "markdownEmailBody": "",
          |    "htmlEmailBody": "",
@@ -70,12 +74,14 @@ class EmailPreviewControllerSpec extends ControllerBaseSpec with Matchers {
     when(mockGatekeeperEmailConnector.sendEmail(*)(*))
       .thenReturn(successful(Json.parse(outgoingEmail).as[OutgoingEmail]))
 
-    when(mockUpscanInitiateConnector.initiateV2(*, *)(*))
-      .thenReturn(successful(UpscanInitiateResponse(UpscanFileReference("reference"), "", Map())))
+    when(mockGatekeeperEmailConnector.fetchEmail(*)(*))
+      .thenReturn(successful(Json.parse(outgoingEmail).as[OutgoingEmail]))
 
-    when(mockGatekeeperEmailConnector.inProgressUploadStatus(*)(*))
-      .thenReturn(successful(UploadInfo(Reference("123423"), InProgress)))
+    when(mockComposeEmailService.fetchEmail(*)(*))
+      .thenReturn(successful(Json.parse(outgoingEmail).as[OutgoingEmail]))
 
+    when(mockGatekeeperEmailConnector.updateEmail(*, *, *, *)(*))
+      .thenReturn(successful(Json.parse(outgoingEmail).as[OutgoingEmail]))
 
   def fakeApplication(): Application =
     new GuiceApplicationBuilder()
@@ -86,21 +92,13 @@ class EmailPreviewControllerSpec extends ControllerBaseSpec with Matchers {
       .build()
   }
 
-  "POST /email" should {
+  "POST /send-email" should {
 
     "send an email upon receiving a valid form submission" in new Setup {
-      val fakeRequest = FakeRequest("POST", "/send-email")
-        .withFormUrlEncodedBody("emailId"->"emailId", "composeEmailForm.emailSubject"->"emailSubject",
-          "composeEmailForm.emailBody"->"emailBody", "composeEmailForm.emailRecipient"->"emailRecipient")
-      val result = controller.sendEmail()(fakeRequest)
-      status(result) shouldBe Status.SEE_OTHER
-    }
-
-    "send an email upon receiving an invalid form submission" in new Setup {
-      val fakeRequest = FakeRequest("POST", "/send-email")
-        .withFormUrlEncodedBody("emailId"->"emailId")
-      val result = controller.sendEmail()(fakeRequest)
-      status(result) shouldBe Status.BAD_REQUEST
+      val fakeRequest = FakeRequest("POST", s"/send-email/$emailUID")
+        .withSession(csrfToken, authToken, userToken).withCSRFToken
+      val result = controller.sendEmail(emailUID)(fakeRequest)
+      status(result) shouldBe SEE_OTHER
     }
   }
 
@@ -108,21 +106,12 @@ class EmailPreviewControllerSpec extends ControllerBaseSpec with Matchers {
 
     "edit email submits valid form to compose email" in new Setup {
       val fakeRequest = FakeRequest("POST", "/edit-email")
-        .withFormUrlEncodedBody("emailId"->"emailId", "composeEmailForm.emailSubject"->"emailSubject",
-          "composeEmailForm.emailBody"->"emailBody", "composeEmailForm.emailRecipient"->"emailRecipient")
+        .withFormUrlEncodedBody("emailUID"->"emailId", "composeEmailForm.emailSubject"->"emailSubject",
+          "composeEmailForm.emailBody"->"emailBody")
         .withSession(csrfToken, authToken, userToken).withCSRFToken
 
-      val result = controller.editEmail()(fakeRequest)
-      status(result) shouldBe Status.OK
-    }
-
-    "edit email submits invalid form to compose email" in new Setup {
-      val fakeRequest = FakeRequest("POST", "/edit-email")
-        .withFormUrlEncodedBody("emailId"->"emailId")
-        .withSession(csrfToken, authToken, userToken).withCSRFToken
-
-      val result = controller.editEmail()(fakeRequest)
-      status(result) shouldBe Status.BAD_REQUEST
+      val result = controller.editEmail(emailUID)(fakeRequest)
+      status(result) shouldBe OK
     }
   }
 }

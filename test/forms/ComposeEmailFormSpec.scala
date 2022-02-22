@@ -25,17 +25,13 @@ class ConposeEmailFormSpec extends AnyWordSpec with Matchers with GuiceOneAppPer
 
   "ComposeEmailForm" should {
     "successfully validate a complete form" in {
-      val correctForm = Map("emailRecipient" -> "john.doe@blah.com", "emailSubject" -> "something", "emailBody" -> "blah\nblah")
+      val correctForm = Map("emailSubject" -> "something", "emailBody" -> "blah\nblah")
       val boundForm = ComposeEmailForm.form.bind(correctForm)
       boundForm.errors.length shouldBe 0
     }
-    "reject a form with no recipient address" in {
-      val correctForm = Map("emailSubject" -> "something", "emailBody" -> "blah\nblah")
-      val boundForm = ComposeEmailForm.form.bind(correctForm)
-      boundForm.errors.length shouldBe 1
-    }
+
     "reject a form with no subject" in {
-      val correctForm = Map("emailRecipient" -> "john.doe@blah.com", "emailBody" -> "blah\nblah")
+      val correctForm = Map("emailBody" -> "blah\nblah")
       val boundForm = ComposeEmailForm.form.bind(correctForm)
       boundForm.errors.length shouldBe 1
     }

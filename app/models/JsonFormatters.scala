@@ -14,26 +14,14 @@
  * limitations under the License.
  */
 
-package utils
+package models
 
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpec
-import utils.Implicits.Base64StringOps
+import play.api.libs.json.Json
 
+import java.util.UUID
 
-class ImplicitsSpec extends AnyWordSpec with Matchers {
+object JsonFormatters {
+  //implicit val uuid = Json.format[UUID]
+  implicit val formatUser = Json.format[User]
 
-  "Base64StringOps" should {
-    "base64 encode a String" in {
-      val actual: String = "Hello, World".base64encode()
-
-      actual shouldBe "SGVsbG8sIFdvcmxk"
-    }
-
-    "base64 decode a String" in {
-      val actual: String = "SGVsbG8sIFdvcmxk".base64decode()
-
-      actual shouldBe "Hello, World"
-    }
-  }
 }

@@ -17,26 +17,17 @@
 @import config.AppConfig
 @import include._
 @import services._
-
+@import models._
 @this(layout: Layout)
 
-@(upscanInitiateResponse : UpscanInitiateResponse, form: Form[ComposeEmailForm])(implicit request: Request[_], messages: Messages, appConfig: AppConfig)
+@(emailUID: String, form: Form[ComposeEmailForm])(implicit request: Request[_], messages: Messages, appConfig: AppConfig)
 
 @layout(pageTitle = Some(s"${appConfig.title} - Compose Email")) {
   @errorSummary(form)
 
   <h1 class="govuk-heading-xl">Compose email</h1>
-@helper.form(routes.ComposeEmailController.upload, Symbol("enctype") -> "multipart/form-data") {
+@helper.form(routes.ComposeEmailController.upload(emailUID)) {
   @helper.CSRF.formField
-  <div class="govuk-form-group @if(form.errors("emailRecipient").nonEmpty) {govuk-form-group--error}">
-    <h1 class="govuk-label-wrapper"><label class="govuk-label govuk-label--l" for="email-recipient">
-      Email recipient
-    </label>
-    </h1>
-    @fieldError(form.errors, "emailRecipient")
-    <input class="govuk-input" id="emailRecipient" name="emailRecipient" type="text"
-           placeholder="muriel.heslop@@porpoisespit.com.au" value="@form.data.getOrElse("emailRecipient", "")">
-  </div>
 
   <div class="govuk-form-group @if(form.errors("emailSubject").nonEmpty) {govuk-form-group--error}">
     <h1 class="govuk-label-wrapper"><label class="govuk-label govuk-label--l" for="email-subject">
@@ -61,20 +52,21 @@
               aria-describedby="email-body-hint">@form.data.getOrElse("emailBody", "")</textarea>
   </div>
 
-    @for(field <- upscanInitiateResponse.formFields) {
-    <input type="hidden" name="@field._1" value="@field._2"/>
-    }
-    <input type="hidden" name="upscan-url" value="@upscanInitiateResponse.postTarget" />
-
-    <div class="govuk-form-group govuk-!-margin-top-6">
-        <label class="govuk-label" for="email-attachments">
-            Attach a file
-        </label>
-        <input class="govuk-file-upload"
-               id="email-attachments"
-               name="file"
-               type="file"
-               accept=".pdf,.doc,.docx,.xlsx,.xls,.png,.jpeg,.jpg,.txt">
+    <div class="govuk-form-group">
+        <fieldset class="govuk-fieldset">
+            <legend class="govuk-fieldset__legend govuk-body">
+                Attaching files
+            </legend>
+            <div class="govuk-checkboxes"
+                 data-module="govuk-checkboxes">
+                <div class="govuk-checkboxes__item">
+                    <input class="govuk-checkboxes__input" id="attachFiles" name="attachFiles" type="checkbox" value="true">
+                    <label class="govuk-label govuk-checkboxes__label" for="attachFiles">
+                        I need to attach files
+                    </label>
+                </div>
+            </div>
+        </fieldset>
     </div>
 
     <div class="govuk-button-group">

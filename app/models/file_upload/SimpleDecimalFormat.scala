@@ -14,18 +14,19 @@
  * limitations under the License.
  */
 
-package utils
+package models.file_upload
 
-import java.util.Base64
+import play.api.libs.json._
 
-object Implicits {
-  implicit class Base64StringOps(input: String) {
-    def base64encode(): String = {
-      val encodedBytes = Base64.getEncoder.encode(input.getBytes("UTF-8"))
-      new String(encodedBytes).replaceAll(System.lineSeparator, "")
-    }
+object SimpleDecimalFormat {
 
-    def base64decode(): String =
-      new String(Base64.getDecoder.decode(input))
-  }
+  def apply[A](from: BigDecimal => A, to: A => BigDecimal): Format[A] =
+    Format(
+      Reads {
+        case JsNumber(value) => JsSuccess(from(value))
+        case json            => JsError(s"Expected json number but got ${json.getClass.getSimpleName}")
+      },
+      Writes.apply(entity => JsNumber(to(entity)))
+    )
+
 }
