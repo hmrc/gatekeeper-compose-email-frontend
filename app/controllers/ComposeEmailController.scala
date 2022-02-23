@@ -52,16 +52,10 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
 
   def initialiseEmail: Action[AnyContent] = requiresAtLeast(GatekeeperRole.USER) { implicit request =>
 
-    def persistEmailDetails(users: List[User]) = {
-      //      implicit val userFormat = Json.reads[User]
-      val usersInTest = List(User("srinivasalu.munagala@digital.hmrc.gov.uk", "Srinivasalu", "munagala", true),
-        User("siva.isikella@digital.hmrc.gov.uk", "siva", "isikella", true),
-        User("imran.akram@digital.hmrc.gov.uk", "Imran", "Akram", true),
-        User("neil.frow@digital.hmrc.gov.uk", "Neil", "Frow", true),
-        User("gareth.chapman@digital.hmrc.gov.uk", "Gareth", "Chapman", true))
+    def persistEmailDetails(users: List[User]): Future[Result] = {
       val emailUID = UUID.randomUUID().toString
       for {
-        email <- emailService.saveEmail(ComposeEmailForm("", "", false), emailUID, usersInTest)
+        email <- emailService.saveEmail(ComposeEmailForm("", "", false), emailUID, users)
       } yield Ok(composeEmail( email.emailUID, controllers.ComposeEmailForm.form.fill(ComposeEmailForm("","", false))))
     }
 
