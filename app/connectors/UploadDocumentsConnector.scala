@@ -17,7 +17,6 @@
 package connectors
 
 import config.AppConfig
-import connectors.UploadDocumentsConnector.Request
 import models.file_upload.{Nonce, UploadDocumentsWrapper, UploadedFile}
 import play.api.http.Status.CREATED
 import play.api.libs.json.{Format, Json}

@@ -16,7 +16,6 @@
 
 package controllers
 
-import models.User
 import play.api.data.Form
 import play.api.data.Forms.{boolean, default, mapping, text}
 

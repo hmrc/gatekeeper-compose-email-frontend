@@ -18,10 +18,8 @@ package models
 
 import play.api.libs.json.Json
 
-import java.util.UUID
 
 object JsonFormatters {
-  //implicit val uuid = Json.format[UUID]
   implicit val formatUser = Json.format[User]
 
 }
