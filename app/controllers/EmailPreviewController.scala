@@ -61,7 +61,7 @@ class EmailPreviewController @Inject()
           email.markdownEmailBody.slice(0, index)
         }
         else email.markdownEmailBody
-        Ok(composeEmail(emailUID, controllers.ComposeEmailForm.form.fill(ComposeEmailForm(email.subject, emailBody, true))))
+        Ok(composeEmail(emailUID, controllers.ComposeEmailForm.form.fill(ComposeEmailForm(email.subject, emailBody, true)), Map()))
       }
     }
   }
