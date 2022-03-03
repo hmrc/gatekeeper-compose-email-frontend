@@ -21,7 +21,6 @@ import config.AppConfig
 import connectors.GatekeeperEmailConnector
 import models.OutgoingEmail
 import play.api.Logging
-import play.api.data.Form
 import play.api.i18n.I18nSupport
 import play.api.mvc.{Action, AnyContent, MessagesControllerComponents}
 import services.ComposeEmailService
@@ -55,13 +54,8 @@ class EmailPreviewController @Inject()
     implicit request => {
       val fetchEmail: Future[OutgoingEmail] = emailService.fetchEmail(emailUID)
       fetchEmail.map { email =>
-        val attachmentStartText = "From the Software Developer Support Team"
-        val index = email.markdownEmailBody.indexOf(attachmentStartText)
-        val emailBody = if(index > 0) {
-          email.markdownEmailBody.slice(0, index)
-        }
-        else email.markdownEmailBody
-        Ok(composeEmail(emailUID, controllers.ComposeEmailForm.form.fill(ComposeEmailForm(email.subject, emailBody, true)), Map()))
+        val txtEmailBody = base64Decode(email.markdownEmailBody)
+        Ok(composeEmail(emailUID, controllers.ComposeEmailForm.form.fill(ComposeEmailForm(email.subject, txtEmailBody, true)), Map()))
       }
     }
   }
