@@ -54,8 +54,16 @@ class EmailPreviewController @Inject()
     implicit request => {
       val fetchEmail: Future[OutgoingEmail] = emailService.fetchEmail(emailUID)
       fetchEmail.map { email =>
+        val attachmentStartText = "From the Software Developer Support Team"
         val txtEmailBody = base64Decode(email.markdownEmailBody)
-        Ok(composeEmail(emailUID, controllers.ComposeEmailForm.form.fill(ComposeEmailForm(email.subject, txtEmailBody, true))))
+        val index = txtEmailBody.indexOf(attachmentStartText)
+
+        val emailBody = if(index > 0) {
+          txtEmailBody.slice(0, index)
+        }
+        else txtEmailBody
+
+        Ok(composeEmail(emailUID, controllers.ComposeEmailForm.form.fill(ComposeEmailForm(email.subject, emailBody, true))))
       }
     }
   }
