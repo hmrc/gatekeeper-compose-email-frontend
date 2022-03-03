@@ -16,21 +16,18 @@
 
 package controllers
 
-import akka.stream.scaladsl.Source
 import com.google.common.base.Charsets
 import config.AppConfig
 import connectors.AuthConnector
 import models._
 import play.api.Logging
 import play.api.data.Form
-import play.api.libs.Files.TemporaryFile
 import play.api.mvc._
 import services.ComposeEmailService
 import uk.gov.hmrc.play.bootstrap.frontend.controller.FrontendController
 import utils.GatekeeperAuthWrapper
 import views.html._
 
-import java.nio.file.Path
 import java.util.{Base64, UUID}
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}

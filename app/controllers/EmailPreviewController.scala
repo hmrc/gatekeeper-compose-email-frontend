@@ -21,7 +21,6 @@ import config.AppConfig
 import connectors.GatekeeperEmailConnector
 import models.OutgoingEmail
 import play.api.Logging
-import play.api.data.Form
 import play.api.i18n.I18nSupport
 import play.api.mvc.{Action, AnyContent, MessagesControllerComponents}
 import services.ComposeEmailService
