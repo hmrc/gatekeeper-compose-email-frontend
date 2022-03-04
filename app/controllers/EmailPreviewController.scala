@@ -55,7 +55,7 @@ class EmailPreviewController @Inject()
       val fetchEmail: Future[OutgoingEmail] = emailService.fetchEmail(emailUID)
       fetchEmail.map { email =>
         val txtEmailBody = base64Decode(email.markdownEmailBody)
-        Ok(composeEmail(emailUID, controllers.ComposeEmailForm.form.fill(ComposeEmailForm(email.subject, txtEmailBody, true))))
+        Ok(composeEmail(emailUID, controllers.ComposeEmailForm.form.fill(ComposeEmailForm(email.subject, txtEmailBody, true)), Map()))
       }
     }
   }

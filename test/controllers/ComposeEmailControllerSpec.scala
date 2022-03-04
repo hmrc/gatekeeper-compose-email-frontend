@@ -65,10 +65,12 @@ class ComposeEmailControllerSpec extends ControllerBaseSpec with Matchers with M
     "unmarshal the request body when it contains an array of User with one element" in new Setup {
       val composeEmailRecipients =
         """[{"email":"neil.frow@digital.hmrc.gov.uk","userId":"d8efe602-3ba4-434e-a547-07bba424797f","firstName":"Neil","lastName":"Frow","verified":true,"mfaEnabled":false}]"""
+      val userSelectionData =
+        """{"API":"Agent Authorisation","Topic":"Business and policy"}""".stripMargin
       givenTheGKUserIsAuthorisedAndIsANormalUser()
       val fakeRequest = FakeRequest("POST", "/email")
         .withSession(csrfToken, authToken, userToken)
-        .withFormUrlEncodedBody("email-recipients" -> composeEmailRecipients)
+        .withFormUrlEncodedBody("email-recipients" -> composeEmailRecipients, "user-selection" -> userSelectionData )
         .withCSRFToken
       val result = controller.initialiseEmail()(fakeRequest)
       status(result) shouldBe OK
@@ -81,10 +83,12 @@ class ComposeEmailControllerSpec extends ControllerBaseSpec with Matchers with M
           |"firstName":"Neil","lastName":"Frow","verified":true,"mfaEnabled":false},
           |{"email":"neil.frow@digital.hmrc.gov.uk","userId":"d8efe602-3ba4-434e-a547-07bba424797f",
           |"firstName":"Neil","lastName":"Frow","verified":true,"mfaEnabled":false}]""".stripMargin
+      val userSelectionData =
+        """{"API":"Agent Authorisation","Topic":"Business and policy"}""".stripMargin
       givenTheGKUserIsAuthorisedAndIsANormalUser()
       val fakeRequest = FakeRequest("POST", "/email")
         .withSession(csrfToken, authToken, userToken)
-        .withFormUrlEncodedBody("email-recipients" -> composeEmailRecipients)
+        .withFormUrlEncodedBody("email-recipients" -> composeEmailRecipients, "user-selection" -> userSelectionData )
         .withCSRFToken
       val result = controller.initialiseEmail()(fakeRequest)
       status(result) shouldBe OK

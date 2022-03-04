@@ -20,7 +20,7 @@
 @import models._
 @this(layout: Layout)
 
-@(emailUID: String, form: Form[ComposeEmailForm])(implicit request: Request[_], messages: Messages, appConfig: AppConfig)
+@(emailUID: String, form: Form[ComposeEmailForm], userSelection: Map[String, String])(implicit request: Request[_], messages: Messages, appConfig: AppConfig)
 
 @layout(pageTitle = Some(s"${appConfig.title} - Compose Email")) {
   @errorSummary(form)
@@ -29,7 +29,19 @@
 @helper.form(routes.ComposeEmailController.upload(emailUID)) {
   @helper.CSRF.formField
 
-  <div class="govuk-form-group @if(form.errors("emailSubject").nonEmpty) {govuk-form-group--error}">
+    <dl class="govuk-summary-list email-summary">
+        @for((key, value) <- userSelection) {
+            <div class="govuk-summary-list__row">
+                <dt class="govuk-summary-list__key email-header">
+                    @key
+                </dt>
+                <dd class="govuk-summary-list__value">
+                    @value
+                </dd>
+            </div>
+        }
+    </dl>
+<div class="govuk-form-group @if(form.errors("emailSubject").nonEmpty) {govuk-form-group--error}">
     <h1 class="govuk-label-wrapper"><label class="govuk-label govuk-label--l" for="email-subject">
       Email subject
     </label>

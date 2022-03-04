@@ -49,11 +49,11 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
 
   def initialiseEmail: Action[AnyContent] = requiresAtLeast(GatekeeperRole.USER) { implicit request =>
 
-    def persistEmailDetails(users: List[User]): Future[Result] = {
+    def persistEmailDetails(users: List[User], userSelection: Map[String, String]): Future[Result] = {
       val emailUID = UUID.randomUUID().toString
       for {
         email <- emailService.saveEmail(ComposeEmailForm("", "", false), emailUID, users)
-      } yield Ok(composeEmail( email.emailUID, controllers.ComposeEmailForm.form.fill(ComposeEmailForm("","", false))))
+      } yield Ok(composeEmail(email.emailUID, controllers.ComposeEmailForm.form.fill(ComposeEmailForm("","", false)), userSelection))
     }
 
     try {
@@ -61,7 +61,14 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
       body.map(elems => elems.get("email-recipients")).head match {
         case Some(recipients) => try {
           Json.parse(recipients.head).validate[List[User]] match {
-            case JsSuccess(value: Seq[User], _) => persistEmailDetails(value)
+            case JsSuccess(value: Seq[User], _) =>
+              body.map(elems => elems.get("user-selection")).head match {
+                case Some(userSelectedData) => Json.parse(userSelectedData.head).validate[Map[String, String]] match {
+                  case JsSuccess(userSelection: Map[String, String], _) => persistEmailDetails(value, userSelection)
+                  case JsError(errors) => Future.successful(BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD,
+                    s"""Request payload does not contain gatekeeper user selected options: ${errors.mkString(", ")}""")))
+                }
+              }
             case JsError(errors) => Future.successful(BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD,
               s"""Request payload does not contain gatekeeper users: ${errors.mkString(", ")}""")))
           }
@@ -112,7 +119,7 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
 
       def handleInvalidForm(formWithErrors: Form[ComposeEmailForm]) = {
         logger.warn(s"Error in form: ${formWithErrors.errors}")
-        Future.successful(BadRequest(composeEmail(emailUID, formWithErrors)))
+        Future.successful(BadRequest(composeEmail(emailUID, formWithErrors, Map())))
       }
       ComposeEmailForm.form.bindFromRequest.fold(handleInvalidForm(_), handleValidForm(_))
   }
