@@ -31,8 +31,8 @@ object UploadDocumentsWrapper {
                     multipleUpload: Boolean,
                     attachmentDetails: Option[Seq[UploadedFile]]
                    )(implicit appConfig: AppConfig): UploadDocumentsWrapper = {
-    val continueUrl = controllers.routes.ComposeEmailController.emailPreview(emailUID)
-    val backLinkUrl = controllers.routes.ComposeEmailController.upload(emailUID)
+    val continueUrl = controllers.routes.ComposeEmailController.emailPreview(emailUID, "")
+    val backLinkUrl = controllers.routes.ComposeEmailController.upload(emailUID, "")
     val callBack = "/gatekeeperemail/updatefiles"
 
     val attachments =
