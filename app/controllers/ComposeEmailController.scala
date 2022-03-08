@@ -94,26 +94,31 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
     implicit request => Future.successful(Ok(sentEmail()))
   }
 
-  def emailPreview(emailUID: String): Action[AnyContent] = requiresAtLeast(GatekeeperRole.USER) {
+  def emailPreview(emailUID: String, userSelection: String): Action[AnyContent] = requiresAtLeast(GatekeeperRole.USER) {
     implicit request =>
+      val userSelectionMap: Map[String, String] = Json.parse(userSelection).as[Map[String, String]]
       val fetchEmail: Future[OutgoingEmail] = emailService.fetchEmail(emailUID)
       fetchEmail.map { email =>
         Ok(emailPreview(base64Decode(email.htmlEmailBody),
-          controllers.EmailPreviewForm.form.fill(EmailPreviewForm(email.emailUID, ComposeEmailForm(email.subject, email.markdownEmailBody, true)))))
+          controllers.EmailPreviewForm.form.fill(EmailPreviewForm(email.emailUID, ComposeEmailForm(email.subject, email.markdownEmailBody, true))),
+          userSelectionMap))
       }
   }
 
-  def upload(emailUID: String): Action[AnyContent] = requiresAtLeast(GatekeeperRole.USER) {
+  def upload(emailUID: String, userSelection: String): Action[AnyContent] = requiresAtLeast(GatekeeperRole.USER) {
     implicit request =>
       def handleValidForm(form: ComposeEmailForm) = {
         val fetchEmail: Future[OutgoingEmail] = emailService.fetchEmail(emailUID)
+        val userSelectionMap: Map[String, String] = Json.parse(userSelection).as[Map[String, String]]
         val outgoingEmail: Future[OutgoingEmail] = fetchEmail.flatMap(user =>
           emailService.updateEmail(form, emailUID, user.recipients, user.attachmentDetails))
         outgoingEmail.map {  email =>
           if(form.attachFiles) {
             Redirect(controllers.routes.FileUploadController.start(emailUID, false, true))
           }
-          else Ok(emailPreview(base64Decode(email.htmlEmailBody), controllers.EmailPreviewForm.form.fill(EmailPreviewForm(email.emailUID, form))))
+          else Ok(emailPreview(base64Decode(email.htmlEmailBody), controllers.EmailPreviewForm.form.fill(EmailPreviewForm(email.emailUID, form)),
+            userSelectionMap))
+//            userSelection.toMap[String, String]))
         }
       }
 

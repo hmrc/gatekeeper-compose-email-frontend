@@ -22,6 +22,7 @@ import connectors.GatekeeperEmailConnector
 import models.OutgoingEmail
 import play.api.Logging
 import play.api.i18n.I18nSupport
+import play.api.libs.json.Json
 import play.api.mvc.{Action, AnyContent, MessagesControllerComponents}
 import services.ComposeEmailService
 import uk.gov.hmrc.play.bootstrap.frontend.controller.FrontendController
@@ -50,12 +51,13 @@ class EmailPreviewController @Inject()
     }
   }
 
-  def editEmail(emailUID: String): Action[AnyContent] = Action.async {
+  def editEmail(emailUID: String, userSelection: String): Action[AnyContent] = Action.async {
     implicit request => {
+      val userSelectionMap: Map[String, String] = Json.parse(userSelection).as[Map[String, String]]
       val fetchEmail: Future[OutgoingEmail] = emailService.fetchEmail(emailUID)
       fetchEmail.map { email =>
         val txtEmailBody = base64Decode(email.markdownEmailBody)
-        Ok(composeEmail(emailUID, controllers.ComposeEmailForm.form.fill(ComposeEmailForm(email.subject, txtEmailBody, true)), Map()))
+        Ok(composeEmail(emailUID, controllers.ComposeEmailForm.form.fill(ComposeEmailForm(email.subject, txtEmailBody, true)), userSelectionMap))
       }
     }
   }

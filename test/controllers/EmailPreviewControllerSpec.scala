@@ -110,7 +110,7 @@ class EmailPreviewControllerSpec extends ControllerBaseSpec with Matchers {
           "composeEmailForm.emailBody"->"emailBody")
         .withSession(csrfToken, authToken, userToken).withCSRFToken
 
-      val result = controller.editEmail(emailUID)(fakeRequest)
+      val result = controller.editEmail(emailUID, "{}")(fakeRequest)
       status(result) shouldBe OK
     }
   }
