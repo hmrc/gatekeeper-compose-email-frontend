@@ -41,7 +41,7 @@ class EmailPreviewControllerSpec extends ControllerBaseSpec with Matchers {
   implicit val materializer = app.materializer
 
   trait Setup extends ControllerSetupBase {
-    val emailUID = UUID.randomUUID().toString
+    val emailUUID = UUID.randomUUID().toString
 
     val csrfToken: (String, String) = "csrfToken" -> app.injector.instanceOf[TokenProvider].generateToken
     private val mockGatekeeperEmailConnector: GatekeeperEmailConnector = mock[GatekeeperEmailConnector]
@@ -59,7 +59,7 @@ class EmailPreviewControllerSpec extends ControllerBaseSpec with Matchers {
     val outgoingEmail =
       s"""
          |  {
-         |    "emailUID": "emailId",
+         |    "emailUUID": "emailId",
          |    "recipientTitle": "Team-Title",
          |    "recipients": [{"email": "", "firstName": "", "lastName": "", "verified": true}],
          |    "attachmentLink": "",
@@ -95,9 +95,9 @@ class EmailPreviewControllerSpec extends ControllerBaseSpec with Matchers {
   "POST /send-email" should {
 
     "send an email upon receiving a valid form submission" in new Setup {
-      val fakeRequest = FakeRequest("POST", s"/send-email/$emailUID")
+      val fakeRequest = FakeRequest("POST", s"/send-email/$emailUUID")
         .withSession(csrfToken, authToken, userToken).withCSRFToken
-      val result = controller.sendEmail(emailUID)(fakeRequest)
+      val result = controller.sendEmail(emailUUID)(fakeRequest)
       status(result) shouldBe SEE_OTHER
     }
   }
@@ -106,11 +106,11 @@ class EmailPreviewControllerSpec extends ControllerBaseSpec with Matchers {
 
     "edit email submits valid form to compose email" in new Setup {
       val fakeRequest = FakeRequest("POST", "/edit-email")
-        .withFormUrlEncodedBody("emailUID"->"emailId", "composeEmailForm.emailSubject"->"emailSubject",
+        .withFormUrlEncodedBody("emailUUID"->"emailId", "composeEmailForm.emailSubject"->"emailSubject",
           "composeEmailForm.emailBody"->"emailBody")
         .withSession(csrfToken, authToken, userToken).withCSRFToken
 
-      val result = controller.editEmail(emailUID, "{}")(fakeRequest)
+      val result = controller.editEmail(emailUUID, "{}")(fakeRequest)
       status(result) shouldBe OK
     }
   }

@@ -32,12 +32,12 @@ class UploadDocumentsConnector @Inject()(httpClient: HttpClient,
 
 
 
-  def initializeNewFileUpload(emailUID: String, searched: Boolean, multipleUpload: Boolean)(implicit hc: HeaderCarrier): Future[Option[String]] = {
+  def initializeNewFileUpload(emailUUID: String, searched: Boolean, multipleUpload: Boolean)(implicit hc: HeaderCarrier): Future[Option[String]] = {
     val nonce = Nonce.random
-//    val payload = UploadDocumentsWrapper.createPayload(nonce, emailUID, searched, multipleUpload)
+//    val payload = UploadDocumentsWrapper.createPayload(nonce, emailUUID, searched, multipleUpload)
     for {
-      emailInfo <- emailService.fetchEmail(emailUID)
-      payload = UploadDocumentsWrapper.createPayload(nonce, emailUID, searched, multipleUpload, emailInfo.attachmentDetails)
+      emailInfo <- emailService.fetchEmail(emailUUID)
+      payload = UploadDocumentsWrapper.createPayload(nonce, emailUUID, searched, multipleUpload, emailInfo.attachmentDetails)
       result <- sendRequest(payload)
     } yield result
   }

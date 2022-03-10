@@ -19,7 +19,7 @@ package models
 import models.file_upload.{UploadCargo, UploadedFile}
 import play.api.libs.json.{Json, OFormat}
 
-case class OutgoingEmail(emailUID: String, recipientTitle: String, recipients: List[User], attachmentDetails: Option[Seq[UploadedFile]],
+case class OutgoingEmail(emailUUID: String, recipientTitle: String, recipients: List[User], attachmentDetails: Option[Seq[UploadedFile]],
                          markdownEmailBody: String, htmlEmailBody: String, subject: String,
                          composedBy: String, approvedBy: Option[String])
 

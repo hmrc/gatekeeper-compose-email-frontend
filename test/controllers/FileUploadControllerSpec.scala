@@ -42,7 +42,7 @@ class FileUploadControllerSpec extends ControllerBaseSpec with Matchers with Moc
 
   trait Setup extends ControllerSetupBase {
     val su = List(User("sawd", "efef", "eff", true))
-    val emailUID = UUID.randomUUID().toString
+    val emailUUID = UUID.randomUUID().toString
     lazy val mockGatekeeperEmailService = mock[ComposeEmailService]
     val csrfToken: (String, String) = "csrfToken" -> app.injector.instanceOf[TokenProvider].generateToken
     implicit val materializer = app.materializer
@@ -52,8 +52,8 @@ class FileUploadControllerSpec extends ControllerBaseSpec with Matchers with Moc
     lazy val emailPreviewTemplateView = app.injector.instanceOf[EmailPreview]
     val uploadDocumentsConnector = mock[UploadDocumentsConnector]
     implicit val hc: HeaderCarrier = HeaderCarrier()
-    val loggedInRequest = FakeRequest("POST", "/start-file-upload/:emailUID").withSession(csrfToken, authToken, userToken).withCSRFToken
-    val notLoggedInRequest = FakeRequest("POST", "/start-file-upload/:emailUID").withCSRFToken
+    val loggedInRequest = FakeRequest("POST", "/start-file-upload/:emailUUID").withSession(csrfToken, authToken, userToken).withCSRFToken
+    val notLoggedInRequest = FakeRequest("POST", "/start-file-upload/:emailUUID").withCSRFToken
 
     val composeEmailForm: ComposeEmailForm = ComposeEmailForm("dfasd", "asdfasf", true)
     val composeEmail: ComposeEmail = fakeApplication.injector.instanceOf[ComposeEmail]
@@ -70,7 +70,7 @@ class FileUploadControllerSpec extends ControllerBaseSpec with Matchers with Moc
     val outgoingEmail =
       s"""
          |  {
-         |    "emailUID": "emailId",
+         |    "emailUUID": "emailId",
          |    "recipientTitle": "Team-Title",
          |    "recipients": [{"email": "", "firstName": "", "lastName": "", "verified": true}],
          |    "attachmentLink": "",
@@ -93,10 +93,10 @@ class FileUploadControllerSpec extends ControllerBaseSpec with Matchers with Moc
   }
 
 
-  "POST /start-file-upload/:emailUID" should {
+  "POST /start-file-upload/:emailUUID" should {
     "return 303" in new Setup {
       givenTheGKUserIsAuthorisedAndIsANormalUser()
-      val result = controller.start(emailUID)(loggedInRequest)
+      val result = controller.start(emailUUID)(loggedInRequest)
       status(result) shouldBe Status.SEE_OTHER
       verifyAuthConnectorCalledForUser
       verifyZeroInteractions(mockGatekeeperEmailService)
@@ -104,7 +104,7 @@ class FileUploadControllerSpec extends ControllerBaseSpec with Matchers with Moc
 
     "redirect to login page for a user that is not authenticated" in new Setup {
       givenFailedLogin()
-      val result = controller.start(emailUID)(notLoggedInRequest)
+      val result = controller.start(emailUUID)(notLoggedInRequest)
       verifyAuthConnectorCalledForUser
       status(result) shouldBe Status.SEE_OTHER
       verifyZeroInteractions(mockGatekeeperEmailService)
@@ -112,7 +112,7 @@ class FileUploadControllerSpec extends ControllerBaseSpec with Matchers with Moc
 
     "deny user with incorrect privileges" in new Setup {
       givenTheGKUserHasInsufficientEnrolments()
-      val result = controller.start(emailUID)(notLoggedInRequest)
+      val result = controller.start(emailUUID)(notLoggedInRequest)
       verifyAuthConnectorCalledForUser
       status(result) shouldBe Status.FORBIDDEN
       verifyZeroInteractions(mockGatekeeperEmailService)
@@ -122,7 +122,7 @@ class FileUploadControllerSpec extends ControllerBaseSpec with Matchers with Moc
       givenTheGKUserIsAuthorisedAndIsANormalUser()
       when(uploadDocumentsConnector.initializeNewFileUpload(*, *, *)(*))
         .thenReturn(successful(None))
-      val result = controller.start(emailUID)(loggedInRequest)
+      val result = controller.start(emailUUID)(loggedInRequest)
       status(result) shouldBe BAD_REQUEST
       verifyZeroInteractions(mockGatekeeperEmailService)
     }
