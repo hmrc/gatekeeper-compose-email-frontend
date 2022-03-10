@@ -42,12 +42,12 @@ class UploadDocumentsConnectorSpec extends AsyncHmrcSpec with BeforeAndAfterEach
 
 
   val subject = "Email subject"
-  val emailUID = "email-uuid"
+  val emailUUID = "email-uuid"
   val emailBody = "Body to be used in the email template"
   val outgoingEmail =
     s"""
        |  {
-       |    "emailUID": "$emailUID",
+       |    "emailUUID": "$emailUUID",
        |    "recipientTitle": "Team-Title",
        |    "recipients": [{"email": "", "firstName": "", "lastName": "", "verified": true}],
        |    "attachmentLink": "",
@@ -60,7 +60,7 @@ class UploadDocumentsConnectorSpec extends AsyncHmrcSpec with BeforeAndAfterEach
       """.stripMargin
   val mockComposeEmailConnector: GatekeeperEmailConnector = mock[GatekeeperEmailConnector]
   class ComposeEmailServiceStub extends ComposeEmailService(mockComposeEmailConnector) {
-    override def fetchEmail(emailUID: String)(implicit hc: HeaderCarrier): Future[OutgoingEmail] = {
+    override def fetchEmail(emailUUID: String)(implicit hc: HeaderCarrier): Future[OutgoingEmail] = {
       Future.successful(Json.parse(outgoingEmail).as[OutgoingEmail])
     }
   }
@@ -98,12 +98,12 @@ class UploadDocumentsConnectorSpec extends AsyncHmrcSpec with BeforeAndAfterEach
   "UploadDocumentsConnector" should {
 
     "send succesful initialise to UDF" in new Setup {
-      val result = await(underTestSuccess.initializeNewFileUpload(emailUID, true, true))
+      val result = await(underTestSuccess.initializeNewFileUpload(emailUUID, true, true))
       result shouldBe Some("/upload-documents")
     }
 
     "send failed initialise to UDF" in new Setup {
-      val result = await(underTestFailure.initializeNewFileUpload(emailUID, true, true))
+      val result = await(underTestFailure.initializeNewFileUpload(emailUUID, true, true))
       result shouldBe None
     }
   }

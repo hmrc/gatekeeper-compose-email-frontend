@@ -55,11 +55,11 @@ class GatekeeperEmailConnectorSpec extends AsyncHmrcSpec with BeforeAndAfterEach
   }
 
   val subject = "Email subject"
-  val emailUID = "email-uuid"
-  val emailSendServicePath = s"/gatekeeper-email/send-email/$emailUID"
-  val emailSaveServicePath = s"/gatekeeper-email/save-email?emailUID=$emailUID"
-  val emailUpdateServicePath = s"/gatekeeper-email/update-email?emailUID=$emailUID"
-  val fetchEmailUrl = s"/gatekeeper-email/fetch-email/$emailUID"
+  val emailUUID = "email-uuid"
+  val emailSendServicePath = s"/gatekeeper-email/send-email/$emailUUID"
+  val emailSaveServicePath = s"/gatekeeper-email/save-email?emailUUID=$emailUUID"
+  val emailUpdateServicePath = s"/gatekeeper-email/update-email?emailUUID=$emailUUID"
+  val fetchEmailUrl = s"/gatekeeper-email/fetch-email/$emailUUID"
   val emailBody = "Body to be used in the email template"
 
   trait Setup {
@@ -74,7 +74,7 @@ class GatekeeperEmailConnectorSpec extends AsyncHmrcSpec with BeforeAndAfterEach
 
     lazy val underTest = new GatekeeperEmailConnector(httpClient, fakeEmailConnectorConfig)
     val composeEmailForm: ComposeEmailForm = ComposeEmailForm(subject, emailBody, true)
-    val emailPreviewForm: EmailPreviewForm = EmailPreviewForm(emailUID, composeEmailForm)
+    val emailPreviewForm: EmailPreviewForm = EmailPreviewForm(emailUUID, composeEmailForm)
     val users = List(User("example@example.com", "first name", "last name", true),
       User("example2@example2.com", "first name2", "last name2", true))
   }
@@ -85,7 +85,7 @@ class GatekeeperEmailConnectorSpec extends AsyncHmrcSpec with BeforeAndAfterEach
     val outgoingEmail =
       s"""
          |  {
-         |    "emailUID": "$emailUID",
+         |    "emailUUID": "$emailUUID",
          |    "recipientTitle": "Team-Title",
          |    "recipients": [{"email": "", "firstName": "", "lastName": "", "verified": true}],
          |    "attachmentLink": "",
@@ -138,7 +138,7 @@ class GatekeeperEmailConnectorSpec extends AsyncHmrcSpec with BeforeAndAfterEach
     }
 
     "save gatekeeper email" in new Setup with WorkingHttp {
-      await(underTest.saveEmail(composeEmailForm, emailUID, users))
+      await(underTest.saveEmail(composeEmailForm, emailUUID, users))
 
       wireMockVerify(1, postRequestedFor(
         urlEqualTo(emailSaveServicePath))
@@ -147,12 +147,12 @@ class GatekeeperEmailConnectorSpec extends AsyncHmrcSpec with BeforeAndAfterEach
 
     "fail to save gatekeeper email" in new Setup with FailingHttp {
       intercept[UpstreamErrorResponse] {
-        await(underTest.saveEmail(composeEmailForm, emailUID, users))
+        await(underTest.saveEmail(composeEmailForm, emailUUID, users))
       }
     }
 
     "update gatekeeper email" in new Setup with WorkingHttp {
-      await(underTest.updateEmail(composeEmailForm, emailUID, users))
+      await(underTest.updateEmail(composeEmailForm, emailUUID, users))
 
       wireMockVerify(1, postRequestedFor(
         urlEqualTo(emailUpdateServicePath))
@@ -161,12 +161,12 @@ class GatekeeperEmailConnectorSpec extends AsyncHmrcSpec with BeforeAndAfterEach
 
     "fail to update gatekeeper email" in new Setup with FailingHttp {
       intercept[UpstreamErrorResponse] {
-        await(underTest.updateEmail(composeEmailForm, emailUID, users))
+        await(underTest.updateEmail(composeEmailForm, emailUUID, users))
       }
     }
 
     "fetch email info" in new Setup with WorkingHttp {
-      await(underTest.fetchEmail(emailUID))
+      await(underTest.fetchEmail(emailUUID))
 
       wireMockVerify(1, getRequestedFor(
         urlEqualTo(fetchEmailUrl))
@@ -175,7 +175,7 @@ class GatekeeperEmailConnectorSpec extends AsyncHmrcSpec with BeforeAndAfterEach
 
     "fail to fetch  email info " in new Setup with FailingHttp {
       intercept[UpstreamErrorResponse] {
-        await(underTest.fetchEmail(emailUID))
+        await(underTest.fetchEmail(emailUUID))
       }
     }
   }

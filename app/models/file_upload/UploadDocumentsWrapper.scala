@@ -26,13 +26,13 @@ import connectors.UploadDocumentsConnector.Request
 object UploadDocumentsWrapper {
 
   def createPayload(nonce: Nonce,
-                    emailUID: String,
+                    emailUUID: String,
                     searched: Boolean,
                     multipleUpload: Boolean,
                     attachmentDetails: Option[Seq[UploadedFile]]
                    )(implicit appConfig: AppConfig): UploadDocumentsWrapper = {
-    val continueUrl = controllers.routes.ComposeEmailController.emailPreview(emailUID, "")
-    val backLinkUrl = controllers.routes.ComposeEmailController.upload(emailUID, "")
+    val continueUrl = controllers.routes.ComposeEmailController.emailPreview(emailUUID, "")
+    val backLinkUrl = controllers.routes.ComposeEmailController.upload(emailUUID, "")
     val callBack = "/gatekeeperemail/updatefiles"
 
     val attachments =
@@ -47,7 +47,7 @@ object UploadDocumentsWrapper {
         continueUrl = s"${appConfig.fileUploadContinueUrlPrefix}$continueUrl",
         backlinkUrl = s"${appConfig.fileUploadContinueUrlPrefix}$backLinkUrl",
         callbackUrl = s"${appConfig.fileUploadCallbackUrlPrefix}$callBack",
-        cargo = UploadCargo(emailUID),
+        cargo = UploadCargo(emailUUID),
 //        content = Some(UploadDocumentsContent(
 //          serviceName = Some(appConfig.fileUploadServiceName),
 //          serviceUrl = Some(appConfig.homepage),

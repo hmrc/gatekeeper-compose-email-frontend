@@ -39,7 +39,7 @@ class ComposeEmailServiceSpec extends AnyWordSpec with Matchers with GuiceOneApp
     val mockEmailConnector = mock[GatekeeperEmailConnector]
     val underTest = new ComposeEmailService(mockEmailConnector)
     val su = List(User("sawd", "efef", "eff", true))
-    val emailUID = "emailUID"
+    val emailUUID = "emailUUID"
   }
 
   "saveEmail" should {
@@ -53,7 +53,7 @@ class ComposeEmailServiceSpec extends AnyWordSpec with Matchers with GuiceOneApp
   "fetchEmail" should {
     "handle fetching an email successfully" in new Setup {
       when(mockEmailConnector.fetchEmail(*)(*)).thenReturn(Future.successful(OutgoingEmail("", "", su, None, "", "", "", "", None)))
-      val result = await(underTest.fetchEmail(emailUID = emailUID))
+      val result = await(underTest.fetchEmail(emailUUID = emailUUID))
       result shouldBe OutgoingEmail("", "", su, None, "", "", "", "", None)
     }
   }

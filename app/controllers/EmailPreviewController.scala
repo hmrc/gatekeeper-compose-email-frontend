@@ -41,23 +41,23 @@ class EmailPreviewController @Inject()
 (implicit val appConfig: AppConfig, val ec: ExecutionContext)
   extends FrontendController(mcc) with I18nSupport with Logging {
 
-  def sendEmail(emailUID: String): Action[AnyContent] = Action.async {
+  def sendEmail(emailUUID: String): Action[AnyContent] = Action.async {
     implicit request => {
-      val fetchEmail: Future[OutgoingEmail] = emailService.fetchEmail(emailUID)
+      val fetchEmail: Future[OutgoingEmail] = emailService.fetchEmail(emailUUID)
       fetchEmail.map { email =>
-        emailConnector.sendEmail(EmailPreviewForm(emailUID, ComposeEmailForm(email.subject, email.htmlEmailBody, true)))
+        emailConnector.sendEmail(EmailPreviewForm(emailUUID, ComposeEmailForm(email.subject, email.htmlEmailBody, true)))
         Redirect(routes.ComposeEmailController.sentEmailConfirmation())
       }
     }
   }
 
-  def editEmail(emailUID: String, userSelection: String): Action[AnyContent] = Action.async {
+  def editEmail(emailUUID: String, userSelection: String): Action[AnyContent] = Action.async {
     implicit request => {
       val userSelectionMap: Map[String, String] = Json.parse(userSelection).as[Map[String, String]]
-      val fetchEmail: Future[OutgoingEmail] = emailService.fetchEmail(emailUID)
+      val fetchEmail: Future[OutgoingEmail] = emailService.fetchEmail(emailUUID)
       fetchEmail.map { email =>
         val txtEmailBody = base64Decode(email.markdownEmailBody)
-        Ok(composeEmail(emailUID, controllers.ComposeEmailForm.form.fill(ComposeEmailForm(email.subject, txtEmailBody, true)), userSelectionMap))
+        Ok(composeEmail(emailUUID, controllers.ComposeEmailForm.form.fill(ComposeEmailForm(email.subject, txtEmailBody, true)), userSelectionMap))
       }
     }
   }

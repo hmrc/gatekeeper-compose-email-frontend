@@ -42,7 +42,7 @@ class ComposeEmailControllerSpec extends ControllerBaseSpec with Matchers with M
 
   trait Setup extends ControllerSetupBase {
     val su = List(User("sawd", "efef", "eff", true))
-    val emailUID = UUID.randomUUID().toString
+    val emailUUID = UUID.randomUUID().toString
     lazy val mockGatekeeperEmailService = mock[ComposeEmailService]
     val csrfToken: (String, String) = "csrfToken" -> app.injector.instanceOf[TokenProvider].generateToken
     implicit val materializer = app.materializer
@@ -164,10 +164,10 @@ class ComposeEmailControllerSpec extends ControllerBaseSpec with Matchers with M
     }
   }
 
-  "GET /emailpreview/emailUID" should {
+  "GET /emailpreview/emailUUID" should {
     "return 200" in new Setup {
       givenTheGKUserIsAuthorisedAndIsANormalUser()
-      val result = controller.emailPreview(emailUID, "{}")(loggedInRequest)
+      val result = controller.emailPreview(emailUUID, "{}")(loggedInRequest)
       verifyAuthConnectorCalledForUser
       status(result) shouldBe OK
       verifyZeroInteractions(mockGatekeeperEmailService)
@@ -175,7 +175,7 @@ class ComposeEmailControllerSpec extends ControllerBaseSpec with Matchers with M
 
     "return HTML" in new Setup {
       givenTheGKUserIsAuthorisedAndIsANormalUser()
-      val result = controller.emailPreview(emailUID, "{}")(loggedInRequest)
+      val result = controller.emailPreview(emailUUID, "{}")(loggedInRequest)
       contentType(result) shouldBe Some("text/html")
       charset(result) shouldBe Some("utf-8")
       verifyZeroInteractions(mockGatekeeperEmailService)
@@ -189,7 +189,7 @@ class ComposeEmailControllerSpec extends ControllerBaseSpec with Matchers with M
       givenTheGKUserIsAuthorisedAndIsANormalUser()
       val uploadRequest = FakeRequest().withBody(composeEmailForm).withCSRFToken
 
-      val result = controller.upload(emailUID, "{}")(uploadRequest)
+      val result = controller.upload(emailUUID, "{}")(uploadRequest)
       status(result) shouldBe BAD_REQUEST
       verifyAuthConnectorCalledForUser
       verifyZeroInteractions(mockGatekeeperEmailService)
@@ -200,7 +200,7 @@ class ComposeEmailControllerSpec extends ControllerBaseSpec with Matchers with M
 
       val uploadRequest = FakeRequest().withBody(composeEmailForm).withCSRFToken
 
-      val result = controller.upload(emailUID, "{}")(uploadRequest)
+      val result = controller.upload(emailUUID, "{}")(uploadRequest)
       status(result) shouldBe BAD_REQUEST
       verifyAuthConnectorCalledForUser
       verifyZeroInteractions(mockGatekeeperEmailService)

@@ -43,16 +43,16 @@ class FileUploadController @Inject()(
   extends FrontendController(mcc) with I18nSupport  with GatekeeperAuthWrapper with Logging{
 
 
-  def start(emailUID: String, searched: Boolean = false, multipleUpload: Boolean = true): Action[AnyContent] =
+  def start(emailUUID: String, searched: Boolean = false, multipleUpload: Boolean = true): Action[AnyContent] =
     requiresAtLeast(GatekeeperRole.USER) { implicit request =>
-      uploadDocumentsConnector.initializeNewFileUpload(emailUID, searched, multipleUpload)
+      uploadDocumentsConnector.initializeNewFileUpload(emailUUID, searched, multipleUpload)
         .map {
           case Some(url) => Redirect(s"${appConfig.fileUploadPublicUrl}$url")
           case None => BadRequest
         }
   }
 
-  def continue(emailUID: String): Action[AnyContent] = requiresAtLeast(GatekeeperRole.USER)  { implicit request =>
+  def continue(emailUUID: String): Action[AnyContent] = requiresAtLeast(GatekeeperRole.USER)  { implicit request =>
     Future.successful(NoContent)
   }
 }
