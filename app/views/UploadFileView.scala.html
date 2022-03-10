@@ -1,0 +1,113 @@
+@*
+ * Copyright 2022 HM Revenue & Customs
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *@
+
+@import config.AppConfig
+@import models.upscan.UpScanInitiateResponse
+
+@this(layout: templates.Layout,
+        inputFileUpload: components.inputFileUpload,
+        h1: components.h1,
+        h2: components.h2,
+        p: components.p,
+        errorSummary: components.errorSummary,
+        bullets: components.bullets,
+        button: components.button,
+        govukDetails: GovukDetails
+)
+
+@(form: Form[_], upScanResponse: UpScanInitiateResponse, backLink: Option[Call], optionalDocs: Seq[OptionalDocument] = Seq.empty)(implicit request: Request[_], appConfig: AppConfig, messages: Messages)
+
+@layout(
+    pageTitle = messages("uploadFile.pageTitle"),
+    customBackLinkUrl = backLink,
+    form = Some(form),
+    showBackLink = backLink.isDefined
+) {
+
+    @errorSummary(form.errors)
+
+    @h1(messages("uploadFile.pageTitle"))
+
+    @p {
+        @messages("uploadFile.mustInclude")
+    }
+
+    @bullets(Seq(
+        Html(messages("uploadFile.originalC88")),
+        Html(messages("uploadFile.originalE2")),
+        Html(messages("uploadFile.originalCalculations"))
+    ))
+
+    @if(!optionalDocs.isEmpty) {
+        @p {
+            @messages("uploadFile.mayInclude")
+        }
+
+        @bullets(optionalDocs.map(doc =>
+            Html(messages(s"uploadFile.${doc}")))
+        )
+    }
+
+    @govukDetails(
+        Details(
+            summary = HtmlContent(messages("common.uploadFile.typesOfFile")),
+            content = HtmlContent(
+                bullets(Seq(
+                    Html(messages("common.uploadFile.PDF")),
+                    Html(messages("common.uploadFile.CSV")),
+                    Html(messages("common.uploadFile.ms")),
+                    Html(messages("common.uploadFile.openDocumentFormat")),
+                    Html(messages("common.uploadFile.image"))
+                ))
+            )
+        )
+    )
+
+    @p {
+        @messages("common.uploadFile.fileSize")
+    }
+
+    <form action="@upScanResponse.uploadFormTemplate.href" method="POST" enctype="multipart/form-data" id="file-upload-form">
+
+        <div id="file-upload-form-group" class="govuk-form-group @{
+            if(form.hasErrors) "govuk-form-group--error"
+        }">
+            @upScanResponse.uploadFormTemplate.fields.map { row =>
+                <input type="hidden" name="@row._1" value="@row._2">
+            }
+
+            @inputFileUpload(
+                form = form,
+                name = "file",
+                id = "file",
+                label = messages("common.uploadFile.uploadAFile"),
+                isPageHeading = false,
+                attributes = Map(
+                    "accept" -> appConfig.upScanAcceptedFileTypes,
+                    "data-max-file-size" -> appConfig.upScanMaxFileSize.toString,
+                    "data-min-file-size" -> appConfig.upScanMinFileSize.toString
+                )
+            )
+        </div>
+
+        @button("common.uploadFile.uploadChosenFile")
+    </form>
+}
+
+
+@{
+    //$COVERAGE-OFF$
+}
