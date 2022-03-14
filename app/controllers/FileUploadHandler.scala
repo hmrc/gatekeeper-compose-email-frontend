@@ -17,10 +17,12 @@
 package controllers
 
 import config.AppConfig
-import models.upscan.{FileStatusEnum, FileUpload, FileUploadInfo, UpscanInitiateError}
-import models.upscan.UpscanErrors.{Quarantined, Rejected, TooBig, TooSmall, UpscanError, Unknown}
+import connectors.GatekeeperEmailFileUploadConnector
+import models.upscan.{FileStatusEnum, FileUpload, FileUploadInfo, InProgress, UploadInfo, UploadStatus, UploadedFailedWithErrors, UploadedSuccessfully, UpscanInitiateError}
+import models.upscan.UpscanErrors.{Quarantined, Rejected, TooBig, TooSmall, Unknown, UpscanError}
 import play.api.mvc.Results.InternalServerError
 import play.api.mvc.{AnyContent, Result}
+import uk.gov.hmrc.http.HeaderCarrier
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Try
@@ -28,7 +30,7 @@ import scala.util.Try
 trait FileUploadHandler[T] {
 
   val appConfig: AppConfig
-
+  val fileUploadConnector: GatekeeperEmailFileUploadConnector
   val syncErrorToUpscanErrorMapping: String => UpscanError = Map(
     "EntityTooSmall" -> TooSmall,
     "EntityTooLarge" -> TooBig
@@ -63,23 +65,23 @@ trait FileUploadHandler[T] {
     uploadCompleteRoute: Result,
     uploadInProgressRoute: Result,
     uploadFailedRoute: Result,
-  )(implicit ec: ExecutionContext): Future[Result] = {
-//    fileUploadRepository.getRecord(key).flatMap {
-//      case Some(upload @ FileUpload(_, _, _, Some(FileStatusEnum.READY), _, _, _)) =>
-//        val updatedListFiles = updateFilesList(upload)
+  )(implicit ec: ExecutionContext, hc: HeaderCarrier): Future[Result] = {
+    fileUploadConnector.fetchFileuploadStatus(key).flatMap {
+      case UploadInfo(_, _, UploadedSuccessfully(_, _, _, _, _))  =>
+        //save to email repository the file ref here.. as this file is successful..
+        //        val updatedListFiles = updateFilesList(upload)
 //        for {
 //          updatedAnswers <- Future.fromTry(saveFilesList(updatedListFiles))
 //          _              <- sessionRepository.set(updatedAnswers)
-//        } yield uploadCompleteRoute
-//      case Some(FileUpload(_, _, _, Some(errorStatus), _, _, _)) =>
-//        val uploadError = asyncErrorToUpscanErrorMapping(errorStatus)
-//        Future.successful(uploadFailedRoute.flashing("uploadError" -> uploadError.toString))
-//      case Some(FileUpload(_, _, _, None, _, _, _)) =>
-//        Future.successful(uploadInProgressRoute)
-//      case None =>
-//        Future.successful(InternalServerError)
-//    }
-    Future.successful(uploadCompleteRoute)
+//        } yield
+          Future.successful(uploadCompleteRoute)
+      case UploadInfo(_, _, UploadedFailedWithErrors(_, errorMsg, _, _)) =>
+        Future.successful(uploadFailedRoute.flashing("uploadError" -> errorMsg))
+      case UploadInfo(_, _, InProgress) =>
+        Future.successful(uploadInProgressRoute)
+      case _ =>
+        Future.successful(InternalServerError)
+    }
   }
 
   def extractFileDetails(doc: FileUpload, key: String): FileUploadInfo = {

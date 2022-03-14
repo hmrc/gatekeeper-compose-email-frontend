@@ -40,7 +40,7 @@ class UploadFileController @Inject() (
   view: UploadFileView,
   progressView: FileUploadProgressView,
   formProvider: UploadFileFormProvider,
-  fileUploadConnector: GatekeeperEmailFileUploadConnector,
+  val fileUploadConnector: GatekeeperEmailFileUploadConnector,
   override val forbiddenView: ForbiddenView,
   override val authConnector: AuthConnector,
   implicit val appConfig: AppConfig,

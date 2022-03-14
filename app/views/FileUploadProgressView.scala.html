@@ -23,22 +23,22 @@
 @(key: String, action: String)(implicit request: Request[_], messages: Messages)
 
 @layout(
-    pageTitle = messages("fileUploadProgress.pageTitle"),
+    pageTitle = "Upload progress",
     customBackLinkUrl = None,
     showBackLink = false
 ) {
 
-    @h1(messages("fileUploadProgress.pageTitle"))
+    @h1("Upload progress")
 
     @p {
-        @messages("fileUploadProgress.message")
+        "Waiting for uploaded file to be scanned."
     }
 
     @p {
-        @messages("fileUploadProgress.request")
+        "Please refresh to view latest progress."
     }
 
-    @linkButton(url = action, messages(("fileUploadProgress.refresh")))
+    @linkButton(url = action, "Refresh")
 
 }
 
