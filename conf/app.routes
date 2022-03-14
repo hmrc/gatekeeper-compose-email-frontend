@@ -12,3 +12,7 @@ POST        /email                   controllers.ComposeEmailController.initiali
 GET         /start-file-upload/:emailUUID        controllers.FileUploadController.start(emailUUID: String, searched: Boolean, multipleUpload: Boolean)
 GET         /upload-confirmation/:emailUUID      controllers.FileUploadController.continue(emailUUID: String)
 
+GET         /upload-file        controllers.UploadFileController.onLoad()
+GET         /upload-file/upscan-response    controllers.UploadFileController.upscanResponseHandler(key: Option[String] ?= None, errorCode: Option[String] ?= None, errorMessage: Option[String] ?= None, errorResource: Option[String] ?= None, errorRequestId: Option[String] ?= None)
+GET         /upload-file/polling       controllers.UploadFileController.uploadProgress(key: String)
+POST        /call-back-from-upscan    controllers.UpscanCallbackController.callbackHandler()

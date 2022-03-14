@@ -1,0 +1,77 @@
+@*
+ * Copyright 2022 HM Revenue & Customs
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *@
+
+@import uk.gov.hmrc.govukfrontend.views.html.components._
+@import uk.gov.hmrc.hmrcfrontend.views.html.components.{Header, HmrcHeader}
+@import uk.gov.hmrc.hmrcfrontend.views.html.helpers._
+@import views.helpers.FooterLinks
+@import views.html.components.{languageSelector}
+
+@this(govukLayout: GovukLayout,
+        appConfig: AppConfig,
+        footerLinks: FooterLinks,
+        backLink: components.back_link,
+        hmrcReportTechnicalIssueHelper: HmrcReportTechnicalIssueHelper,
+        hmrcHeader : HmrcHeader,
+        govukFooter: GovukFooter,
+        languageSelect: languageSelector
+)
+
+@(pageTitle: String,
+        form: Option[Form[_]] = None,
+        headBlock: Option[Html] = None,
+        scriptsBlock: Option[Html] = None,
+        showBackLink: Boolean = true,
+        customBackLinkUrl: Option[Call] = None,
+        enableTimeoutDialog: Boolean = true,
+        isAuthorised: Boolean = true
+)(contentBlock: Html)(implicit request: Request[_], messages: Messages)
+
+@scripts = {
+    <script src='@controllers.routes.Assets.versioned("javascripts/application.min.js")'></script>
+    <script>window.GOVUKFrontend.initAll();</script>
+    <script>window.HMRCFrontend.initAll();</script>
+    @scriptsBlock
+}
+
+@content = {
+    @contentBlock
+
+    <div class="govuk-!-margin-top-6 govuk-!-display-none-print">
+        @hmrcReportTechnicalIssueHelper()
+    </div>
+}
+
+@footer = {
+    @govukFooter(Footer(
+        meta = Some(Meta(items = Some(footerLinks.links()))),
+        classes = "govuk-!-display-none-print"
+    ))
+}
+
+@defining({
+    form.collect[String] {
+        case f if f.errors.nonEmpty => messages("common.errorPrefix") + pageTitle
+    }.orElse(Some(pageTitle))
+}) { title =>
+    @govukLayout(
+        pageTitle = title.map(_ + messages("page.title.suffix")),
+        footerBlock = Some(footer)
+    )(content)
+}
+@{
+    //$COVERAGE-OFF$
+}

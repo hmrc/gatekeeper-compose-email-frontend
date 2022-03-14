@@ -16,6 +16,7 @@
 
 package models.upscan
 
+import com.sun.xml.internal.messaging.saaj.packaging.mime.internet.MimeUtility
 import play.api.libs.functional.syntax._
 import play.api.libs.json.Reads._
 import play.api.libs.json._

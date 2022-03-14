@@ -14,18 +14,9 @@
  * limitations under the License.
  */
 
-package forms
+package forms.utils
 
-import play.api.data.Form
+trait FormHelpers {
 
-import javax.inject.Inject
-import forms.mappings.Mappings
-import forms.utils.FormHelpers
-
-class UploadFileFormProvider @Inject() extends Mappings with FormHelpers {
-
-  def apply(): Form[String] =
-    Form(
-      "file" -> text("uploadFile.error.noFileSelected")
-    )
+  def toUpperNoSpaces(input: String): String = input.replaceAll("\\s", "").toUpperCase
 }

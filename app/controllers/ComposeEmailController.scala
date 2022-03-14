@@ -114,7 +114,7 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
           emailService.updateEmail(form, emailUUID, user.recipients, user.attachmentDetails))
         outgoingEmail.map {  email =>
           if(form.attachFiles) {
-            Redirect(controllers.routes.FileUploadController.start(emailUUID, false, true))
+            Redirect(controllers.routes.UploadFileController.onLoad())
           }
           else Ok(emailPreview(base64Decode(email.htmlEmailBody), controllers.EmailPreviewForm.form.fill(EmailPreviewForm(email.emailUUID, form)),
             userSelectionMap))

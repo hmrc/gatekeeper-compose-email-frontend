@@ -38,6 +38,7 @@ class AppConfig @Inject()(config: Configuration, servicesConfig: ServicesConfig)
   val maxFileSize = getString("file-formats.max-file-size-mb")
   val approvedFileExtensions = getString("file-formats.approved-file-extensions")
   val approvedFileTypes = getString("file-formats.approved-file-types")
+  val footerLinkItems: Seq[String] = config.get[Seq[String]]("footerLinkItems")
 
   val uploadRedirectTargetBase = getString("upload-redirect-target-base")
 

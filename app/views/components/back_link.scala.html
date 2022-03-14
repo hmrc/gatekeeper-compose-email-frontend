@@ -1,4 +1,4 @@
-/*
+@*
  * Copyright 2022 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,26 +12,21 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- */
+ *@
 
-package forms
+@import uk.gov.hmrc.govukfrontend.views.html.components._
 
-import play.api.data.Forms.of
-import play.api.data.{FieldMapping, Form}
+@this(govukBackLink : GovukBackLink)
 
-import javax.inject.Inject
+@(url: Option[Call] = None)(implicit messages: Messages)
 
-class RemoveUploadedFileFormProvider @Inject() () {
+@govukBackLink(BackLink(
+  href = url.map(_.url).getOrElse("#"),
+  content = Text(messages("common.back")),
+  attributes = Map("id" -> "back-link"),
+  classes = "govuk-!-display-none-print"
+))
 
-  def boolean(
-                         requiredKey: String = "error.required",
-                         invalidKey: String = "error.boolean",
-                         args: Seq[Any] = Seq.empty
-                       ): FieldMapping[Boolean] =
-    of(booleanFormatter(requiredKey, invalidKey, args))
-
-  def apply(): Form[Boolean] =
-    Form(
-      "value" -> boolean("removeUploadedFile.error.required")
-    )
+@{
+ //$COVERAGE-OFF$
 }

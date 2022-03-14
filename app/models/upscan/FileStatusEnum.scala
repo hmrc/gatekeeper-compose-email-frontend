@@ -16,6 +16,8 @@
 
 package models.upscan
 
+import models.Enumerable
+
 sealed trait FileStatusEnum
 
 sealed trait FileStatusError extends FileStatusEnum

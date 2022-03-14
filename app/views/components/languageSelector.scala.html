@@ -1,4 +1,4 @@
-/*
+@*
  * Copyright 2022 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,20 +12,19 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- */
+ *@
 
-package forms
+@import config.AppConfig
+@import uk.gov.hmrc.hmrcfrontend.views.html.components.HmrcLanguageSelect
+@import uk.gov.hmrc.hmrcfrontend.views.viewmodels.language.LanguageSelect
 
-import play.api.data.Form
+@this(appConfig: AppConfig)
 
-import javax.inject.Inject
-import forms.mappings.Mappings
-import forms.utils.FormHelpers
+@()(implicit messages: Messages)
 
-class UploadFileFormProvider @Inject() extends Mappings with FormHelpers {
+<div class="govuk-!-display-none-print">
+</div>
 
-  def apply(): Form[String] =
-    Form(
-      "file" -> text("uploadFile.error.noFileSelected")
-    )
+@{
+//$COVERAGE-OFF$
 }

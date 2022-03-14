@@ -18,7 +18,7 @@ package controllers
 
 import config.AppConfig
 import models.upscan.{FileStatusEnum, FileUpload, FileUploadInfo, UpscanInitiateError}
-import models.upscan.UpscanErrors.{Quarantined, Rejected, TooBig, TooSmall, UpscanError}
+import models.upscan.UpscanErrors.{Quarantined, Rejected, TooBig, TooSmall, UpscanError, Unknown}
 import play.api.mvc.Results.InternalServerError
 import play.api.mvc.{AnyContent, Result}
 
@@ -45,12 +45,12 @@ trait FileUploadHandler[T] {
     error: Option[UpscanInitiateError],
     successRoute: Result,
     errorRoute: Result
-  )(implicit request: DataRequest[AnyContent], ec: ExecutionContext): Future[Result] = (key, error) match {
+  )(ec: ExecutionContext): Future[Result] = (key, error) match {
     case (Some(key), None) =>
-      fileUploadRepository.updateRecord(FileUpload(key, Some(request.credId))).map { _ =>
-        Thread.sleep(appConfig.upScanPollingDelayMilliSeconds)
-        successRoute
-      }
+//      fileUploadRepository.updateRecord(FileUpload(key, Some(request.credId))).map { _ =>
+//        Thread.sleep(appConfig.upScanPollingDelayMilliSeconds)
+        Future.successful(successRoute)
+//      }
     case (_, Some(error)) =>
       val uploadError = syncErrorToUpscanErrorMapping(error.code)
       Future.successful(errorRoute.flashing("uploadError" -> uploadError.toString))
@@ -64,21 +64,22 @@ trait FileUploadHandler[T] {
     uploadInProgressRoute: Result,
     uploadFailedRoute: Result,
   )(implicit ec: ExecutionContext): Future[Result] = {
-    fileUploadRepository.getRecord(key).flatMap {
-      case Some(upload @ FileUpload(_, _, _, Some(FileStatusEnum.READY), _, _, _)) =>
-        val updatedListFiles = updateFilesList(upload)
-        for {
-          updatedAnswers <- Future.fromTry(saveFilesList(updatedListFiles))
-          _              <- sessionRepository.set(updatedAnswers)
-        } yield uploadCompleteRoute
-      case Some(FileUpload(_, _, _, Some(errorStatus), _, _, _)) =>
-        val uploadError = asyncErrorToUpscanErrorMapping(errorStatus)
-        Future.successful(uploadFailedRoute.flashing("uploadError" -> uploadError.toString))
-      case Some(FileUpload(_, _, _, None, _, _, _)) =>
-        Future.successful(uploadInProgressRoute)
-      case None =>
-        Future.successful(InternalServerError)
-    }
+//    fileUploadRepository.getRecord(key).flatMap {
+//      case Some(upload @ FileUpload(_, _, _, Some(FileStatusEnum.READY), _, _, _)) =>
+//        val updatedListFiles = updateFilesList(upload)
+//        for {
+//          updatedAnswers <- Future.fromTry(saveFilesList(updatedListFiles))
+//          _              <- sessionRepository.set(updatedAnswers)
+//        } yield uploadCompleteRoute
+//      case Some(FileUpload(_, _, _, Some(errorStatus), _, _, _)) =>
+//        val uploadError = asyncErrorToUpscanErrorMapping(errorStatus)
+//        Future.successful(uploadFailedRoute.flashing("uploadError" -> uploadError.toString))
+//      case Some(FileUpload(_, _, _, None, _, _, _)) =>
+//        Future.successful(uploadInProgressRoute)
+//      case None =>
+//        Future.successful(InternalServerError)
+//    }
+    Future.successful(uploadCompleteRoute)
   }
 
   def extractFileDetails(doc: FileUpload, key: String): FileUploadInfo = {

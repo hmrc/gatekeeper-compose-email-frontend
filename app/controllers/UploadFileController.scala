@@ -17,6 +17,7 @@
 package controllers
 
 import config.AppConfig
+import connectors.AuthConnector
 import forms.UploadFileFormProvider
 import models.GatekeeperRole
 import models.upscan.{FileUpload, FileUploadInfo}
@@ -25,7 +26,7 @@ import play.api.mvc._
 import services.UpScanService
 import uk.gov.hmrc.play.bootstrap.frontend.controller.FrontendController
 import utils.GatekeeperAuthWrapper
-import views.html.{FileUploadProgressView, UploadFileView}
+import views.html.{FileUploadProgressView, ForbiddenView, UploadFileView}
 
 import javax.inject.{Inject, Singleton}
 import scala.:+
@@ -39,6 +40,8 @@ class UploadFileController @Inject() (
   view: UploadFileView,
   progressView: FileUploadProgressView,
   formProvider: UploadFileFormProvider,
+  override val forbiddenView: ForbiddenView,
+  override val authConnector: AuthConnector,
   implicit val appConfig: AppConfig,
   implicit val ec: ExecutionContext
 ) extends FrontendController(mcc)
@@ -76,12 +79,12 @@ class UploadFileController @Inject() (
       controllers.routes.UploadFileController.uploadProgress(key.getOrElse("this will never be used"))
     )
 
-    handleUpscanResponse(key, upscanError, successRoute, errorRoute)
+    handleUpscanResponse(key, upscanError, successRoute, errorRoute)(ec)
   }
 
   def uploadProgress(key: String): Action[AnyContent] = requiresAtLeast(GatekeeperRole.USER) {
     implicit request =>
-      val uploadCompleteRoute = Redirect(controllers.routes.UploadAnotherFileController.onLoad())
+      val uploadCompleteRoute = Redirect(controllers.routes.UploadFileController.onLoad())
       val uploadFailedRoute   = Redirect(controllers.routes.UploadFileController.onLoad())
       val uploadInProgressRoute = Ok(
         progressView(

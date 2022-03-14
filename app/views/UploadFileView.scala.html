@@ -16,6 +16,7 @@
 
 @import config.AppConfig
 @import models.upscan.UpScanInitiateResponse
+@import uk.gov.hmrc.govukfrontend.views.html.components._
 
 @this(layout: templates.Layout,
         inputFileUpload: components.inputFileUpload,
@@ -32,9 +33,7 @@
 
 @layout(
     pageTitle = messages("uploadFile.pageTitle"),
-    customBackLinkUrl = backLink,
-    form = Some(form),
-    showBackLink = backLink.isDefined
+    form = Some(form)
 ) {
 
     @errorSummary(form.errors)
@@ -51,15 +50,6 @@
         Html(messages("uploadFile.originalCalculations"))
     ))
 
-    @if(!optionalDocs.isEmpty) {
-        @p {
-            @messages("uploadFile.mayInclude")
-        }
-
-        @bullets(optionalDocs.map(doc =>
-            Html(messages(s"uploadFile.${doc}")))
-        )
-    }
 
     @govukDetails(
         Details(
