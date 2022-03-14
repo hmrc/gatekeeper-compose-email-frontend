@@ -17,7 +17,7 @@
 package controllers
 
 import config.AppConfig
-import connectors.AuthConnector
+import connectors.{AuthConnector, GatekeeperEmailFileUploadConnector}
 import forms.UploadFileFormProvider
 import models.GatekeeperRole
 import models.upscan.{FileUpload, FileUploadInfo}
@@ -40,6 +40,7 @@ class UploadFileController @Inject() (
   view: UploadFileView,
   progressView: FileUploadProgressView,
   formProvider: UploadFileFormProvider,
+  fileUploadConnector: GatekeeperEmailFileUploadConnector,
   override val forbiddenView: ForbiddenView,
   override val authConnector: AuthConnector,
   implicit val appConfig: AppConfig,
@@ -48,7 +49,7 @@ class UploadFileController @Inject() (
     with I18nSupport with GatekeeperAuthWrapper
     with FileUploadHandler[FileUploadInfo] {
 
-  def onLoad(): Action[AnyContent] = requiresAtLeast(GatekeeperRole.USER) { implicit request =>
+  def onLoad(emailUUID: String): Action[AnyContent] = requiresAtLeast(GatekeeperRole.USER) { implicit request =>
 
     val form = request.flash.get("uploadError") match {
       case Some("TooSmall")    => formProvider().withError("file", Messages("uploadFile.error.tooSmall"))
@@ -60,6 +61,7 @@ class UploadFileController @Inject() (
     }
 
     upScanService.initiateNewJourney().map { response =>
+      fileUploadConnector.inProgressUploadStatus(response.reference.value, emailUUID)
       Ok(view(form, response))
         .removingFromSession("UpscanReference")
         .addingToSession("UpscanReference" -> response.reference.value)
@@ -73,39 +75,42 @@ class UploadFileController @Inject() (
     errorResource: Option[String] = None,
     errorRequestId: Option[String] = None
   ): Action[AnyContent] = requiresAtLeast(GatekeeperRole.USER) { implicit request =>
-    val upscanError = buildUpscanError(errorCode, errorMessage, errorResource, errorRequestId)
-    val errorRoute  = Redirect(controllers.routes.UploadFileController.onLoad())
-    val successRoute = Redirect(
-      controllers.routes.UploadFileController.uploadProgress(key.getOrElse("this will never be used"))
-    )
-
-    handleUpscanResponse(key, upscanError, successRoute, errorRoute)(ec)
+    fileUploadConnector.fetchFileuploadStatus(key.getOrElse("this will never be used")).flatMap { uploadInfo =>
+      val upscanError = buildUpscanError(errorCode, errorMessage, errorResource, errorRequestId)
+      val errorRoute = Redirect(controllers.routes.UploadFileController.onLoad(uploadInfo.emailUUID))
+      val successRoute = Redirect(
+        controllers.routes.UploadFileController.uploadProgress(key.getOrElse("this will never be used"))
+      )
+      handleUpscanResponse(key, upscanError, successRoute, errorRoute)(ec)
+    }
   }
 
   def uploadProgress(key: String): Action[AnyContent] = requiresAtLeast(GatekeeperRole.USER) {
     implicit request =>
-      val uploadCompleteRoute = Redirect(controllers.routes.UploadFileController.onLoad())
-      val uploadFailedRoute   = Redirect(controllers.routes.UploadFileController.onLoad())
-      val uploadInProgressRoute = Ok(
-        progressView(
-          key,
-          action = controllers.routes.UploadFileController.uploadProgress(key).url
+      fileUploadConnector.fetchFileuploadStatus(key).flatMap { uploadInfo =>
+        val uploadCompleteRoute = Redirect(controllers.routes.UploadFileController.onLoad(uploadInfo.emailUUID))
+        val uploadFailedRoute = Redirect(controllers.routes.UploadFileController.onLoad(uploadInfo.emailUUID))
+        val uploadInProgressRoute = Ok(
+          progressView(
+            key,
+            action = controllers.routes.UploadFileController.uploadProgress(key).url
+          )
         )
-      )
-//      val updateFilesList: FileUpload => Seq[FileUploadInfo] = { file =>
-//        val upload = extractFileDetails(file, key)
-//        request.userAnswers.get(FileUploadPage).getOrElse(Seq.empty) :+ upload
-//      }
-//      val saveFilesList: Seq[FileUploadInfo] => Try[UserAnswers] = { list =>
-//        request.userAnswers.set(FileUploadPage, list)(FileUploadPage.queryWrites)
-//      }
+        //      val updateFilesList: FileUpload => Seq[FileUploadInfo] = { file =>
+        //        val upload = extractFileDetails(file, key)
+        //        request.userAnswers.get(FileUploadPage).getOrElse(Seq.empty) :+ upload
+        //      }
+        //      val saveFilesList: Seq[FileUploadInfo] => Try[UserAnswers] = { list =>
+        //        request.userAnswers.set(FileUploadPage, list)(FileUploadPage.queryWrites)
+        //      }
 
-      handleUpscanFileProcessing(
-        key,
-        uploadCompleteRoute,
-        uploadInProgressRoute,
-        uploadFailedRoute
-      )
+        handleUpscanFileProcessing(
+          key,
+          uploadCompleteRoute,
+          uploadInProgressRoute,
+          uploadFailedRoute
+        )
+      }
   }
 
 }
