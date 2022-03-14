@@ -99,6 +99,34 @@ class AppConfig @Inject()(config: Configuration, servicesConfig: ServicesConfig)
 
   lazy val customsFinancialsApi: String = servicesConfig.baseUrl("customs-financials-api") +
     config.getOptional[String]("customs-financials-api.context").getOrElse("/customs-financials-api")
+
+  lazy val host                    = servicesConfig.getString("urls.host")
+
+  lazy val upScanCallbackUrlForSuccessOrFailureOfFileUpload: String =
+    servicesConfig.getString("upscan.callbackUrlForSuccessOrFailureOfFileUpload")
+  lazy val upScanSuccessRedirectForUser: String = host + servicesConfig.getString("upscan.successRedirectForUser")
+  lazy val upScanErrorRedirectForUser: String   = host + servicesConfig.getString("upscan.errorRedirectForUser")
+  lazy val upScanSuccessRedirectForBulk: String = host + servicesConfig.getString("upscan.successRedirectForBulk")
+  lazy val upScanErrorRedirectForBulk: String   = host + servicesConfig.getString("upscan.errorRedirectForBulk")
+  lazy val upScanSupportingDocSuccessRedirectForUser: String =
+    host + servicesConfig.getString("upscan.supportingDocSuccessRedirectForUser")
+  lazy val upScanSupportingDocErrorRedirectForUser: String =
+    host + servicesConfig.getString("upscan.supportingDocErrorRedirectForUser")
+  lazy val upScanMinFileSize: Int              = servicesConfig.getInt("upscan.minFileSize")
+  lazy val upScanMaxFileSize: Int              = servicesConfig.getInt("upscan.maxFileSize")
+  lazy val upScanPollingDelayMilliSeconds: Int = servicesConfig.getInt("upscan.upScanPollingDelayMilliSeconds")
+  lazy val upScanInitiateBaseUrl: String       = servicesConfig.baseUrl("upscan-initiate")
+  lazy val upScanAcceptedFileTypes: String     = servicesConfig.getString("upscan.acceptedFileTypes")
+
+  lazy val upScanAuthoritySuccessRedirectForUser: String =
+    host + servicesConfig.getString("upscan.authoritySuccessRedirectForUser")
+  lazy val upScanAuthorityErrorRedirectForUser: String =
+    host + servicesConfig.getString("upscan.authorityErrorRedirectForUser")
+
+  lazy val upScanCancelCaseRedirectForUser: String =
+    host + servicesConfig.getString("upscan.cancelCaseDocSuccessRedirectForUser")
+  lazy val upScanCancelCaseDocErrorRedirectForUser: String =
+    host + servicesConfig.getString("upscan.cancelCaseDocErrorRedirectForUser")
 }
 
 trait EmailConnectorConfig {

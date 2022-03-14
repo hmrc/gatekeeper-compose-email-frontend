@@ -17,7 +17,7 @@
 package controllers
 
 import config.AppConfig
-import models.upscan.{FileStatusEnum, FileUpload, UpscanInitiateError}
+import models.upscan.{FileStatusEnum, FileUpload, FileUploadInfo, UpscanInitiateError}
 import models.upscan.UpscanErrors.{Quarantined, Rejected, TooBig, TooSmall, UpscanError}
 import play.api.mvc.Results.InternalServerError
 import play.api.mvc.{AnyContent, Result}
@@ -63,8 +63,6 @@ trait FileUploadHandler[T] {
     uploadCompleteRoute: Result,
     uploadInProgressRoute: Result,
     uploadFailedRoute: Result,
-    updateFilesList: FileUpload => Seq[T],
-    saveFilesList: Seq[T] => Try[UserAnswers]
   )(implicit ec: ExecutionContext): Future[Result] = {
     fileUploadRepository.getRecord(key).flatMap {
       case Some(upload @ FileUpload(_, _, _, Some(FileStatusEnum.READY), _, _, _)) =>

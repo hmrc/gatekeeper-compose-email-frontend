@@ -17,20 +17,24 @@
 package controllers
 
 import config.AppConfig
+import forms.UploadFileFormProvider
 import models.GatekeeperRole
+import models.upscan.{FileUpload, FileUploadInfo}
 import play.api.i18n.{I18nSupport, Messages}
 import play.api.mvc._
+import services.UpScanService
 import uk.gov.hmrc.play.bootstrap.frontend.controller.FrontendController
+import utils.GatekeeperAuthWrapper
+import views.html.{FileUploadProgressView, UploadFileView}
 
 import javax.inject.{Inject, Singleton}
+import scala.:+
 import scala.concurrent.ExecutionContext
 import scala.util.Try
 
 @Singleton
 class UploadFileController @Inject() (
   mcc: MessagesControllerComponents,
-  val fileUploadRepository: FileUploadRepository,
-  val sessionRepository: SessionRepository,
   upScanService: UpScanService,
   view: UploadFileView,
   progressView: FileUploadProgressView,
@@ -38,20 +42,10 @@ class UploadFileController @Inject() (
   implicit val appConfig: AppConfig,
   implicit val ec: ExecutionContext
 ) extends FrontendController(mcc)
-    with I18nSupport
+    with I18nSupport with GatekeeperAuthWrapper
     with FileUploadHandler[FileUploadInfo] {
 
   def onLoad(): Action[AnyContent] = requiresAtLeast(GatekeeperRole.USER) { implicit request =>
-    lazy val backLink =
-      (request.userAnswers.get(FileUploadPage), request.userAnswers.get(AnyOtherSupportingDocsPage)) match {
-        case (Some(files), _) if files.nonEmpty =>
-          Some(controllers.docUpload.routes.UploadAnotherFileController.onLoad())
-        case (_, Some(true)) if !request.checkMode =>
-          Some(controllers.docUpload.routes.OptionalSupportingDocsController.onLoad())
-        case (_, Some(false)) if !request.checkMode =>
-          Some(controllers.docUpload.routes.AnyOtherSupportingDocsController.onLoad())
-        case _ => None
-      }
 
     val form = request.flash.get("uploadError") match {
       case Some("TooSmall")    => formProvider().withError("file", Messages("uploadFile.error.tooSmall"))
@@ -62,12 +56,8 @@ class UploadFileController @Inject() (
       case _                   => formProvider()
     }
 
-    val anyOtherDocs = request.userAnswers.get(AnyOtherSupportingDocsPage).getOrElse(false)
-    val otherDocs    = request.userAnswers.get(OptionalSupportingDocsPage).getOrElse(Seq.empty)
-    val docs         = if (anyOtherDocs) otherDocs else Seq.empty
-
     upScanService.initiateNewJourney().map { response =>
-      Ok(view(form, response, backLink, docs))
+      Ok(view(form, response))
         .removingFromSession("UpscanReference")
         .addingToSession("UpscanReference" -> response.reference.value)
     }
@@ -79,41 +69,39 @@ class UploadFileController @Inject() (
     errorMessage: Option[String] = None,
     errorResource: Option[String] = None,
     errorRequestId: Option[String] = None
-  ): Action[AnyContent] = (identify andThen getData andThen requireData).async { implicit request =>
+  ): Action[AnyContent] = requiresAtLeast(GatekeeperRole.USER) { implicit request =>
     val upscanError = buildUpscanError(errorCode, errorMessage, errorResource, errorRequestId)
-    val errorRoute  = Redirect(controllers.docUpload.routes.UploadFileController.onLoad())
+    val errorRoute  = Redirect(controllers.routes.UploadFileController.onLoad())
     val successRoute = Redirect(
-      controllers.docUpload.routes.UploadFileController.uploadProgress(key.getOrElse("this will never be used"))
+      controllers.routes.UploadFileController.uploadProgress(key.getOrElse("this will never be used"))
     )
 
     handleUpscanResponse(key, upscanError, successRoute, errorRoute)
   }
 
-  def uploadProgress(key: String): Action[AnyContent] = (identify andThen getData andThen requireData).async {
+  def uploadProgress(key: String): Action[AnyContent] = requiresAtLeast(GatekeeperRole.USER) {
     implicit request =>
-      val uploadCompleteRoute = Redirect(controllers.docUpload.routes.UploadAnotherFileController.onLoad())
-      val uploadFailedRoute   = Redirect(controllers.docUpload.routes.UploadFileController.onLoad())
+      val uploadCompleteRoute = Redirect(controllers.routes.UploadAnotherFileController.onLoad())
+      val uploadFailedRoute   = Redirect(controllers.routes.UploadFileController.onLoad())
       val uploadInProgressRoute = Ok(
         progressView(
           key,
-          action = controllers.docUpload.routes.UploadFileController.uploadProgress(key).url
+          action = controllers.routes.UploadFileController.uploadProgress(key).url
         )
       )
-      val updateFilesList: FileUpload => Seq[FileUploadInfo] = { file =>
-        val upload = extractFileDetails(file, key)
-        request.userAnswers.get(FileUploadPage).getOrElse(Seq.empty) :+ upload
-      }
-      val saveFilesList: Seq[FileUploadInfo] => Try[UserAnswers] = { list =>
-        request.userAnswers.set(FileUploadPage, list)(FileUploadPage.queryWrites)
-      }
+//      val updateFilesList: FileUpload => Seq[FileUploadInfo] = { file =>
+//        val upload = extractFileDetails(file, key)
+//        request.userAnswers.get(FileUploadPage).getOrElse(Seq.empty) :+ upload
+//      }
+//      val saveFilesList: Seq[FileUploadInfo] => Try[UserAnswers] = { list =>
+//        request.userAnswers.set(FileUploadPage, list)(FileUploadPage.queryWrites)
+//      }
 
       handleUpscanFileProcessing(
         key,
         uploadCompleteRoute,
         uploadInProgressRoute,
-        uploadFailedRoute,
-        updateFilesList,
-        saveFilesList
+        uploadFailedRoute
       )
   }
 
