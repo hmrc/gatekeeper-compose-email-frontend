@@ -15,6 +15,10 @@
  *@
 
 @import config.AppConfig
+@import include._
+@import services._
+@import models._
+@import play.api.libs.json._
 @import models.upscan.UpScanInitiateResponse
 @import uk.gov.hmrc.govukfrontend.views.html.components._
 
@@ -31,10 +35,7 @@
 
 @(form: Form[_], upScanResponse: UpScanInitiateResponse)(implicit request: Request[_], appConfig: AppConfig, messages: Messages)
 
-@layout(
-    pageTitle = messages("uploadFile.pageTitle"),
-    form = Some(form)
-) {
+@layout(pageTitle = messages("uploadFile.pageTitle"), form = Some(form)) {
 
     @errorSummary(form.errors)
 
@@ -98,6 +99,3 @@
 }
 
 
-@{
-    //$COVERAGE-OFF$
-}

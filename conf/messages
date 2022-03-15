@@ -3,3 +3,34 @@ service.text = This is your new service
 email.recipient.required = Provide an email recipient
 email.subject.required = Provide an email subject
 email.body.required = Provide an email body
+
+
+
+# Upload File common
+common.uploadFile.uploadAFile = Upload a file
+common.uploadFile.uploadChosenFile = Upload chosen file
+common.uploadFile.typesOfFile = Types of file you can upload
+common.uploadFile.PDF = PDF (.pdf)
+common.uploadFile.CSV = CSV (.csv)
+common.uploadFile.ms = Microsoft Excel, Word or PowerPoint (.xls, .xlsx, .doc, .docx, .ppt or .pptx)
+common.uploadFile.openDocumentFormat = Open Document Format (.odt, .ods or .odp)
+common.uploadFile.image = image (.jpeg, .jpg, .png or .tiff)
+common.uploadFile.fileSize = Each file must be 6MB or less and you can only upload one file at a time.
+
+# Upload File page
+uploadFile.pageTitle = Upload supporting documents
+uploadFile.mustInclude = You must upload:
+uploadFile.mayInclude = You have told us you will upload:
+uploadFile.originalC88 = the original import declaration, also known as the C88 or SAD
+uploadFile.originalE2 = the entry acceptance, also known as the E2
+uploadFile.originalCalculations = a document or scanned image showing how you calculated the tax or duty that should have been paid
+uploadFile.importAndEntry = the amendment import declaration (C88) and entry acceptance (E2)
+uploadFile.airwayBill = the air waybill
+uploadFile.originProof = a proof of origin
+uploadFile.other = other documentation relevant to this underpayment disclosure
+uploadFile.error.noFileSelected = Select a file to upload
+uploadFile.error.tooSmall = Select a file to upload
+uploadFile.error.tooBig = The selected file must be smaller than 6MB
+uploadFile.error.unknown = The selected file could not be uploaded – try again
+uploadFile.error.rejected = The selected file must be a PDF, XLS, XLSX, DOC, DOCX, PPT, PPTX, ODT, ODS, ODP, JPG, PNG, or TIFF
+uploadFile.error.quarantined = The selected file contains a virus
