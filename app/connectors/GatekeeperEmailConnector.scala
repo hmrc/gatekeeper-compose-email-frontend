@@ -19,7 +19,6 @@ package connectors
 import config.EmailConnectorConfig
 import controllers.{ComposeEmailForm, EmailPreviewForm}
 import models.EmailRequest.{createEmailRequest, updateEmailRequest}
-import models.file_upload.UploadedFile
 import models.{EmailRequest, OutgoingEmail, User}
 import uk.gov.hmrc.http.HttpReads.Implicits._
 import uk.gov.hmrc.http.{HeaderCarrier, HttpClient, HttpErrorFunctions, UpstreamErrorResponse}
@@ -41,7 +40,7 @@ class GatekeeperEmailConnector @Inject()(http: HttpClient, config: EmailConnecto
     postSaveEmail(createEmailRequest(composeEmailForm, userInfo), emailUUID)
   }
 
-  def updateEmail(composeEmailForm: ComposeEmailForm, emailUUID: String, users: List[User], attachmentDetails: Option[Seq[UploadedFile]] = None)
+  def updateEmail(composeEmailForm: ComposeEmailForm, emailUUID: String, users: List[User], attachmentDetails: Option[Seq[String]] = None)
                  (implicit hc: HeaderCarrier): Future[OutgoingEmail] = {
     postUpdateEmail(updateEmailRequest(composeEmailForm, users, attachmentDetails), emailUUID)
   }

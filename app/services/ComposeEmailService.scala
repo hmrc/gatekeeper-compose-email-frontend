@@ -19,7 +19,6 @@ package services
 import connectors.GatekeeperEmailConnector
 import controllers.ComposeEmailForm
 import models.{OutgoingEmail, User}
-import models.file_upload.UploadedFile
 import uk.gov.hmrc.http.HeaderCarrier
 
 import javax.inject.Inject
@@ -36,7 +35,7 @@ class ComposeEmailService @Inject()(emailConnector: GatekeeperEmailConnector)
     emailConnector.fetchEmail(emailUUID)
   }
 
-  def updateEmail(composeEmailForm: ComposeEmailForm, emailUUID: String, users: List[User], attachmentDetails: Option[Seq[UploadedFile]] = None)
+  def updateEmail(composeEmailForm: ComposeEmailForm, emailUUID: String, users: List[User], attachmentDetails: Option[Seq[String]] = None)
                  (implicit hc: HeaderCarrier): Future[OutgoingEmail] = {
     emailConnector.updateEmail(composeEmailForm, emailUUID, users, attachmentDetails)
   }
