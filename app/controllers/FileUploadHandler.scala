@@ -18,10 +18,10 @@ package controllers
 
 import config.AppConfig
 import connectors.GatekeeperEmailFileUploadConnector
-import models.upscan.{FileStatusEnum, FileUpload, FileUploadInfo, InProgress, UploadInfo, UploadStatus, UploadedFailedWithErrors, UploadedSuccessfully, UpscanInitiateError}
-import models.upscan.UpscanErrors.{Quarantined, Rejected, TooBig, TooSmall, Unknown, UpscanError}
+import models.upscan._
+import models.upscan.UpscanErrors._
 import play.api.mvc.Results.InternalServerError
-import play.api.mvc.{AnyContent, Result}
+import play.api.mvc.Result
 import uk.gov.hmrc.http.HeaderCarrier
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -49,11 +49,11 @@ trait FileUploadHandler[T] {
     errorRoute: Result
   )(ec: ExecutionContext): Future[Result] = (key, error) match {
     case (Some(key), None) =>
-//      fileUploadRepository.updateRecord(FileUpload(key, Some(request.credId))).map { _ =>
-//        Thread.sleep(appConfig.upScanPollingDelayMilliSeconds)
+        println(s"*****No Errors in Upscan init response for key : $key")
         Future.successful(successRoute)
 //      }
     case (_, Some(error)) =>
+      println(s"*****Errors in Upscan init response for key : $key")
       val uploadError = syncErrorToUpscanErrorMapping(error.code)
       Future.successful(errorRoute.flashing("uploadError" -> uploadError.toString))
     case _ =>

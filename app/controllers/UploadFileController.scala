@@ -21,11 +21,12 @@ import connectors.{AuthConnector, GatekeeperEmailFileUploadConnector}
 import forms.UploadFileFormProvider
 import models.GatekeeperRole
 import models.upscan.{FileUpload, FileUploadInfo}
+import play.api.Logging
 import play.api.i18n.{I18nSupport, Messages}
 import play.api.mvc._
 import services.UpScanService
 import uk.gov.hmrc.play.bootstrap.frontend.controller.FrontendController
-import utils.GatekeeperAuthWrapper
+import utils.{ApplicationLogger, GatekeeperAuthWrapper}
 import views.html.{FileUploadProgressView, ForbiddenView, UploadFileView}
 
 import javax.inject.{Inject, Singleton}
@@ -47,10 +48,11 @@ class UploadFileController @Inject() (
   implicit val ec: ExecutionContext
 ) extends FrontendController(mcc)
     with I18nSupport with GatekeeperAuthWrapper
-    with FileUploadHandler[FileUploadInfo] {
+    with FileUploadHandler[FileUploadInfo] with ApplicationLogger {
 
   def onLoad(emailUUID: String): Action[AnyContent] = requiresAtLeast(GatekeeperRole.USER) { implicit request =>
 
+    logger.info(s"*****************************************onLoad for emailUUID : $emailUUID")
     val form = request.flash.get("uploadError") match {
       case Some("TooSmall")    => formProvider().withError("file", Messages("uploadFile.error.tooSmall"))
       case Some("TooBig")      => formProvider().withError("file", Messages("uploadFile.error.tooBig"))
@@ -69,25 +71,28 @@ class UploadFileController @Inject() (
   }
 
   def upscanResponseHandler(
-    key: Option[String] = None,
+    key: String,
     errorCode: Option[String] = None,
     errorMessage: Option[String] = None,
     errorResource: Option[String] = None,
     errorRequestId: Option[String] = None
-  ): Action[AnyContent] = requiresAtLeast(GatekeeperRole.USER) { implicit request =>
-    fileUploadConnector.fetchFileuploadStatus(key.getOrElse("this will never be used")).flatMap { uploadInfo =>
+  ): Action[AnyContent] = Action.async { implicit request =>
+    logger.info("*****************Inside upscanResponseHandler outside fetchFileuploadStatus")
+    fileUploadConnector.fetchFileuploadStatus(Some(key).getOrElse("this will never be used")).flatMap { uploadInfo =>
+      logger.info("*********************Inside upscanResponseHandler fetchFileuploadStatus")
       val upscanError = buildUpscanError(errorCode, errorMessage, errorResource, errorRequestId)
       val errorRoute = Redirect(controllers.routes.UploadFileController.onLoad(uploadInfo.emailUUID))
       val successRoute = Redirect(
-        controllers.routes.UploadFileController.uploadProgress(key.getOrElse("this will never be used"))
+        controllers.routes.UploadFileController.uploadProgress(Some(key).getOrElse("this will never be used"))
       )
-      handleUpscanResponse(key, upscanError, successRoute, errorRoute)(ec)
+      handleUpscanResponse(Some(key), upscanError, successRoute, errorRoute)(ec)
     }
   }
 
   def uploadProgress(key: String): Action[AnyContent] = requiresAtLeast(GatekeeperRole.USER) {
     implicit request =>
       fileUploadConnector.fetchFileuploadStatus(key).flatMap { uploadInfo =>
+        logger.info(s"*********In uploadProgress for key: $key")
         val uploadCompleteRoute = Redirect(controllers.routes.UploadFileController.onLoad(uploadInfo.emailUUID))
         val uploadFailedRoute = Redirect(controllers.routes.UploadFileController.onLoad(uploadInfo.emailUUID))
         val uploadInProgressRoute = Ok(

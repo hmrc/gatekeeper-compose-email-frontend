@@ -37,6 +37,7 @@ class GatekeeperEmailFileUploadConnector @Inject()(http: HttpClient, config: Ema
 
   def fetchFileuploadStatus(key: String)(implicit hc: HeaderCarrier) = {
     val url = s"$serviceUrl/gatekeeperemail/fetchfileuploadstatus"
+    println(s"********In fetchFileuploadStatus for $key")
     http.GET[UploadInfo](url, Seq(("key", key)))
   }
 

@@ -10,5 +10,5 @@ POST       /edit-email/:emailUUID/:userSelection    controllers.EmailPreviewCont
 POST        /email                   controllers.ComposeEmailController.initialiseEmail
 
 GET         /upload-file/:emailUUID        controllers.UploadFileController.onLoad(emailUUID: String)
-GET         /upload-file/upscan-response    controllers.UploadFileController.upscanResponseHandler(key: Option[String] ?= None, errorCode: Option[String] ?= None, errorMessage: Option[String] ?= None, errorResource: Option[String] ?= None, errorRequestId: Option[String] ?= None)
+GET         /upload-file/upscan-response/:key    controllers.UploadFileController.upscanResponseHandler(key: String)
 GET         /upload-file/polling       controllers.UploadFileController.uploadProgress(key: String)
