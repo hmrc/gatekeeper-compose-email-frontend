@@ -22,7 +22,7 @@
 @import models.upscan.UpScanInitiateResponse
 @import uk.gov.hmrc.govukfrontend.views.html.components._
 
-@this(layout: templates.Layout,
+@this(layout: Layout,
         inputFileUpload: components.inputFileUpload,
         h1: components.h1,
         h2: components.h2,
@@ -35,7 +35,7 @@
 
 @(form: Form[_], upScanResponse: UpScanInitiateResponse)(implicit request: Request[_], appConfig: AppConfig, messages: Messages)
 
-@layout(pageTitle = messages("uploadFile.pageTitle"), form = Some(form)) {
+@layout(pageTitle = Some(messages("uploadFile.pageTitle"))) {
 
     @errorSummary(form.errors)
 
