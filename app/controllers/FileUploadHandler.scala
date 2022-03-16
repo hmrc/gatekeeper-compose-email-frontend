@@ -16,21 +16,27 @@
 
 package controllers
 
+import com.google.common.base.Charsets
 import config.AppConfig
 import connectors.GatekeeperEmailFileUploadConnector
 import models.upscan._
 import models.upscan.UpscanErrors._
 import play.api.mvc.Results.InternalServerError
 import play.api.mvc.Result
+import play.shaded.ahc.io.netty.handler.codec.base64.Base64Decoder
+import services.ComposeEmailService
 import uk.gov.hmrc.http.HeaderCarrier
+import utils.ApplicationLogger
 
+import java.util.Base64
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Try
 
-trait FileUploadHandler[T] {
+trait FileUploadHandler[T] extends ApplicationLogger{
 
   val appConfig: AppConfig
   val fileUploadConnector: GatekeeperEmailFileUploadConnector
+  val emailService: ComposeEmailService
   val syncErrorToUpscanErrorMapping: String => UpscanError = Map(
     "EntityTooSmall" -> TooSmall,
     "EntityTooLarge" -> TooBig
@@ -49,11 +55,11 @@ trait FileUploadHandler[T] {
     errorRoute: Result
   )(ec: ExecutionContext): Future[Result] = (key, error) match {
     case (Some(key), None) =>
-        println(s"*****No Errors in Upscan init response for key : $key")
+        logger.info(s"**************No Errors in Upscan init response for key : $key")
         Future.successful(successRoute)
 //      }
     case (_, Some(error)) =>
-      println(s"*****Errors in Upscan init response for key : $key")
+      logger.info(s"************Errors in Upscan init response for key : $key")
       val uploadError = syncErrorToUpscanErrorMapping(error.code)
       Future.successful(errorRoute.flashing("uploadError" -> uploadError.toString))
     case _ =>
@@ -67,17 +73,24 @@ trait FileUploadHandler[T] {
     uploadFailedRoute: Result,
   )(implicit ec: ExecutionContext, hc: HeaderCarrier): Future[Result] = {
     fileUploadConnector.fetchFileuploadStatus(key).flatMap {
-      case UploadInfo(_, _, UploadedSuccessfully(_, _, _, _, _))  =>
+      case UploadInfo(key, emailUUID, UploadedSuccessfully(_, _, _, _, _))  =>
+        logger.info("************* handleUpscanFileProcessing Success Case")
         //save to email repository the file ref here.. as this file is successful..
-        //        val updatedListFiles = updateFilesList(upload)
-//        for {
-//          updatedAnswers <- Future.fromTry(saveFilesList(updatedListFiles))
-//          _              <- sessionRepository.set(updatedAnswers)
-//        } yield
+        val attachAppended = emailService.fetchEmail(emailUUID).map( emailInfo =>
+          if(emailInfo.attachmentDetails.isDefined) {
+            emailInfo.copy(attachmentDetails = Some(emailInfo.attachmentDetails.get :+ key))
+          } else emailInfo
+        )
+        attachAppended.flatMap(email => emailService.updateEmail(ComposeEmailForm(
+          new String(Base64.getDecoder.decode(email.markdownEmailBody), Charsets.UTF_8),
+          email.subject, true), emailUUID, email.recipients, email.attachmentDetails))
+
           Future.successful(uploadCompleteRoute)
-      case UploadInfo(_, _, UploadedFailedWithErrors(_, errorMsg, _, _)) =>
-        Future.successful(uploadFailedRoute.flashing("uploadError" -> errorMsg))
+      case UploadInfo(_, _, UploadedFailedWithErrors(_, _, _, _)) =>
+        logger.info("************* handleUpscanFileProcessing Failure Case")
+        Future.successful(uploadFailedRoute.flashing("uploadError" -> "QUARANTINE"))
       case UploadInfo(_, _, InProgress) =>
+        logger.info("************* handleUpscanFileProcessing InProgress Case")
         Future.successful(uploadInProgressRoute)
       case _ =>
         Future.successful(InternalServerError)

@@ -24,7 +24,7 @@ import models.upscan.{FileUpload, FileUploadInfo}
 import play.api.Logging
 import play.api.i18n.{I18nSupport, Messages}
 import play.api.mvc._
-import services.UpScanService
+import services.{ComposeEmailService, UpScanService}
 import uk.gov.hmrc.play.bootstrap.frontend.controller.FrontendController
 import utils.{ApplicationLogger, GatekeeperAuthWrapper}
 import views.html.{FileUploadProgressView, ForbiddenView, UploadFileView}
@@ -41,6 +41,7 @@ class UploadFileController @Inject() (
   view: UploadFileView,
   progressView: FileUploadProgressView,
   formProvider: UploadFileFormProvider,
+  val emailService: ComposeEmailService,
   val fileUploadConnector: GatekeeperEmailFileUploadConnector,
   override val forbiddenView: ForbiddenView,
   override val authConnector: AuthConnector,
@@ -71,21 +72,21 @@ class UploadFileController @Inject() (
   }
 
   def upscanResponseHandler(
-    key: String,
+    key: Option[String] = None,
     errorCode: Option[String] = None,
     errorMessage: Option[String] = None,
     errorResource: Option[String] = None,
     errorRequestId: Option[String] = None
   ): Action[AnyContent] = Action.async { implicit request =>
-    logger.info("*****************Inside upscanResponseHandler outside fetchFileuploadStatus")
-    fileUploadConnector.fetchFileuploadStatus(Some(key).getOrElse("this will never be used")).flatMap { uploadInfo =>
+    logger.info("*****************>>>>>>>>>>>>>>>>>>>>>>>>>>>Inside upscanResponseHandler outside fetchFileuploadStatus")
+    fileUploadConnector.fetchFileuploadStatus(key.getOrElse("this will never be used")).flatMap { uploadInfo =>
       logger.info("*********************Inside upscanResponseHandler fetchFileuploadStatus")
       val upscanError = buildUpscanError(errorCode, errorMessage, errorResource, errorRequestId)
       val errorRoute = Redirect(controllers.routes.UploadFileController.onLoad(uploadInfo.emailUUID))
       val successRoute = Redirect(
-        controllers.routes.UploadFileController.uploadProgress(Some(key).getOrElse("this will never be used"))
+        controllers.routes.UploadFileController.uploadProgress(key.getOrElse("this will never be used"))
       )
-      handleUpscanResponse(Some(key), upscanError, successRoute, errorRoute)(ec)
+      handleUpscanResponse(key, upscanError, successRoute, errorRoute)(ec)
     }
   }
 
@@ -101,13 +102,6 @@ class UploadFileController @Inject() (
             action = controllers.routes.UploadFileController.uploadProgress(key).url
           )
         )
-        //      val updateFilesList: FileUpload => Seq[FileUploadInfo] = { file =>
-        //        val upload = extractFileDetails(file, key)
-        //        request.userAnswers.get(FileUploadPage).getOrElse(Seq.empty) :+ upload
-        //      }
-        //      val saveFilesList: Seq[FileUploadInfo] => Try[UserAnswers] = { list =>
-        //        request.userAnswers.set(FileUploadPage, list)(FileUploadPage.queryWrites)
-        //      }
 
         handleUpscanFileProcessing(
           key,
