@@ -50,18 +50,20 @@ package controllers
 
 import com.google.common.base.Charsets
 import config.AppConfig
-import connectors.GatekeeperEmailFileUploadConnector
+import connectors.{AuthConnector, GatekeeperEmailFileUploadConnector}
 import forms.UploadAnotherFileFormProvider
 import models.GatekeeperRole
+import models.upscan.{UploadInfo, UploadedSuccessfully}
 import play.api.data.Form
 import play.api.i18n.{I18nSupport, Messages}
+import play.api.libs.EventSource.Event.writeable
 import play.api.mvc._
 import services.ComposeEmailService
 import uk.gov.hmrc.govukfrontend.views.Aliases._
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.bootstrap.frontend.controller.FrontendController
 import utils.GatekeeperAuthWrapper
-import views.html.{EmailPreview, UploadAnotherFileView}
+import views.html.{EmailPreview, ForbiddenView, UploadAnotherFileView}
 
 import java.util.Base64
 import javax.inject.Inject
@@ -74,9 +76,10 @@ class UploadAnotherFileController @Inject() (
   emailService: ComposeEmailService,
   view: UploadAnotherFileView,
   emailPreview: EmailPreview,
+  override val forbiddenView: ForbiddenView,
+  override val authConnector: AuthConnector,
   fileUploadConnector: GatekeeperEmailFileUploadConnector,
   implicit val ec: ExecutionContext,
-  implicit val hc: HeaderCarrier,
   implicit val appConfig: AppConfig,
 ) extends FrontendController(mcc) with GatekeeperAuthWrapper
     with I18nSupport {
@@ -87,14 +90,18 @@ class UploadAnotherFileController @Inject() (
       if (!email.attachmentDetails.isDefined) {
         Future.successful(Redirect(controllers.routes.UploadFileController.onLoad(emailUUID)))
       } else {
-        Future.successful(Ok(view(formProvider(), buildSummaryList(email.attachmentDetails))))
+        val fileUploads = Future.sequence(email.attachmentDetails.get.map(
+          file => fileUploadConnector.fetchFileuploadStatus(file)
+          ))
+        val result = fileUploads.map(buildSummaryList(_))
+        result.map( r => Ok(view(formProvider(), r, emailUUID)))
       }
     }
   }
 
   def onSubmit(emailUUID: String): Action[AnyContent] = requiresAtLeast(GatekeeperRole.USER) { implicit request =>
     formProvider().bindFromRequest().fold(
-      formWithErrors => resultWithErrors(formWithErrors),
+      formWithErrors => Future.successful(Redirect(controllers.routes.UploadFileController.onLoad(emailUUID))),
       addAnotherFile => {
         if (addAnotherFile) {
           Future.successful(Redirect(controllers.routes.UploadFileController.onLoad(emailUUID)))
@@ -108,35 +115,23 @@ class UploadAnotherFileController @Inject() (
     )
   }
 
-  private def resultWithErrors(
-    formWithErrors: Form[Boolean]
-  ): Future[Result] =
-    request.userAnswers.get(FileUploadPage).fold(
-      Future(Redirect(controllers.docUpload.routes.UploadFileController.onLoad().url))
-    ) { files =>
-      Future.successful(BadRequest(view(formWithErrors, buildSummaryList(files))))
-    }
+//  private def resultWithErrors(
+//    formWithErrors: Form[Boolean], emailUUID: String
+//  ): Future[Result] = {
+//      Future.successful(BadRequest(view(formWithErrors, buildSummaryList())))
+//    }
 
-  private def getOptionalDocs(userAnswers: UserAnswers): Seq[OptionalDocument] = {
-    val anyOptionalDocs = userAnswers.get(AnyOtherSupportingDocsPage).getOrElse(false)
-    if (anyOptionalDocs) {
-      userAnswers.get(OptionalSupportingDocsPage).getOrElse(Seq.empty)
-    } else {
-      Seq.empty
-    }
-  }
+  private def buildSummaryList(files: Seq[UploadInfo])(implicit messages: Messages) = {
 
-  private def buildSummaryList(files: Seq[String])(implicit messages: Messages) = {
-    val fileUploads = files.map(file => fileUploadConnector.fetchFileuploadStatus(file))
-
-    val summaryListRows = fileUploads.zipWithIndex.map { case (file, index) =>
+    val summaryListRows = files.zipWithIndex.map { case (file, index) =>
       //val removeLink = controllers.routes.RemoveUploadedFileController.onLoad(Index(index)).url
+      file.status.asInstanceOf[UploadedSuccessfully].name
       SummaryListRow(
-        key = Key(content = Text(file.fileName), classes = s"govuk-!-width-one-third govuk-!-font-weight-regular".trim),
+        key = Key(content = Text(file.status.asInstanceOf[UploadedSuccessfully].name), classes = s"govuk-!-width-one-third govuk-!-font-weight-regular".trim),
         value = Value(
           content = HtmlContent(
             s"""<a href=removeLink class="govuk-link"> <span aria-hidden="true">${messages("common.remove")}</span>
-               |<span class="govuk-visually-hidden"> Remove ${file.fileName}</span>
+               |<span class="govuk-visually-hidden"> Remove ${file.status.asInstanceOf[UploadedSuccessfully].name}</span>
                |</a>""".stripMargin
           ),
           classes = "govuk-summary-list__actions"

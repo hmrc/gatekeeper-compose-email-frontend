@@ -34,3 +34,8 @@ uploadFile.error.tooBig = The selected file must be smaller than 6MB
 uploadFile.error.unknown = The selected file could not be uploaded – try again
 uploadFile.error.rejected = The selected file must be a PDF, XLS, XLSX, DOC, DOCX, PPT, PPTX, ODT, ODS, ODP, JPG, PNG, or TIFF
 uploadFile.error.quarantined = The selected file contains a virus
+
+# File Upload Summary page
+uploadAnotherFile.pageTitle = You have uploaded {0} {1}
+uploadAnotherFile.addFile = Do you need to upload another file?
+uploadAnotherFile.error.required = Select yes to upload another file

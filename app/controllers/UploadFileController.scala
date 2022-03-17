@@ -94,7 +94,7 @@ class UploadFileController @Inject() (
     implicit request =>
       fileUploadConnector.fetchFileuploadStatus(key).flatMap { uploadInfo =>
         logger.info(s"*********In uploadProgress for key: $key")
-        val uploadCompleteRoute = Redirect(controllers.routes.UploadFileController.onLoad(uploadInfo.emailUUID))
+        val uploadCompleteRoute = Redirect(controllers.routes.UploadAnotherFileController.onLoad(uploadInfo.emailUUID))
         val uploadFailedRoute = Redirect(controllers.routes.UploadFileController.onLoad(uploadInfo.emailUUID))
         val uploadInProgressRoute = Ok(
           progressView(

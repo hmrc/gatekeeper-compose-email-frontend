@@ -14,4 +14,4 @@ GET         /upload-files/upscan-response    controllers.UploadFileController.up
 GET         /upload-files/polling       controllers.UploadFileController.uploadProgress(key: String)
 
 GET         /disclosure/upload-another-file                                                    controllers.UploadAnotherFileController.onLoad(emailUUID: String)
-POST        /disclosure/upload-another-file                                                    controllers.UploadAnotherFileController.onSubmit()
+POST        /disclosure/upload-another-file                                                    controllers.UploadAnotherFileController.onSubmit(emailUUID: String)

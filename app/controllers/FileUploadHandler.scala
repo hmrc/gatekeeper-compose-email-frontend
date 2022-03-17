@@ -88,7 +88,7 @@ trait FileUploadHandler[T] extends ApplicationLogger{
           Future.successful(uploadCompleteRoute)
       case UploadInfo(_, _, UploadedFailedWithErrors(_, _, _, _)) =>
         logger.info("************* handleUpscanFileProcessing Failure Case")
-        Future.successful(uploadFailedRoute.flashing("uploadError" -> "QUARANTINE"))
+        Future.successful(uploadFailedRoute.flashing("uploadError" -> "Quarantined"))
       case UploadInfo(_, _, InProgress) =>
         logger.info("************* handleUpscanFileProcessing InProgress Case")
         Future.successful(uploadInProgressRoute)
