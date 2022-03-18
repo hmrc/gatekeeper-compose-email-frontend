@@ -21,15 +21,15 @@
 @import uk.gov.hmrc.hmrcfrontend.views.viewmodels.header.NavigationItem
 @import uk.gov.hmrc.govukfrontend.views.Aliases.Text
 
-@this(hmrcHeader: HmrcHeader)
+@this(hmrcHeader: HmrcHeader, appConfig: AppConfig)
 @()(implicit messages: Messages)
 
 @navigation = @{
     Seq(
-        NavigationItem(content = Text("Applications"), href = Some("#")),
-        NavigationItem(content = Text("Developers"), href = Some("#")),
-        NavigationItem(content = Text("Email"), href = Some("#")),
-        NavigationItem(content = Text("API Approvals"), href = Some("#"))
+        NavigationItem(content = Text("Applications"), href = Some(s"${appConfig.apiGatekeeperFrontendUrl}/applications")),
+        NavigationItem(content = Text("Developers"), href = Some(s"${appConfig.apiGatekeeperFrontendUrl}/developers2")),
+        NavigationItem(content = Text("Email"), href = Some(s"${appConfig.apiGatekeeperFrontendUrl}/emails")),
+        NavigationItem(content = Text("API Approvals"), href = Some(s"${appConfig.apiGatekeeperFrontendUrl}/pending"))
     )
 }
 
