@@ -21,7 +21,7 @@ import play.api.libs.json.{Json, OFormat}
 
 case class OutgoingEmail(emailUUID: String, recipientTitle: String, recipients: List[User], attachmentDetails: Option[Seq[UploadedFile]],
                          markdownEmailBody: String, htmlEmailBody: String, subject: String,
-                         composedBy: String, approvedBy: Option[String])
+                         status: String, composedBy: String, approvedBy: Option[String])
 
 object OutgoingEmail {
   implicit val userFmt: OFormat[User] = Json.format[User]

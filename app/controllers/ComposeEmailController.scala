@@ -101,7 +101,7 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
       fetchEmail.map { email =>
         Ok(emailPreview(base64Decode(email.htmlEmailBody),
           controllers.EmailPreviewForm.form.fill(EmailPreviewForm(email.emailUUID, ComposeEmailForm(email.subject, email.markdownEmailBody, true))),
-          userSelectionMap))
+          userSelectionMap, email.status))
       }
   }
 
@@ -110,15 +110,18 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
       def handleValidForm(form: ComposeEmailForm) = {
         val fetchEmail: Future[OutgoingEmail] = emailService.fetchEmail(emailUUID)
         val userSelectionMap: Map[String, String] = Json.parse(userSelection).as[Map[String, String]]
-        val outgoingEmail: Future[OutgoingEmail] = fetchEmail.flatMap(user =>
-          emailService.updateEmail(form, emailUUID, user.recipients, user.attachmentDetails))
-        outgoingEmail.map {  email =>
-          if(form.attachFiles) {
-            Redirect(controllers.routes.FileUploadController.start(emailUUID, false, true))
+        fetchEmail.flatMap { emailFetched =>
+          val outgoingEmail = emailService.updateEmail(form, emailUUID, emailFetched.recipients, emailFetched.attachmentDetails)
+          outgoingEmail.map {  email =>
+            if(form.attachFiles) {
+              Redirect(controllers.routes.FileUploadController.start(emailUUID, false, true))
+            }
+            else {
+              logger.info(s"*****email status***********:${emailFetched.status}")
+              Ok(emailPreview(base64Decode(email.htmlEmailBody), controllers.EmailPreviewForm.form.fill(EmailPreviewForm(email.emailUUID, form)),
+              userSelectionMap, emailFetched.status))
+            }
           }
-          else Ok(emailPreview(base64Decode(email.htmlEmailBody), controllers.EmailPreviewForm.form.fill(EmailPreviewForm(email.emailUUID, form)),
-            userSelectionMap))
-//            userSelection.toMap[String, String]))
         }
       }
 

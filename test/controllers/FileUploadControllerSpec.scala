@@ -77,6 +77,7 @@ class FileUploadControllerSpec extends ControllerBaseSpec with Matchers with Moc
          |    "markdownEmailBody": "",
          |    "htmlEmailBody": "",
          |    "subject": "emailSubject",
+         |    "status": "INPROGRESS",
          |    "composedBy": "auto-emailer",
          |    "approvedBy": "auto-emailer"
          |  }

@@ -92,6 +92,7 @@ class GatekeeperEmailConnectorSpec extends AsyncHmrcSpec with BeforeAndAfterEach
          |    "markdownEmailBody": "",
          |    "htmlEmailBody": "",
          |    "subject": "",
+         |    "status": "",
          |    "composedBy": "auto-emailer",
          |    "approvedBy": "auto-emailer"
          |  }
