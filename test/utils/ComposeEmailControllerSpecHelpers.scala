@@ -77,15 +77,15 @@ object ComposeEmailControllerSpecHelpers  extends ControllerBaseSpec with Matche
   class ComposeEmailServiceTest extends ComposeEmailService(mock[GatekeeperEmailConnector]){
     override def saveEmail(composeEmailForm: ComposeEmailForm, emailUUID: String,  userInfo: List[User])(implicit hc: HeaderCarrier): Future[OutgoingEmail] =
       Future.successful(OutgoingEmail("srinivasalu.munagala@digital.hmrc.gov.uk",
-        "Hello", su, None,  "*test email body*", "", "", "", None))
+        "Hello", su, None,  "*test email body*", "", "", "", "", None))
     override def fetchEmail(emailUUID: String)(implicit hc: HeaderCarrier): Future[OutgoingEmail] = {
       Future.successful(OutgoingEmail("srinivasalu.munagala@digital.hmrc.gov.uk",
-        "Hello", su, None,  "*test email body*", "", "", "", None))
+        "Hello", su, None,  "*test email body*", "", "", "", "", None))
     }
     override def updateEmail(composeEmailForm: ComposeEmailForm, emailUUID: String, users: List[User],
                              attachmentDetails: Option[Seq[UploadedFile]])(implicit hc: HeaderCarrier): Future[OutgoingEmail] = {
       Future.successful(OutgoingEmail("srinivasalu.munagala@digital.hmrc.gov.uk",
-        "Hello", su, None,  "*test email body*", "", "", "", None))
+        "Hello", su, None,  "*test email body*", "", "", "", "", None))
     }
   }
   val mockGateKeeperService = new ComposeEmailServiceTest

@@ -44,25 +44,25 @@ class ComposeEmailServiceSpec extends AnyWordSpec with Matchers with GuiceOneApp
 
   "saveEmail" should {
     "handle saving an email successfully" in new Setup {
-      when(mockEmailConnector.saveEmail(*, *, *)(*)).thenReturn(Future.successful(OutgoingEmail("", "", su, None, "", "", "", "", None)))
+      when(mockEmailConnector.saveEmail(*, *, *)(*)).thenReturn(Future.successful(OutgoingEmail("", "", su, None, "", "", "", "", "", None)))
       val result = await(underTest.saveEmail(new ComposeEmailForm("", "", true), "", su))
-      result shouldBe OutgoingEmail("", "", su, None, "", "", "", "", None)
+      result shouldBe OutgoingEmail("", "", su, None, "", "", "", "", "", None)
     }
   }
 
   "fetchEmail" should {
     "handle fetching an email successfully" in new Setup {
-      when(mockEmailConnector.fetchEmail(*)(*)).thenReturn(Future.successful(OutgoingEmail("", "", su, None, "", "", "", "", None)))
+      when(mockEmailConnector.fetchEmail(*)(*)).thenReturn(Future.successful(OutgoingEmail("", "", su, None, "", "", "", "", "", None)))
       val result = await(underTest.fetchEmail(emailUUID = emailUUID))
-      result shouldBe OutgoingEmail("", "", su, None, "", "", "", "", None)
+      result shouldBe OutgoingEmail("", "", su, None, "", "", "", "", "", None)
     }
   }
 
   "updateEmail" should {
     "handle updating an email successfully" in new Setup {
-      when(mockEmailConnector.updateEmail(*, *, *, *)(*)).thenReturn(Future.successful(OutgoingEmail("", "", su, None, "", "", "", "", None)))
+      when(mockEmailConnector.updateEmail(*, *, *, *)(*)).thenReturn(Future.successful(OutgoingEmail("", "", su, None, "", "", "", "", "", None)))
       val result = await(underTest.updateEmail(new ComposeEmailForm("", "", true), "", su))
-      result shouldBe OutgoingEmail("", "", su, None, "", "", "", "", None)
+      result shouldBe OutgoingEmail("", "", su, None, "", "", "", "", "", None)
     }
   }
 }

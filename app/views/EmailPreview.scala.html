@@ -21,7 +21,7 @@
 
 @this(layout: Layout, appConfig: AppConfig)
 
-@(emailPreview: String, form: Form[EmailPreviewForm], userSelection: Map[String, String])(implicit request: Request[_], messages: Messages)
+@(emailPreview: String, form: Form[EmailPreviewForm], userSelection: Map[String, String], status: String)(implicit request: Request[_], messages: Messages)
 
 @layout(pageTitle = Some(s"${appConfig.title} - Email preview")) {
 @errorSummary(form)
@@ -38,9 +38,11 @@
                     <input type="hidden" name="composeEmailForm.emailBody" value="@form.data.getOrElse("composeEmailForm.emailBody", "")" />
                     <div class="govuk-grid-column-one-half govuk-!-padding-left-0">
                         <div class="govuk-button-group">
-                            <button class="govuk-button" data-module="govuk-button" value="send">
-                                Send email
-                            </button>
+                            @if(status == null || status != "SENT") {
+                                <button class="govuk-button" data-module="govuk-button" value="send">
+                                    Send email
+                                </button>
+                            }
                         </div>
                     </div>
                 }
@@ -91,12 +93,6 @@
                     </div>
                 </div>
                 <br>
-
-                <div>
-                    <a href="./are-you-sure" class="govuk-button govuk-button--secondary">
-                        Delete email
-                    </a>
-                </div>
             </div>
         </div>
     </div>

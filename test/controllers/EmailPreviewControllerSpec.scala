@@ -66,6 +66,7 @@ class EmailPreviewControllerSpec extends ControllerBaseSpec with Matchers {
          |    "markdownEmailBody": "",
          |    "htmlEmailBody": "",
          |    "subject": "emailSubject",
+         |    "status": "IN_PROGRESS",
          |    "composedBy": "auto-emailer",
          |    "approvedBy": "auto-emailer"
          |  }
