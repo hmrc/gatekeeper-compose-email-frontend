@@ -36,15 +36,17 @@
                     <input type="hidden" name="emailUUID" value="@form.data.getOrElse("emailUUID", "")" />
                     <input type="hidden" name="composeEmailForm.emailSubject" value="@form.data.getOrElse("composeEmailForm.emailSubject", "")" />
                     <input type="hidden" name="composeEmailForm.emailBody" value="@form.data.getOrElse("composeEmailForm.emailBody", "")" />
+                    @if(status == null || status != "SENT") {
                     <div class="govuk-grid-column-one-half govuk-!-padding-left-0">
                         <div class="govuk-button-group">
-                            @if(status == null || status != "SENT") {
+
                                 <button class="govuk-button" data-module="govuk-button" value="send">
                                     Send email
                                 </button>
-                            }
+
                         </div>
                     </div>
+                    }
                 }
 
                 <div class="govuk-grid-column-one-half govuk-!-padding-right-0">
@@ -54,12 +56,13 @@
                         <input type="hidden" name="emailId" value="@form.data.getOrElse("emailUUID", "")" />
                         <input type="hidden" name="composeEmailForm.emailSubject" value="@form.data.getOrElse("composeEmailForm.emailSubject", "")" />
                         <input type="hidden" name="composeEmailForm.emailBody" value="@form.data.getOrElse("composeEmailForm.emailBody", "")" />
-
+                        @if(status == null || status != "SENT") {
                         <button draggable="false"
                                class="govuk-button govuk-button--secondary govuk-!-width-full"
                                data-module="govuk-button">
                             Edit email
                         </button>
+                        }
                         }
                     </div>
                 </div>
