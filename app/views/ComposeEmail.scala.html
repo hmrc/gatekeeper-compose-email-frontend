@@ -30,11 +30,11 @@
 @helper.form(routes.ComposeEmailController.upload(emailUUID, Json.toJson(userSelection).toString())) {
   @helper.CSRF.formField
 
-    <dl class="govuk-summary-list email-summary">
+    <dl class="govuk-summary-list email-summary" style="border-top: 1px solid #b1b4b6;margin-bottom: 30px;border-left: 1px solid #b1b4b6;border-right: 1px solid #b1b4b6;">
         @for((key, value) <- userSelection) {
             <div class="govuk-summary-list__row">
                 <dt class="govuk-summary-list__key email-header">
-                    @key
+                    &nbsp;&nbsp;&nbsp;@key
                 </dt>
                 <dd class="govuk-summary-list__value">
                     @value
