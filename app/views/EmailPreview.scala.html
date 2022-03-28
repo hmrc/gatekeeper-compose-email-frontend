@@ -68,12 +68,12 @@
                 </div>
             </div>
 
-            <div class="govuk-grid-column-two-thirds">
-                <div class="email-preview">
+            <div class="govuk-grid-column-two-thirds" style="box-sizing: border-box;width: 100%;padding: 0 15px;">
+                <div class="email-preview" style="border-top: 1px solid #b1b4b6;margin-bottom: 10px;border-left: 1px solid #b1b4b6;border-right: 1px solid #b1b4b6; border-bottom: 1px solid #b1b4b6;">
                     <dl class="govuk-summary-list email-summary">
                         @for((key, value) <- userSelection) {
                         <div class="govuk-summary-list__row">
-                            <dt class="govuk-summary-list__key email-header">
+                            <dt class="govuk-summary-list__key email-header" style="padding-left: 15px; font-weight: 100">
                                 @key
                             </dt>
                             <dd class="govuk-summary-list__value">
@@ -82,7 +82,7 @@
                         </div>
                         }
                         <div class="govuk-summary-list__row">
-                            <dt class="govuk-summary-list__key email-header">
+                            <dt class="govuk-summary-list__key email-header" style="padding-left: 15px; font-weight: 100">
                                 Subject
                             </dt>
                             <dd class="govuk-summary-list__value">
@@ -91,7 +91,7 @@
                         </div>
                     </dl>
 
-                    <div class="email-content">
+                    <div class="email-content" style="padding-left: 15px;">
                         @Html(emailPreview)
                     </div>
                 </div>
