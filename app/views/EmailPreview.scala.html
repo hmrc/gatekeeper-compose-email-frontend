@@ -31,7 +31,7 @@
         <div class="govuk-grid-row">
             <div class="govuk-grid-column-two-thirds">
                 <h1 class="govuk-heading-l">Email preview</h1>
-                @helper.form(routes.EmailPreviewController.sendEmail(form.data.getOrElse("emailUUID", ""))) {
+                @helper.form(routes.EmailPreviewController.sendEmail(form.data.getOrElse("emailUUID", ""), Json.toJson(userSelection).toString())) {
                 @helper.CSRF.formField
                     <input type="hidden" name="emailUUID" value="@form.data.getOrElse("emailUUID", "")" />
                     <input type="hidden" name="composeEmailForm.emailSubject" value="@form.data.getOrElse("composeEmailForm.emailSubject", "")" />
