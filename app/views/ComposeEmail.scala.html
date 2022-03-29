@@ -97,7 +97,7 @@
 
 }
     <div class="govuk-grid-column-one-half govuk-!-padding-right-0">
-        <div class="govuk-button-group" style="float: right; margin-top: 0%; margin-right: 10%;">
+        <div class="govuk-button-group" style="float: left; margin-top: 0%; margin-right: 10%;">
             @helper.form(action = routes.ComposeEmailController.deleteOption(emailUUID, Json.toJson(userSelection).toString())) {
             @helper.CSRF.formField
             <button draggable="false"
@@ -110,7 +110,7 @@
 
     <br>
     <br>
-    <h2 class="govuk-heading-m govuk-!-margin-top-6" >Formatting </h2>
+    <h2 class="govuk-heading-m govuk-!-margin-top-6" >Formatting</h2>
     <p class="govuk-body">
         To put a title in your template, use a hash:
     </p>
