@@ -149,7 +149,7 @@ class ComposeEmailControllerSpec extends ControllerBaseSpec with Matchers with M
   "GET /sent-email" should {
     "return 200" in new Setup {
       givenTheGKUserIsAuthorisedAndIsANormalUser()
-      val result = controller.sentEmailConfirmation(fakeConfirmationGetRequest)
+      val result = controller.sentEmailConfirmation("{}")(fakeConfirmationGetRequest)
       verifyAuthConnectorCalledForUser
       status(result) shouldBe Status.OK
       verifyZeroInteractions(mockGatekeeperEmailService)
@@ -157,7 +157,7 @@ class ComposeEmailControllerSpec extends ControllerBaseSpec with Matchers with M
 
     "return HTML" in new Setup {
       givenTheGKUserIsAuthorisedAndIsANormalUser()
-      val result = controller.sentEmailConfirmation(fakeConfirmationGetRequest)
+      val result = controller.sentEmailConfirmation("{}")(fakeConfirmationGetRequest)
       contentType(result) shouldBe Some("text/html")
       charset(result) shouldBe Some("utf-8")
       verifyZeroInteractions(mockGatekeeperEmailService)
