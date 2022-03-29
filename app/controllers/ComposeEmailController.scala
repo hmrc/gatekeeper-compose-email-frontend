@@ -138,7 +138,7 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
 
   def deleteOption(emailUUID: String, userSelection: String): Action[AnyContent] = requiresAtLeast(GatekeeperRole.USER) {
     implicit request =>
-      Future.successful(Ok(deleteEmail(formProvider(), backlink(), submitLink(emailUUID, userSelection))))
+      Future.successful(Ok(deleteEmail(formProvider(), submitLink(emailUUID, userSelection))))
   }
 
   def delete(emailUUID: String, userSelection: String): Action[AnyContent] = requiresAtLeast(GatekeeperRole.USER) {
@@ -146,7 +146,7 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
       formProvider().bindFromRequest().fold(
         formWithErrors => {
           Future.successful(
-            BadRequest(deleteEmail(formWithErrors, backlink(), submitLink(emailUUID, userSelection))))
+            BadRequest(deleteEmail(formWithErrors, submitLink(emailUUID, userSelection))))
         },
         value => {
           if (value) {
@@ -164,9 +164,6 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
 
   private def base64Decode(result: String): String =
     new String(Base64.getDecoder.decode(result), Charsets.UTF_8)
-
-  private[controllers] def backlink() =
-    controllers.routes.ComposeEmailController.initialiseEmail()
 
   private def submitLink(emailUUID: String, userSelection: String) =
     controllers.routes.ComposeEmailController.delete(emailUUID, userSelection)

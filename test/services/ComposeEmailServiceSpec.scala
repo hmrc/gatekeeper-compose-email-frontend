@@ -58,6 +58,14 @@ class ComposeEmailServiceSpec extends AnyWordSpec with Matchers with GuiceOneApp
     }
   }
 
+  "deleteEmail" should {
+    "handle deleting an email successfully" in new Setup {
+      when(mockEmailConnector.deleteEmail(*)(*)).thenReturn(Future.successful(true))
+      val result = await(underTest.deleteEmail(emailUUID = emailUUID))
+      result shouldBe true
+    }
+  }
+
   "updateEmail" should {
     "handle updating an email successfully" in new Setup {
       when(mockEmailConnector.updateEmail(*, *, *, *)(*)).thenReturn(Future.successful(OutgoingEmail("", "", su, None, "", "", "", "", "", None)))
