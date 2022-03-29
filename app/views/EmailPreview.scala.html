@@ -103,7 +103,7 @@
                     @helper.form(action = routes.ComposeEmailController.deleteOption(form.data.getOrElse("emailUUID", ""), Json.toJson(userSelection).toString())) {
                     @helper.CSRF.formField
                     <button draggable="false"
-                            class="govuk-button"  data-module="govuk-button">
+                            class="govuk-button   govuk-button--secondary"  data-module="govuk-button">
                         Delete email
                     </button>
                     }
