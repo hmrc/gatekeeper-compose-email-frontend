@@ -27,6 +27,7 @@ import services.ComposeEmailService
 import uk.gov.hmrc.play.bootstrap.frontend.controller.FrontendController
 import utils.GatekeeperAuthWrapper
 import views.html._
+import models._
 
 import java.util.{Base64, UUID}
 import javax.inject.{Inject, Singleton}
