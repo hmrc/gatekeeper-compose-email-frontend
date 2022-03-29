@@ -21,30 +21,7 @@ import play.api.data.Forms.of
 
 import java.time.LocalDate
 
-trait Mappings extends Formatters with Constraints {
-
-  protected def text(errorKey: String = "error.required", args: Seq[Any] = Seq.empty): FieldMapping[String] =
-    of(stringFormatter(errorKey, args))
-
-  protected def int(
-    requiredKey: String = "error.required",
-    wholeNumberKey: String = "error.wholeNumber",
-    nonNumericKey: String = "error.nonNumeric"
-  ): FieldMapping[Int] =
-    of(intFormatter(requiredKey, wholeNumberKey, nonNumericKey))
-
-  protected def numeric(
-    isCurrency: Boolean = false,
-    numDecimalPlaces: Int = 2,
-    requiredKey: String = "error.required",
-    invalidDecimalPlacesKey: String = "error.invalidNumeric",
-    nonNumericKey: String = "error.nonNumeric"
-  ): FieldMapping[BigDecimal] =
-    if (isCurrency) {
-      of(numericFormatter(isCurrency = true, numDecimalPlaces, requiredKey, invalidDecimalPlacesKey, nonNumericKey))
-    } else {
-      of(numericFormatter(isCurrency = false, numDecimalPlaces, requiredKey, invalidDecimalPlacesKey, nonNumericKey))
-    }
+trait Mappings extends Formatters {
 
   protected def boolean(
     requiredKey: String = "error.required",

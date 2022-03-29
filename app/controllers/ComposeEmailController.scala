@@ -44,7 +44,7 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
                                        emailService: ComposeEmailService,
                                        sentEmail: EmailSentConfirmation,
                                        deleteConfirmEmail: EmailDeleteConfirmation,
-                                       deleteEmail: RemoveUploadedFileView,
+                                       deleteEmail: RemoveEmailView,
                                        override val forbiddenView: ForbiddenView,
                                        formProvider: RemoveUploadedFileFormProvider,
                                        override val authConnector: AuthConnector)
@@ -53,11 +53,11 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
 
   def initialiseEmail: Action[AnyContent] = requiresAtLeast(GatekeeperRole.USER) { implicit request =>
 
-    def persistEmailDetails(users: List[User], userSelection: Map[String, String]): Future[Result] = {
+    def persistEmailDetails(users: List[User], userSelection: String): Future[Result] = {
       val emailUUID = UUID.randomUUID().toString
       for {
         email <- emailService.saveEmail(ComposeEmailForm("", "", false), emailUUID, users)
-      } yield Ok(composeEmail(email.emailUUID, controllers.ComposeEmailForm.form.fill(ComposeEmailForm("","", false)), userSelection))
+      } yield Ok(composeEmail(email.emailUUID, controllers.ComposeEmailForm.form.fill(ComposeEmailForm("","", false)), Json.parse(userSelection).as[Map[String, String]]))
     }
 
     try {
@@ -68,7 +68,7 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
             case JsSuccess(value: Seq[User], _) =>
               body.map(elems => elems.get("user-selection")).head match {
                 case Some(userSelectedData) => Json.parse(userSelectedData.head).validate[Map[String, String]] match {
-                  case JsSuccess(userSelection: Map[String, String], _) => persistEmailDetails(value, userSelection)
+                  case JsSuccess(userSelection: Map[String, String], _) => persistEmailDetails(value,  Json.toJson(userSelection).toString())
                   case JsError(errors) => Future.successful(BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD,
                     s"""Request payload does not contain gatekeeper user selected options: ${errors.mkString(", ")}""")))
                 }
@@ -131,22 +131,34 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
 
       def handleInvalidForm(formWithErrors: Form[ComposeEmailForm]) = {
         logger.warn(s"Error in form: ${formWithErrors.errors}")
-        Future.successful(BadRequest(composeEmail(emailUUID, formWithErrors, Map())))
+        Future.successful(BadRequest(composeEmail(emailUUID, formWithErrors, Map[String, String]().empty)))
       }
       ComposeEmailForm.form.bindFromRequest.fold(handleInvalidForm(_), handleValidForm(_))
   }
 
-  def deleteOption(emailUUID: String): Action[AnyContent] = requiresAtLeast(GatekeeperRole.USER) {
+  def deleteOption(emailUUID: String, userSelection: String): Action[AnyContent] = requiresAtLeast(GatekeeperRole.USER) {
     implicit request =>
-      Future.successful(Ok(deleteEmail(formProvider(), backlink(), submitLink(emailUUID))))
+      Future.successful(Ok(deleteEmail(formProvider(), backlink(), submitLink(emailUUID, userSelection))))
   }
 
-  def delete(emailUUID: String): Action[AnyContent] = requiresAtLeast(GatekeeperRole.USER) {
+  def delete(emailUUID: String, userSelection: String): Action[AnyContent] = requiresAtLeast(GatekeeperRole.USER) {
     implicit request =>
-      emailService.deleteEmail(emailUUID) map {
-        result => Ok(deleteConfirmEmail())
-      }
-
+      formProvider().bindFromRequest().fold(
+        formWithErrors => {
+          Future.successful(
+            BadRequest(deleteEmail(formWithErrors, backlink(), submitLink(emailUUID, userSelection))))
+        },
+        value => {
+          if (value) {
+            emailService.deleteEmail(emailUUID) map {
+              result => Ok(deleteConfirmEmail())
+            }
+          } else {
+            Future.successful(Ok(composeEmail(emailUUID,
+              controllers.ComposeEmailForm.form.fill(ComposeEmailForm("","", false)), Json.parse(userSelection).as[Map[String, String]])))
+          }
+        }
+      )
   }
 
 
@@ -156,6 +168,6 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
   private[controllers] def backlink() =
     controllers.routes.ComposeEmailController.initialiseEmail()
 
-  private def submitLink(emailUUID: String) =
-    controllers.routes.ComposeEmailController.delete(emailUUID)
+  private def submitLink(emailUUID: String, userSelection: String) =
+    controllers.routes.ComposeEmailController.delete(emailUUID, userSelection)
 }

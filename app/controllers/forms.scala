@@ -64,6 +64,6 @@ class RemoveUploadedFileFormProvider @Inject() extends Mappings {
 
   def apply(): Form[Boolean] =
     Form(
-      "value" -> boolean("removeUploadedFile.error.required")
+      "value" -> boolean("Select yes if you want to remove this file")
     )
 }

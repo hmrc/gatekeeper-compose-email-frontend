@@ -19,11 +19,26 @@
 
 @this(layout: Layout)
 
-@()(implicit request: Request[_], messages: Messages, applicationConfig: AppConfig)
+@()(implicit request: Request[_], messages: Messages, appConfig: AppConfig)
 
-@layout(pageTitle = Some(s"${applicationConfig.title} - Email Sent")){
- <h1 class="govuk-heading-xl">Email Deleted!</h1>
- <p class="govuk-body">@{"HMRC API Gatekeeper"}</p>
+@layout(pageTitle = Some(s"${appConfig.title} - Email Deleted")){
+<div class="govuk-form-group">
+ <div class="govuk-width-container">
+  <div class="govuk-grid-row">
+   <div class="govuk-grid-column-two-thirds" style="width: 100%">
+    <div class="govuk-panel govuk-panel--confirmation">
+     <h2 class="govuk-panel__title">You deleted the email</h2>
+    </div>
+    <br>
+    <ul class="govuk-list">
+     <li>
+      <a class="govuk-link govuk-link--no-visited-state" href="@appConfig.apiGatekeeperFrontendUrl/emails">Back to Emails</a>
+     </li>
+    </ul>
+   </div>
+  </div>
+ </div>
+</div>
  <div>
   @helper.CSRF.formField
 

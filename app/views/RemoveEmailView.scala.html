@@ -19,6 +19,8 @@
 @this(
         layout: Layout,
         formHelper: FormWithCSRF,
+        h1: components.h1,
+        p: components.p,
         errorSummary: components.errorSummary,
         yesNoRadio: components.yesNoRadio,
         button: components.button
@@ -27,7 +29,7 @@
 @(form: Form[_], backlink: Call, action: Call)(implicit request: Request[_], messages: Messages)
 
 @legendContent = {
-    @messages("removeUploadedFile.pageTitle")
+    @messages("Are you sure you want to remove this file?")
 }
 
 @layout(pageTitle = Some("Are you sure you want to remove this file?")) {
@@ -37,8 +39,8 @@
 
     @formHelper(action = action) {
 
-        <h1 class="govuk-label-wrapper"><label class="govuk-label govuk-label--l" for="Are you sure you want to remove this Email?">
-
+        @h1("Are you sure you want to remove this email?")
+        @p(Html("deletes emails cannot be recovered."))
         @defining({
             Some(Legend(
                 content = HtmlContent(legendContent.toString()),
