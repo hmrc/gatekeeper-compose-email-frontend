@@ -94,8 +94,11 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
     }
   }
 
-  def sentEmailConfirmation: Action[AnyContent] = requiresAtLeast(GatekeeperRole.USER) {
-    implicit request => Future.successful(Ok(sentEmail()))
+  def sentEmailConfirmation(userSelection: String): Action[AnyContent] = requiresAtLeast(GatekeeperRole.USER) {
+    implicit request => {
+      val userSelectionMap: Map[String, String] = Json.parse(userSelection).as[Map[String, String]]
+      Future.successful(Ok(sentEmail(userSelectionMap)))
+    }
   }
 
   def emailPreview(emailUUID: String, userSelection: String): Action[AnyContent] = requiresAtLeast(GatekeeperRole.USER) {
