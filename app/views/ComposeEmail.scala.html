@@ -93,8 +93,19 @@
             Save email
         </button>
     </div>
-  }
-
 <script src='@routes.Assets.versioned("javascripts/resize-textarea.js")' type="text/javascript"></script>
 
 }
+    <div class="govuk-grid-column-one-half govuk-!-padding-right-0">
+        <div class="govuk-button-group">
+            @helper.form(action = routes.ComposeEmailController.deleteOption(emailUUID)) {
+            @helper.CSRF.formField
+            <button draggable="false"
+                    class="govuk-button"  data-module="govuk-button">
+                Delete email
+            </button>
+            }
+        </div>
+    </div>
+  }
+

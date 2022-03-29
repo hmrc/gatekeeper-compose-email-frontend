@@ -19,7 +19,7 @@ package controllers
 import com.google.common.base.Charsets
 import config.AppConfig
 import connectors.AuthConnector
-import models._
+import models.GatekeeperRole
 import play.api.Logging
 import play.api.data.Form
 import play.api.mvc._
@@ -27,6 +27,7 @@ import services.ComposeEmailService
 import uk.gov.hmrc.play.bootstrap.frontend.controller.FrontendController
 import utils.GatekeeperAuthWrapper
 import views.html._
+import models._
 
 import java.util.{Base64, UUID}
 import javax.inject.{Inject, Singleton}
@@ -42,7 +43,10 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
                                        emailPreview: EmailPreview,
                                        emailService: ComposeEmailService,
                                        sentEmail: EmailSentConfirmation,
+                                       deleteConfirmEmail: EmailDeleteConfirmation,
+                                       deleteEmail: RemoveUploadedFileView,
                                        override val forbiddenView: ForbiddenView,
+                                       formProvider: RemoveUploadedFileFormProvider,
                                        override val authConnector: AuthConnector)
                                       (implicit  val appConfig: AppConfig, val ec: ExecutionContext)
   extends FrontendController(mcc) with GatekeeperAuthWrapper with Logging {
@@ -132,7 +136,26 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
       ComposeEmailForm.form.bindFromRequest.fold(handleInvalidForm(_), handleValidForm(_))
   }
 
+  def deleteOption(emailUUID: String): Action[AnyContent] = requiresAtLeast(GatekeeperRole.USER) {
+    implicit request =>
+      Future.successful(Ok(deleteEmail(formProvider(), backlink(), submitLink(emailUUID))))
+  }
+
+  def delete(emailUUID: String): Action[AnyContent] = requiresAtLeast(GatekeeperRole.USER) {
+    implicit request =>
+      emailService.deleteEmail(emailUUID) map {
+        result => Ok(deleteConfirmEmail())
+      }
+
+  }
+
+
   private def base64Decode(result: String): String =
     new String(Base64.getDecoder.decode(result), Charsets.UTF_8)
 
+  private[controllers] def backlink() =
+    controllers.routes.ComposeEmailController.initialiseEmail()
+
+  private def submitLink(emailUUID: String) =
+    controllers.routes.ComposeEmailController.delete(emailUUID)
 }

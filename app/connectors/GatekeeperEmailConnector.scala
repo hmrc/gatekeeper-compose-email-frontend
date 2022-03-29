@@ -51,6 +51,11 @@ class GatekeeperEmailConnector @Inject()(http: HttpClient, config: EmailConnecto
     http.GET[OutgoingEmail](url)
   }
 
+  def deleteEmail(emailUUID: String)(implicit hc: HeaderCarrier): Future[Boolean] = {
+    val url = s"$serviceUrl/gatekeeper-email/delete-email/$emailUUID"
+    http.GET[Boolean](url)
+  }
+
   def sendEmail(emailPreviewForm: EmailPreviewForm)(implicit hc: HeaderCarrier): Future[OutgoingEmail] = {
     http.POSTEmpty[OutgoingEmail](s"$serviceUrl/gatekeeper-email/send-email/${emailPreviewForm.emailUUID}")
   }
