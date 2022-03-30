@@ -46,7 +46,7 @@ class EmailPreviewController @Inject()
       val fetchEmail: Future[OutgoingEmail] = emailService.fetchEmail(emailUUID)
       fetchEmail.map { email =>
         emailConnector.sendEmail(EmailPreviewForm(emailUUID, ComposeEmailForm(email.subject, email.htmlEmailBody, true)))
-        Redirect(routes.ComposeEmailController.sentEmailConfirmation(userSelection))
+        Redirect(routes.ComposeEmailController.sentEmailConfirmation(userSelection, email.recipients.size))
       }
     }
   }
