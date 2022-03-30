@@ -19,6 +19,8 @@ package controllers
 import play.api.data.Form
 import play.api.data.Forms.{boolean, default, mapping, text}
 
+import javax.inject.Inject
+import forms.Mappings
 case class ComposeEmailForm(emailSubject: String, emailBody: String, attachFiles: Boolean) {}
 
 object ComposeEmailForm {
@@ -47,4 +49,12 @@ object EmailPreviewForm {
       )(ComposeEmailForm.apply)(ComposeEmailForm.unapply)
     )(EmailPreviewForm.apply)(EmailPreviewForm.unapply)
   )
+}
+
+class RemoveUploadedFileFormProvider @Inject() extends Mappings {
+
+  def apply(): Form[Boolean] =
+    Form(
+      "value" -> boolean("Select yes if you want to remove this file")
+    )
 }

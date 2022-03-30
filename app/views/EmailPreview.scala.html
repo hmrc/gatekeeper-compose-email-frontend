@@ -97,6 +97,19 @@
                 </div>
                 <br>
             </div>
+
+            <div class="govuk-grid-column-one-half govuk-!-padding-right-0">
+                <div class="govuk-button-group">
+                    @helper.form(action = routes.ComposeEmailController.deleteOption(form.data.getOrElse("emailUUID", ""), Json.toJson(userSelection).toString())) {
+                    @helper.CSRF.formField
+                    <button draggable="false"
+                            class="govuk-button   govuk-button--secondary"  data-module="govuk-button">
+                        Delete email
+                    </button>
+                    }
+                </div>
+            </div>
+
         </div>
     </div>
 </main>

@@ -88,13 +88,63 @@
       </div>
     </div>
 
-    <div class="govuk-button-group">
+    <div class="govuk-button-group" style="float: left; margin-top: 0%; margin-left: 0%;">
         <button class="govuk-button" data-module="govuk-button">
             Save email
         </button>
     </div>
-  }
-
-<script src='@routes.Assets.versioned("javascripts/resize-textarea.js")' type="text/javascript"></script>
+    <script src='@routes.Assets.versioned("javascripts/resize-textarea.js")' type="text/javascript"></script>
 
 }
+    <div class="govuk-grid-column-one-half govuk-!-padding-right-0">
+        <div class="govuk-button-group" style="float: left; margin-top: 0%; margin-right: 10%;">
+            @helper.form(action = routes.ComposeEmailController.deleteOption(emailUUID, Json.toJson(userSelection).toString())) {
+            @helper.CSRF.formField
+            <button draggable="false"
+                    class="govuk-button  govuk-button--secondary"  data-module="govuk-button">
+                Delete email
+            </button>
+            }
+        </div>
+    </div>
+
+    <br>
+    <br>
+    <h2 class="govuk-heading-m govuk-!-margin-top-6" style="width: 10px;">Formatting</h2>
+    <p class="govuk-body">
+        To put a title in your template, use a hash:
+    </p>
+    <div class="govuk-inset-text govuk-!-margin-top-1">
+        # This is a title
+    </div>
+    <p class="govuk-body">
+        To make bullet points, use asterisks:
+    </p>
+    <div class="govuk-inset-text govuk-!-margin-top-1">
+        * point 1<br/>
+        * point 2<br/>
+        * point 3<br/>
+    </div>
+
+    <p class="govuk-body">
+        To add a horizontal line, use three dashes:
+    </p>
+    <div class="govuk-inset-text govuk-!-margin-top-1">
+        <p class="govuk-body">First paragraph
+        </p>
+        <p class="govuk-body" style="letter-spacing: 1px;">---
+        </p>
+        <p class="govuk-body">Second paragraph
+        </p>
+    </div>
+
+    <h2 class="govuk-heading-m">Links and URLs
+    </h2>
+    <p class="govuk-body">
+        Always use full URLs, starting with https://
+    </p>
+    <div class="govuk-inset-text govuk-!-margin-top-1">
+        Apply now at https://www.gov.uk/example
+    </div>
+  }
+
