@@ -51,15 +51,6 @@ object EmailPreviewForm {
   )
 }
 
-//case class RemoveUploadedFileForm(yesno: Boolean)
-//object RemoveUploadedFileForm {
-//
-//  val form: Form[RemoveUploadedFileForm] = Form(
-//    mapping("yesno" -> boolean.verifying("not selected", _.booleanValue()))(RemoveUploadedFileForm.apply)(RemoveUploadedFileForm.unapply)
-//  )
-//
-//}
-
 class RemoveUploadedFileFormProvider @Inject() extends Mappings {
 
   def apply(): Form[Boolean] =
