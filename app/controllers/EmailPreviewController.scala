@@ -41,12 +41,12 @@ class EmailPreviewController @Inject()
 (implicit val appConfig: AppConfig, val ec: ExecutionContext)
   extends FrontendController(mcc) with I18nSupport with Logging {
 
-  def sendEmail(emailUUID: String): Action[AnyContent] = Action.async {
+  def sendEmail(emailUUID: String, userSelection: String): Action[AnyContent] = Action.async {
     implicit request => {
       val fetchEmail: Future[OutgoingEmail] = emailService.fetchEmail(emailUUID)
       fetchEmail.map { email =>
         emailConnector.sendEmail(EmailPreviewForm(emailUUID, ComposeEmailForm(email.subject, email.htmlEmailBody, true)))
-        Redirect(routes.ComposeEmailController.sentEmailConfirmation())
+        Redirect(routes.ComposeEmailController.sentEmailConfirmation(userSelection, email.recipients.size))
       }
     }
   }
