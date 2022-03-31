@@ -30,7 +30,7 @@
 @layout(pageTitle = Some(s"${appConfig.title} - Compose Email")) {
   @errorSummary(form)
 
-  <h1 class="govuk-heading-xl">Compose email</h1>
+  <h2 class="govuk-heading-l">Compose email</h2>
 @helper.form(routes.ComposeEmailController.upload(emailUUID, Json.toJson(userSelection).toString())) {
   @helper.CSRF.formField
 
@@ -47,8 +47,8 @@
         }
     </dl>
 <div class="govuk-form-group @if(form.errors("emailSubject").nonEmpty) {govuk-form-group--error}">
-    <h1 class="govuk-label-wrapper"><label class="govuk-label govuk-label--l" for="email-subject">
-      Email subject
+    <h1 class="govuk-label-wrapper"><label class="govuk-label" for="email-subject">
+      Subject
     </label>
     </h1>
     @fieldError(form.errors, "emailSubject")
@@ -57,36 +57,15 @@
   </div>
 
   <div class="govuk-form-group @if(form.errors("emailBody").nonEmpty) {govuk-form-group--error}">
-    <h1 class="govuk-label-wrapper"><label class="govuk-label govuk-label--l" for="email-body">
-      Email body
+    <h1 class="govuk-label-wrapper"><label class="govuk-label govuk-label--1" for="email-body">
+      Message
     </label>
     </h1>
     @fieldError(form.errors, "emailBody")
-    <div id="email-body-hint" class="govuk-hint">
-      Supports some markdown: this, that, and the other
-    </div>
+
     <textarea class="govuk-textarea dynamic-text-area" id="emailBody" name="emailBody" style="min-height: 226px;" rows="8" oninput="auto_grow(this)"
               aria-describedby="email-body-hint">@form.data.getOrElse("emailBody", "")</textarea>
   </div>
-
-    <div class="govuk-form-group">
-      <div style="visibility: hidden">
-        <fieldset class="govuk-fieldset">
-            <legend class="govuk-fieldset__legend govuk-body">
-                Attaching files
-            </legend>
-            <div class="govuk-checkboxes"
-                 data-module="govuk-checkboxes">
-                <div class="govuk-checkboxes__item">
-                    <input class="govuk-checkboxes__input" id="attachFiles" name="attachFiles" type="checkbox" value="true">
-                    <label class="govuk-label govuk-checkboxes__label" for="attachFiles">
-                        I need to attach files
-                    </label>
-                </div>
-            </div>
-        </fieldset>
-      </div>
-    </div>
 
     <div class="govuk-button-group" style="float: left; margin-top: 0%; margin-left: 0%;">
         <button class="govuk-button" data-module="govuk-button">

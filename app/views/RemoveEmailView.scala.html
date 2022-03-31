@@ -40,7 +40,9 @@
     @formHelper(action = action) {
 
         @h1("Are you sure you want to remove this email?")
-        @p(Html("deletes emails cannot be recovered."))
+        <div id="are-you-sure-hint" class="govuk-hint">
+            Deleted emails cannot be recovered.
+        </div>
         @defining({
             Some(Legend(
                 content = HtmlContent(legendContent.toString()),
