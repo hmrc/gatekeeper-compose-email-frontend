@@ -29,17 +29,17 @@
 @(form: Form[_], action: Call)(implicit request: Request[_], messages: Messages)
 
 @legendContent = {
-    @messages("Are you sure you want to remove this file?")
+    @messages("Are you sure you want to delete the email?")
 }
 
-@layout(pageTitle = Some("Are you sure you want to remove this file?")) {
+@layout(pageTitle = Some("Are you sure you want to delete the email?")) {
 
     @errorSummary(form.errors)
 
 
     @formHelper(action = action) {
 
-        @h1("Are you sure you want to remove this email?")
+        @h1("Are you sure you want to delete the email?")
         <div id="are-you-sure-hint" class="govuk-hint">
             Deleted emails cannot be recovered.
         </div>
@@ -52,7 +52,7 @@
         }) { legend =>
             @yesNoRadio(
                 form,
-                headingKey = "Are you sure you want to remove this Email?",
+                headingKey = "Are you sure you want to delete the email?",
                 classes = "govuk-visually-hidden",
                 inline = true,
                 customLegend = legend
