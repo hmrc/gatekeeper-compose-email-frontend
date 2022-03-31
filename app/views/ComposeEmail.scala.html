@@ -37,7 +37,7 @@
     <dl class="govuk-summary-list email-summary" style="border-top: 1px solid #b1b4b6;margin-bottom: 30px;border-left: 1px solid #b1b4b6;border-right: 1px solid #b1b4b6;">
         @for((key, value) <- userSelection) {
             <div class="govuk-summary-list__row">
-                <dt class="govuk-summary-list__key email-header" style="padding-left: 15px; font-weight: 100">
+                <dt class="govuk-summary-list__key email-summary-key govuk-!-font-weight-regular" style="padding-left: 15px; font-weight: 100;">
                     @key
                 </dt>
                 <dd class="govuk-summary-list__value">
@@ -47,10 +47,9 @@
         }
     </dl>
 <div class="govuk-form-group @if(form.errors("emailSubject").nonEmpty) {govuk-form-group--error}">
-    <h1 class="govuk-label-wrapper"><label class="govuk-label" for="email-subject">
+    <label class="govuk-label" for="email-subject">
       Subject
     </label>
-    </h1>
     @fieldError(form.errors, "emailSubject")
     <input class="govuk-input" id="emailSubject" name="emailSubject" type="text" placeholder="What it's about"
            value="@form.data.getOrElse("emailSubject", "")">
