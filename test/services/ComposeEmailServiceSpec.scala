@@ -17,7 +17,7 @@
 package services
 
 import connectors.GatekeeperEmailConnector
-import controllers.{ComposeEmailForm, EmailPreviewForm}
+import controllers.ComposeEmailForm
 import models.{OutgoingEmail, User}
 import org.mockito.ArgumentMatchersSugar
 import org.mockito.scalatest.MockitoSugar
@@ -25,7 +25,6 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.test.Helpers._
-import play.mvc.Http.Status
 import uk.gov.hmrc.http.HeaderCarrier
 
 import scala.concurrent.ExecutionContext.Implicits.global

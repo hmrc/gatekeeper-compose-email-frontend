@@ -16,39 +16,25 @@
 
 package utils
 
-import akka.stream.scaladsl.Source
-import akka.util.ByteString
 import common.ControllerBaseSpec
-import config.EmailConnectorConfig
 import connectors.{AuthConnector, GatekeeperEmailConnector}
-import controllers.{ComposeEmailController, ComposeEmailForm, ControllerSetupBase}
-import mocks.TestRoles.userRole
-import mocks.connector.AuthConnectorMock
+import controllers.{ComposeEmailController, ComposeEmailForm}
 import models.file_upload.UploadedFile
 import models.{OutgoingEmail, User}
-import org.mockito.{ArgumentMatchersSugar, MockitoSugar}
-import org.mockito.MockitoSugar.mock
+import org.mockito.MockitoSugar
 import org.scalatest.GivenWhenThen
 import org.scalatest.matchers.should.Matchers
 import play.api.Application
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.ws.WSClient
-import play.api.libs.ws.ahc.AhcWSResponse
-import play.api.libs.ws.ahc.cache.{CacheableHttpResponseBodyPart, CacheableHttpResponseStatus}
-import play.api.mvc.{MultipartFormData, Result}
 import play.api.test.CSRFTokenHelper.CSRFFRequestHeader
 import play.api.test.FakeRequest
-import play.api.test.Helpers.{BAD_REQUEST, OK}
-import play.shaded.ahc.io.netty.handler.codec.http.DefaultHttpHeaders
-import play.shaded.ahc.org.asynchttpclient.uri.Uri
 import services.ComposeEmailService
 import uk.gov.hmrc.http.{HeaderCarrier, HttpClient}
-import views.html.{ComposeEmail, EmailPreview, EmailSentConfirmation, ErrorTemplate, ForbiddenView}
+import views.html._
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.{ExecutionContext, Future}
-import scala.concurrent.Future.successful
-import scala.xml.Properties.userName
+import scala.concurrent.Future
 
 object ComposeEmailControllerSpecHelpers  extends ControllerBaseSpec with Matchers with GivenWhenThen
   with MockitoSugar {

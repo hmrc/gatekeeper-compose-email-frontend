@@ -17,12 +17,9 @@
 package models.file_upload
 
 import config.AppConfig
-import connectors.UploadDocumentsConnector
 import play.api.libs.json.{Json, OFormat}
-import uk.gov.hmrc.http.Request
 
 case class UploadDocumentsWrapper(config: UploadDocumentsConfig, existingFiles: Seq[UploadedFile])
-import connectors.UploadDocumentsConnector.Request
 object UploadDocumentsWrapper {
 
   def createPayload(nonce: Nonce,

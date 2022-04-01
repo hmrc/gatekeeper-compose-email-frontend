@@ -16,24 +16,24 @@
 
 package controllers
 
+import java.util.UUID
+
 import connectors.GatekeeperEmailConnector
 import models.OutgoingEmail
 import org.scalatest.matchers.should.Matchers
 import play.api.Application
-import play.api.http.Status.{BAD_REQUEST, OK, SEE_OTHER}
+import play.api.http.Status.{OK, SEE_OTHER}
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.Json
-import play.api.mvc.Results.Status
 import play.api.test.CSRFTokenHelper.CSRFFRequestHeader
 import play.api.test.FakeRequest
 import play.api.test.Helpers.status
 import play.filters.csrf.CSRF.TokenProvider
 import services.ComposeEmailService
 import uk.gov.hmrc.http.HeaderCarrier
-import utils.ComposeEmailControllerSpecHelpers.{mcc, mockGateKeeperService}
+import utils.ComposeEmailControllerSpecHelpers.mcc
 import views.html.ComposeEmail
 
-import java.util.UUID
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future.successful
 

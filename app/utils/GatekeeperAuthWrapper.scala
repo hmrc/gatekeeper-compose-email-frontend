@@ -20,8 +20,7 @@ import config.AppConfig
 import models.GatekeeperRole.GatekeeperRole
 import models._
 import play.api.i18n.I18nSupport
-import play.api.libs.Files.TemporaryFile
-import play.api.mvc.{Action, AnyContent, MessagesRequest, MultipartFormData, Request, Result}
+import play.api.mvc.{Action, AnyContent, Request, Result}
 import uk.gov.hmrc.auth.core._
 import uk.gov.hmrc.auth.core.authorise.Predicate
 import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals

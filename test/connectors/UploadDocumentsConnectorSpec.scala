@@ -16,27 +16,18 @@
 
 package connectors
 
-import com.github.tomakehurst.wiremock.WireMockServer
-import com.github.tomakehurst.wiremock.client.WireMock
-import com.github.tomakehurst.wiremock.client.WireMock.{aResponse, get, getRequestedFor, post, postRequestedFor, stubFor, urlEqualTo, verify => wireMockVerify}
-import com.github.tomakehurst.wiremock.core.WireMockConfiguration._
 import common.AsyncHmrcSpec
-import config.{AppConfig, EmailConnectorConfig}
-import controllers.{ComposeEmailForm, EmailPreviewForm}
+import config.AppConfig
 import models.file_upload.UploadDocumentsWrapper
 import models.{OutgoingEmail, User}
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
-import play.api.http.Status.{NOT_FOUND, OK}
 import play.api.libs.json.Json
-import play.api.mvc.Results.Status
-import play.api.test.Helpers.OK
 import services.ComposeEmailService
-import uk.gov.hmrc.http.{HeaderCarrier, HttpClient, HttpResponse, UpstreamErrorResponse}
+import uk.gov.hmrc.http.{HeaderCarrier, HttpClient, HttpResponse}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-import scala.concurrent.Future.successful
 
 class UploadDocumentsConnectorSpec extends AsyncHmrcSpec with BeforeAndAfterEach with BeforeAndAfterAll with GuiceOneAppPerSuite {
 

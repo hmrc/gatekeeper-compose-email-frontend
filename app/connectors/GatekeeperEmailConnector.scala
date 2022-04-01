@@ -23,7 +23,6 @@ import models.file_upload.UploadedFile
 import models.{EmailRequest, OutgoingEmail, User}
 import uk.gov.hmrc.http.HttpReads.Implicits._
 import uk.gov.hmrc.http.{HeaderCarrier, HttpClient, HttpErrorFunctions, UpstreamErrorResponse}
-import uk.gov.hmrc.play.http.metrics.common.API
 import utils.ApplicationLogger
 
 import javax.inject.{Inject, Singleton}
@@ -34,7 +33,6 @@ class GatekeeperEmailConnector @Inject()(http: HttpClient, config: EmailConnecto
   extends HttpErrorFunctions
     with ApplicationLogger {
 
-  val api = API("gatekeeper-email")
   lazy val serviceUrl = config.emailBaseUrl
 
   def saveEmail(composeEmailForm: ComposeEmailForm, emailUUID: String, userInfo: List[User])(implicit hc: HeaderCarrier): Future[OutgoingEmail] = {
