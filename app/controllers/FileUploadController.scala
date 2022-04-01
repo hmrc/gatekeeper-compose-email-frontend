@@ -18,8 +18,7 @@ package controllers
 
 import config.AppConfig
 import connectors.{AuthConnector, UploadDocumentsConnector}
-import models.{GatekeeperRole, OutgoingEmail}
-import models.file_upload.UploadedFileMetadata
+import models.GatekeeperRole
 import play.api.Logging
 import play.api.i18n.I18nSupport
 import play.api.mvc._

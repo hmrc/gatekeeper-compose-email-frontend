@@ -16,13 +16,12 @@
 
 package controllers
 
+import java.util.UUID
+
 import models._
 import org.mockito.{ArgumentMatchersSugar, MockitoSugar}
 import org.scalatest.matchers.should.Matchers
-import play.api.Play.materializer
 import play.api.http.Status
-import play.api.libs.Files.TemporaryFile
-import play.api.mvc.{MultipartFormData, Result}
 import play.api.test.CSRFTokenHelper._
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
@@ -31,12 +30,6 @@ import services.ComposeEmailService
 import uk.gov.hmrc.http.HeaderCarrier
 import utils.ComposeEmailControllerSpecHelpers._
 import views.html.{ComposeEmail, EmailSentConfirmation}
-
-import scala.concurrent.Future
-import models.JsonFormatters._
-import play.api.libs.json.Json
-
-import java.util.UUID
 
 class ComposeEmailControllerSpec extends ControllerBaseSpec with Matchers with MockitoSugar with ArgumentMatchersSugar {
 

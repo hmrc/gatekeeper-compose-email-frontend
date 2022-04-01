@@ -16,7 +16,8 @@
 
 package controllers
 
-import config.AppConfig
+import java.util.UUID
+
 import connectors.{AuthConnector, UploadDocumentsConnector}
 import models._
 import org.mockito.{ArgumentMatchersSugar, MockitoSugar}
@@ -30,12 +31,10 @@ import play.api.test.Helpers._
 import play.filters.csrf.CSRF.TokenProvider
 import services.ComposeEmailService
 import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
-import utils.ComposeEmailControllerSpecHelpers.{app, fakeApplication, _}
-import views.html.{ComposeEmail, EmailPreview, EmailSentConfirmation, ErrorTemplate, ForbiddenView}
+import utils.ComposeEmailControllerSpecHelpers._
+import views.html._
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import java.util.UUID
-import scala.concurrent.ExecutionContext
 import scala.concurrent.Future.successful
 
 class FileUploadControllerSpec extends ControllerBaseSpec with Matchers with MockitoSugar with ArgumentMatchersSugar {
