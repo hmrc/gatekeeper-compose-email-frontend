@@ -98,7 +98,7 @@ class EmailPreviewControllerSpec extends ControllerBaseSpec with Matchers {
     "send an email upon receiving a valid form submission" in new Setup {
       val fakeRequest = FakeRequest("POST", s"/send-email/$emailUUID")
         .withSession(csrfToken, authToken, userToken).withCSRFToken
-      val result = controller.sendEmail(emailUUID)(fakeRequest)
+      val result = controller.sendEmail(emailUUID, "{}")(fakeRequest)
       status(result) shouldBe SEE_OTHER
     }
   }

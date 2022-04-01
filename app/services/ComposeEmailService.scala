@@ -36,6 +36,10 @@ class ComposeEmailService @Inject()(emailConnector: GatekeeperEmailConnector)
     emailConnector.fetchEmail(emailUUID)
   }
 
+  def deleteEmail(emailUUID: String)(implicit hc: HeaderCarrier): Future[Boolean] = {
+    emailConnector.deleteEmail(emailUUID)
+  }
+
   def updateEmail(composeEmailForm: ComposeEmailForm, emailUUID: String, users: List[User], attachmentDetails: Option[Seq[UploadedFile]] = None)
                  (implicit hc: HeaderCarrier): Future[OutgoingEmail] = {
     emailConnector.updateEmail(composeEmailForm, emailUUID, users, attachmentDetails)

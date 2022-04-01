@@ -142,7 +142,7 @@ class ComposeEmailControllerSpec extends ControllerBaseSpec with Matchers with M
   "GET /sent-email" should {
     "return 200" in new Setup {
       givenTheGKUserIsAuthorisedAndIsANormalUser()
-      val result = controller.sentEmailConfirmation(fakeConfirmationGetRequest)
+      val result = controller.sentEmailConfirmation("{}", 1)(fakeConfirmationGetRequest)
       verifyAuthConnectorCalledForUser
       status(result) shouldBe Status.OK
       verifyZeroInteractions(mockGatekeeperEmailService)
@@ -150,7 +150,7 @@ class ComposeEmailControllerSpec extends ControllerBaseSpec with Matchers with M
 
     "return HTML" in new Setup {
       givenTheGKUserIsAuthorisedAndIsANormalUser()
-      val result = controller.sentEmailConfirmation(fakeConfirmationGetRequest)
+      val result = controller.sentEmailConfirmation("{}", 1)(fakeConfirmationGetRequest)
       contentType(result) shouldBe Some("text/html")
       charset(result) shouldBe Some("utf-8")
       verifyZeroInteractions(mockGatekeeperEmailService)
@@ -195,6 +195,55 @@ class ComposeEmailControllerSpec extends ControllerBaseSpec with Matchers with M
 
       val result = controller.upload(emailUUID, "{}")(uploadRequest)
       status(result) shouldBe BAD_REQUEST
+      verifyAuthConnectorCalledForUser
+      verifyZeroInteractions(mockGatekeeperEmailService)
+    }
+
+  }
+
+  "POST /delete" should {
+
+    "reject a form submission with missing radio button yesNo selection" in new Setup {
+      givenTheGKUserIsAuthorisedAndIsANormalUser()
+      val uploadRequest = FakeRequest().withBody().withCSRFToken
+
+      val result = controller.delete(emailUUID, "{}")(uploadRequest)
+      status(result) shouldBe BAD_REQUEST
+      verifyAuthConnectorCalledForUser
+      verifyZeroInteractions(mockGatekeeperEmailService)
+    }
+
+    "accept a form submission with Yes selected" in new Setup {
+      givenTheGKUserIsAuthorisedAndIsANormalUser()
+
+      val uploadRequest = FakeRequest().withFormUrlEncodedBody("value" -> "true").withCSRFToken
+
+      val result = controller.delete(emailUUID, "{}")(uploadRequest)
+      contentType(result) shouldBe Some("text/html")
+      charset(result) shouldBe Some("utf-8")
+    }
+
+    "accept a form submission with No selected" in new Setup {
+      givenTheGKUserIsAuthorisedAndIsANormalUser()
+
+      val uploadRequest = FakeRequest().withFormUrlEncodedBody("value" -> "false").withCSRFToken
+
+      val result = controller.delete(emailUUID, "{}")(uploadRequest)
+      contentType(result) shouldBe Some("text/html")
+      charset(result) shouldBe Some("utf-8")
+      verifyZeroInteractions(mockGatekeeperEmailService)
+    }
+
+  }
+
+  "POST /deleteOption" should {
+
+    "a form submission on click on deleteEmail button" in new Setup {
+      givenTheGKUserIsAuthorisedAndIsANormalUser()
+      val uploadRequest = FakeRequest().withBody().withCSRFToken
+
+      val result = controller.deleteOption(emailUUID, "{}")(uploadRequest)
+      status(result) shouldBe OK
       verifyAuthConnectorCalledForUser
       verifyZeroInteractions(mockGatekeeperEmailService)
     }

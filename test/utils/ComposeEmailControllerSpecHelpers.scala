@@ -18,7 +18,7 @@ package utils
 
 import common.ControllerBaseSpec
 import connectors.{AuthConnector, GatekeeperEmailConnector}
-import controllers.{ComposeEmailController, ComposeEmailForm}
+import controllers.{ComposeEmailController, ComposeEmailForm, RemoveUploadedFileFormProvider}
 import models.file_upload.UploadedFile
 import models.{OutgoingEmail, User}
 import org.mockito.MockitoSugar
@@ -57,6 +57,9 @@ object ComposeEmailControllerSpecHelpers  extends ControllerBaseSpec with Matche
   lazy val composeEmailTemplateView = app.injector.instanceOf[ComposeEmail]
   lazy val emailPreviewTemplateView = app.injector.instanceOf[EmailPreview]
   lazy val emailSentTemplateView = app.injector.instanceOf[EmailSentConfirmation]
+  lazy val deleteConfirmEmail = app.injector.instanceOf[EmailDeleteConfirmation]
+  lazy val deleteEmail = app.injector.instanceOf[RemoveEmailView]
+  lazy val formProvider = app.injector.instanceOf[RemoveUploadedFileFormProvider]
   lazy val httpClient = mock[HttpClient]
   val su = List(User("sawd", "efef", "eff", true))
 
@@ -73,6 +76,8 @@ object ComposeEmailControllerSpecHelpers  extends ControllerBaseSpec with Matche
       Future.successful(OutgoingEmail("srinivasalu.munagala@digital.hmrc.gov.uk",
         "Hello", su, None,  "*test email body*", "", "", "", "", None))
     }
+
+    override def deleteEmail(emailUUID: String)(implicit hc: HeaderCarrier): Future[Boolean] = Future.successful(true)
   }
   val mockGateKeeperService = new ComposeEmailServiceTest
 
@@ -83,7 +88,8 @@ object ComposeEmailControllerSpecHelpers  extends ControllerBaseSpec with Matche
       emailPreviewTemplateView,
       mockGateKeeperService,
       emailSentTemplateView,
-      forbiddenView, mockAuthConnector)
+      deleteConfirmEmail, deleteEmail,
+      forbiddenView, formProvider, mockAuthConnector)
   }
 
 }
