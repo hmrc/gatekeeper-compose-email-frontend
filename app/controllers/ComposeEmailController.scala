@@ -86,7 +86,7 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
         case None => Future.successful(BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, s"Request payload does not contain any email recipients")))
       }
     } catch {
-      case e => {
+      case _: Throwable => {
         logger.error("Error")
         Future.successful(BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, "Request payload was not a URL encoded form")))
 

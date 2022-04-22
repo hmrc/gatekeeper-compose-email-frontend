@@ -19,8 +19,6 @@ package forms
 import play.api.data.FieldMapping
 import play.api.data.Forms.of
 
-import java.time.LocalDate
-
 trait Mappings extends Formatters {
 
   protected def boolean(

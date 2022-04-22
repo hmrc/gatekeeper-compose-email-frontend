@@ -67,7 +67,6 @@ class ComposeEmailControllerSpec extends ControllerBaseSpec with Matchers with M
         .withCSRFToken
       val result = controller.initialiseEmail()(fakeRequest)
       status(result) shouldBe OK
-      result
     }
 
     "unmarshal the request body when it contains an array of User with two elements" in new Setup {
@@ -205,7 +204,7 @@ class ComposeEmailControllerSpec extends ControllerBaseSpec with Matchers with M
 
     "reject a form submission with missing radio button yesNo selection" in new Setup {
       givenTheGKUserIsAuthorisedAndIsANormalUser()
-      val uploadRequest = FakeRequest().withBody().withCSRFToken
+      val uploadRequest = FakeRequest().withCSRFToken
 
       val result = controller.delete(emailUUID, "{}")(uploadRequest)
       status(result) shouldBe BAD_REQUEST
@@ -240,7 +239,7 @@ class ComposeEmailControllerSpec extends ControllerBaseSpec with Matchers with M
 
     "a form submission on click on deleteEmail button" in new Setup {
       givenTheGKUserIsAuthorisedAndIsANormalUser()
-      val uploadRequest = FakeRequest().withBody().withCSRFToken
+      val uploadRequest = FakeRequest().withCSRFToken
 
       val result = controller.deleteOption(emailUUID, "{}")(uploadRequest)
       status(result) shouldBe OK
