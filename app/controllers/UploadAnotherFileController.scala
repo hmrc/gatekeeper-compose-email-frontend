@@ -98,7 +98,7 @@ class UploadAnotherFileController @Inject() (
       }
     }
   }
-
+//TODO fix user selection..
   def onSubmit(emailUUID: String): Action[AnyContent] = requiresAtLeast(GatekeeperRole.USER) { implicit request =>
     formProvider().bindFromRequest().fold(
       formWithErrors => Future.successful(Redirect(controllers.routes.UploadFileController.onLoad(emailUUID))),
