@@ -17,7 +17,6 @@
 package controllers
 
 import java.util.UUID
-
 import connectors.GatekeeperEmailConnector
 import models.OutgoingEmail
 import org.scalatest.matchers.should.Matchers
@@ -31,8 +30,8 @@ import play.api.test.Helpers.status
 import play.filters.csrf.CSRF.TokenProvider
 import services.ComposeEmailService
 import uk.gov.hmrc.http.HeaderCarrier
-import utils.ComposeEmailControllerSpecHelpers.mcc
-import views.html.ComposeEmail
+import utils.ComposeEmailControllerSpecHelpers.{app, mcc}
+import views.html.{ComposeEmail, ForbiddenView}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future.successful
@@ -42,7 +41,7 @@ class EmailPreviewControllerSpec extends ControllerBaseSpec with Matchers {
 
   trait Setup extends ControllerSetupBase {
     val emailUUID = UUID.randomUUID().toString
-
+    lazy val forbiddenView = app.injector.instanceOf[ForbiddenView]
     val csrfToken: (String, String) = "csrfToken" -> app.injector.instanceOf[TokenProvider].generateToken
     private val mockGatekeeperEmailConnector: GatekeeperEmailConnector = mock[GatekeeperEmailConnector]
     private val mockComposeEmailService: ComposeEmailService = mock[ComposeEmailService]
@@ -52,6 +51,7 @@ class EmailPreviewControllerSpec extends ControllerBaseSpec with Matchers {
       mcc,
       composeEmailTemplateView,
       mockComposeEmailService,
+      forbiddenView, mockAuthConnector,
       mockGatekeeperEmailConnector
     )
     implicit val hc: HeaderCarrier = HeaderCarrier()
@@ -96,6 +96,7 @@ class EmailPreviewControllerSpec extends ControllerBaseSpec with Matchers {
   "POST /send-email" should {
 
     "send an email upon receiving a valid form submission" in new Setup {
+      givenTheGKUserIsAuthorisedAndIsANormalUser()
       val fakeRequest = FakeRequest("POST", s"/send-email/$emailUUID")
         .withSession(csrfToken, authToken, userToken).withCSRFToken
       val result = controller.sendEmail(emailUUID, "{}")(fakeRequest)
@@ -106,6 +107,7 @@ class EmailPreviewControllerSpec extends ControllerBaseSpec with Matchers {
   "POST /edit-email" should {
 
     "edit email submits valid form to compose email" in new Setup {
+      givenTheGKUserIsAuthorisedAndIsANormalUser()
       val fakeRequest = FakeRequest("POST", "/edit-email")
         .withFormUrlEncodedBody("emailUUID"->"emailId", "composeEmailForm.emailSubject"->"emailSubject",
           "composeEmailForm.emailBody"->"emailBody")
