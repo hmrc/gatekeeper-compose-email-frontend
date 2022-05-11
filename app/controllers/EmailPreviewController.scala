@@ -18,15 +18,16 @@ package controllers
 
 import com.google.common.base.Charsets
 import config.AppConfig
-import connectors.GatekeeperEmailConnector
-import models.OutgoingEmail
+import connectors.{AuthConnector, GatekeeperEmailConnector}
+import models.{GatekeeperRole, OutgoingEmail}
 import play.api.Logging
 import play.api.i18n.I18nSupport
 import play.api.libs.json.Json
 import play.api.mvc.{Action, AnyContent, MessagesControllerComponents}
 import services.ComposeEmailService
 import uk.gov.hmrc.play.bootstrap.frontend.controller.FrontendController
-import views.html.ComposeEmail
+import utils.GatekeeperAuthWrapper
+import views.html.{ComposeEmail, ForbiddenView}
 
 import java.util.Base64
 import javax.inject.{Inject, Singleton}
@@ -37,11 +38,13 @@ class EmailPreviewController @Inject()
 (mcc: MessagesControllerComponents,
  composeEmail: ComposeEmail,
  emailService: ComposeEmailService,
+ override val forbiddenView: ForbiddenView,
+ override val authConnector: AuthConnector,
  emailConnector: GatekeeperEmailConnector)
 (implicit val appConfig: AppConfig, val ec: ExecutionContext)
-  extends FrontendController(mcc) with I18nSupport with Logging {
+  extends FrontendController(mcc) with GatekeeperAuthWrapper with I18nSupport with Logging {
 
-  def sendEmail(emailUUID: String, userSelection: String): Action[AnyContent] = Action.async {
+  def sendEmail(emailUUID: String, userSelection: String): Action[AnyContent] = requiresAtLeast(GatekeeperRole.USER){
     implicit request => {
       val fetchEmail: Future[OutgoingEmail] = emailService.fetchEmail(emailUUID)
       fetchEmail.map { email =>
@@ -51,7 +54,7 @@ class EmailPreviewController @Inject()
     }
   }
 
-  def editEmail(emailUUID: String, userSelection: String): Action[AnyContent] = Action.async {
+  def editEmail(emailUUID: String, userSelection: String): Action[AnyContent] = requiresAtLeast(GatekeeperRole.USER) {
     implicit request => {
       val userSelectionMap: Map[String, String] = Json.parse(userSelection).as[Map[String, String]]
       val fetchEmail: Future[OutgoingEmail] = emailService.fetchEmail(emailUUID)
