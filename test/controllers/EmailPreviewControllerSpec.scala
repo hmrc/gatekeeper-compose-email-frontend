@@ -24,6 +24,7 @@ import play.api.Application
 import play.api.http.Status.{OK, SEE_OTHER}
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.Json
+import play.api.http.Status
 import play.api.test.CSRFTokenHelper.CSRFFRequestHeader
 import play.api.test.FakeRequest
 import play.api.test.Helpers.status
@@ -102,6 +103,21 @@ class EmailPreviewControllerSpec extends ControllerBaseSpec with Matchers {
       val result = controller.sendEmail(emailUUID, "{}")(fakeRequest)
       status(result) shouldBe SEE_OTHER
     }
+
+    "redirect to login page for a user that is not authenticated" in new Setup {
+      givenFailedLogin()
+      val fakeRequest = FakeRequest("POST", s"/send-email/$emailUUID")
+        .withSession(csrfToken, authToken, userToken).withCSRFToken
+      val result = controller.sendEmail(emailUUID, "{}")(fakeRequest)
+      status(result) shouldBe SEE_OTHER
+    }
+    "deny user with incorrect privileges" in new Setup {
+      givenTheGKUserHasInsufficientEnrolments()
+      val fakeRequest = FakeRequest("POST", s"/send-email/$emailUUID")
+        .withSession(csrfToken, authToken, userToken).withCSRFToken
+      val result = controller.sendEmail(emailUUID, "{}")(fakeRequest)
+      status(result) shouldBe Status.FORBIDDEN
+    }
   }
 
   "POST /edit-email" should {
@@ -115,6 +131,26 @@ class EmailPreviewControllerSpec extends ControllerBaseSpec with Matchers {
 
       val result = controller.editEmail(emailUUID, "{}")(fakeRequest)
       status(result) shouldBe OK
+    }
+    "redirect to login page for a user that is not authenticated" in new Setup {
+      givenFailedLogin()
+      val fakeRequest = FakeRequest("POST", "/edit-email")
+        .withFormUrlEncodedBody("emailUUID"->"emailId", "composeEmailForm.emailSubject"->"emailSubject",
+          "composeEmailForm.emailBody"->"emailBody")
+        .withSession(csrfToken, authToken, userToken).withCSRFToken
+
+      val result = controller.editEmail(emailUUID, "{}")(fakeRequest)
+      status(result) shouldBe SEE_OTHER
+    }
+    "deny user with incorrect privileges" in new Setup {
+      givenTheGKUserHasInsufficientEnrolments()
+      val fakeRequest = FakeRequest("POST", "/edit-email")
+        .withFormUrlEncodedBody("emailUUID"->"emailId", "composeEmailForm.emailSubject"->"emailSubject",
+          "composeEmailForm.emailBody"->"emailBody")
+        .withSession(csrfToken, authToken, userToken).withCSRFToken
+
+      val result = controller.editEmail(emailUUID, "{}")(fakeRequest)
+      status(result) shouldBe Status.FORBIDDEN
     }
   }
 }
