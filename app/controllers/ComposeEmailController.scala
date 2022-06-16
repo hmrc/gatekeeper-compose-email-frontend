@@ -34,6 +34,7 @@ import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 import models.JsonFormatters._
 import play.api.libs.json.{JsError, JsSuccess, Json}
+import uk.gov.hmrc.play.bootstrap.controller.WithDefaultFormBinding
 
 import scala.util.control.NonFatal
 
@@ -49,7 +50,7 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
                                        formProvider: RemoveUploadedFileFormProvider,
                                        override val authConnector: AuthConnector)
                                       (implicit  val appConfig: AppConfig, val ec: ExecutionContext)
-  extends FrontendController(mcc) with GatekeeperAuthWrapper with Logging {
+  extends FrontendController(mcc) with GatekeeperAuthWrapper with Logging with WithDefaultFormBinding {
 
   def initialiseEmail: Action[AnyContent] = requiresAtLeast(GatekeeperRole.USER) { implicit request =>
 
