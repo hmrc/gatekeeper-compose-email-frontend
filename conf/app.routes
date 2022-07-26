@@ -13,4 +13,3 @@ POST        /email                   controllers.ComposeEmailController.initiali
 
 GET         /start-file-upload/:emailUUID        controllers.FileUploadController.start(emailUUID: String, searched: Boolean, multipleUpload: Boolean)
 GET         /upload-confirmation/:emailUUID      controllers.FileUploadController.continue(emailUUID: String)
-

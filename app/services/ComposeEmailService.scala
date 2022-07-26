@@ -18,7 +18,7 @@ package services
 
 import connectors.GatekeeperEmailConnector
 import controllers.ComposeEmailForm
-import models.{OutgoingEmail, User}
+import models.{DevelopersEmailQuery, OutgoingEmail, User}
 import models.file_upload.UploadedFile
 import uk.gov.hmrc.http.HeaderCarrier
 
@@ -28,8 +28,8 @@ import scala.concurrent.{ExecutionContext, Future}
 class ComposeEmailService @Inject()(emailConnector: GatekeeperEmailConnector)
                          (implicit val ec: ExecutionContext){
 
-  def saveEmail(composeEmailForm: ComposeEmailForm, emailUUID: String,  userInfo: List[User])(implicit hc: HeaderCarrier): Future[OutgoingEmail] = {
-    emailConnector.saveEmail(composeEmailForm, emailUUID, userInfo)
+  def saveEmail(composeEmailForm: ComposeEmailForm, emailUUID: String,  userSelectionQuery: DevelopersEmailQuery)(implicit hc: HeaderCarrier): Future[OutgoingEmail] = {
+    emailConnector.saveEmail(composeEmailForm, emailUUID, userSelectionQuery)
   }
 
   def fetchEmail(emailUUID: String)(implicit hc: HeaderCarrier): Future[OutgoingEmail] = {
@@ -40,9 +40,9 @@ class ComposeEmailService @Inject()(emailConnector: GatekeeperEmailConnector)
     emailConnector.deleteEmail(emailUUID)
   }
 
-  def updateEmail(composeEmailForm: ComposeEmailForm, emailUUID: String, users: List[User], attachmentDetails: Option[Seq[UploadedFile]] = None)
+  def updateEmail(composeEmailForm: ComposeEmailForm, emailUUID: String, userSelectionQuery: Option[DevelopersEmailQuery], attachmentDetails: Option[Seq[UploadedFile]] = None)
                  (implicit hc: HeaderCarrier): Future[OutgoingEmail] = {
-    emailConnector.updateEmail(composeEmailForm, emailUUID, users, attachmentDetails)
+    emailConnector.updateEmail(composeEmailForm, emailUUID, userSelectionQuery, attachmentDetails)
   }
 
 }

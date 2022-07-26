@@ -54,43 +54,50 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
 
   def initialiseEmail: Action[AnyContent] = requiresAtLeast(GatekeeperRole.USER) { implicit request =>
 
-    def persistEmailDetails(users: List[User], userSelection: String): Future[Result] = {
+    def persistEmailDetails(userSelectionQuery: DevelopersEmailQuery, userSelection: String): Future[Result] = {
       val emailUUID = UUID.randomUUID().toString
       for {
-        email <- emailService.saveEmail(ComposeEmailForm("", "", false), emailUUID, users)
-      } yield Ok(composeEmail(email.emailUUID, controllers.ComposeEmailForm.form.fill(ComposeEmailForm("","", false)), Json.parse(userSelection).as[Map[String, String]]))
+        email <- emailService.saveEmail(ComposeEmailForm("", "", false), emailUUID, userSelectionQuery)
+      } yield Ok(composeEmail(email.emailUUID, controllers.ComposeEmailForm.form.fill(ComposeEmailForm("", "", false)), Json.parse(userSelection).as[Map[String, String]]))
     }
 
     try {
       val body: Option[Map[String, Seq[String]]] = request.body.asInstanceOf[AnyContentAsFormUrlEncoded].asFormUrlEncoded
-      body.map(elems => elems.get("email-recipients")).head match {
-        case Some(recipients) => try {
-          Json.parse(recipients.head).validate[List[User]] match {
-            case JsSuccess(value: Seq[User], _) =>
+
+//        case Some(recipients) => try {
+//          Json.parse(recipients.head).validate[List[User]] match {
+//            case JsSuccess(value: Seq[User], _) =>
               body.map(elems => elems.get("user-selection")).head match {
                 case Some(userSelectedData) => Json.parse(userSelectedData.head).validate[Map[String, String]] match {
-                  case JsSuccess(userSelection: Map[String, String], _) => persistEmailDetails(value,  Json.toJson(userSelection).toString())
+                  case JsSuccess(userSelection: Map[String, String], _) =>
+                    body.map(elems => elems.get("user-selection-query")).head match {
+                      case Some(userSelectionQuery) =>
+                        Json.parse(userSelectionQuery.head).validate[DevelopersEmailQuery] match {
+                          case JsSuccess(value: DevelopersEmailQuery, _) =>
+                            persistEmailDetails(value, Json.toJson(userSelection).toString())
+                        }
+                    }
                   case JsError(errors) => Future.successful(BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD,
                     s"""Request payload does not contain gatekeeper user selected options: ${errors.mkString(", ")}""")))
                 }
-              }
-            case JsError(errors) => Future.successful(BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD,
-              s"""Request payload does not contain gatekeeper users: ${errors.mkString(", ")}""")))
-          }
-        } catch {
-          case NonFatal(e) => {
-            logger.error("Email recipients not valid JSON", e)
-            Future.successful(BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, s"Request payload does not appear to be JSON: ${e.getMessage}"))
-            )
-          }
-        }
-        case None => Future.successful(BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, s"Request payload does not contain any email recipients")))
-      }
-    } catch {
-      case _: Throwable => {
-        logger.error("Error")
-        Future.successful(BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, "Request payload was not a URL encoded form")))
-
+//              }
+//            case JsError(errors) => Future.successful(BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD,
+//              s"""Request payload does not contain gatekeeper users: ${errors.mkString(", ")}""")))
+//          }
+//        } catch {
+//          case NonFatal(e) => {
+//            logger.error("Email recipients not valid JSON", e)
+//            Future.successful(BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, s"Request payload does not appear to be JSON: ${e.getMessage}"))
+//            )
+//          }
+//        }
+//        case None => Future.successful(BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, s"Request payload does not contain any email recipients")))
+//      }
+//    } catch {
+//      case _: Throwable => {
+//        logger.error("Error")
+//        Future.successful(BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, "Request payload was not a URL encoded form")))
+//
       }
     }
   }
@@ -119,15 +126,15 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
         val fetchEmail: Future[OutgoingEmail] = emailService.fetchEmail(emailUUID)
         val userSelectionMap: Map[String, String] = Json.parse(userSelection).as[Map[String, String]]
         fetchEmail.flatMap { emailFetched =>
-          val outgoingEmail = emailService.updateEmail(form, emailUUID, emailFetched.recipients, emailFetched.attachmentDetails)
-          outgoingEmail.map {  email =>
-            if(form.attachFiles) {
+          val outgoingEmail = emailService.updateEmail(form, emailUUID, emailFetched.userSelectionQuery, emailFetched.attachmentDetails)
+          outgoingEmail.map { email =>
+            if (form.attachFiles) {
               Redirect(controllers.routes.FileUploadController.start(emailUUID, false, true))
             }
             else {
               logger.info(s"*****email status***********:${emailFetched.status}")
               Ok(emailPreview(base64Decode(email.htmlEmailBody), controllers.EmailPreviewForm.form.fill(EmailPreviewForm(email.emailUUID, form)),
-              userSelectionMap, emailFetched.status))
+                userSelectionMap, emailFetched.status))
             }
           }
         }
@@ -137,6 +144,7 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
         logger.warn(s"Error in form: ${formWithErrors.errors}")
         Future.successful(BadRequest(composeEmail(emailUUID, formWithErrors, Map[String, String]().empty)))
       }
+
       ComposeEmailForm.form.bindFromRequest.fold(handleInvalidForm(_), handleValidForm(_))
   }
 
@@ -159,7 +167,7 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
             }
           } else {
             Future.successful(Ok(composeEmail(emailUUID,
-              controllers.ComposeEmailForm.form.fill(ComposeEmailForm("","", false)), Json.parse(userSelection).as[Map[String, String]])))
+              controllers.ComposeEmailForm.form.fill(ComposeEmailForm("", "", false)), Json.parse(userSelection).as[Map[String, String]])))
           }
         }
       )

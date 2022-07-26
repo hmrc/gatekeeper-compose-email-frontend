@@ -20,7 +20,7 @@ import config.EmailConnectorConfig
 import controllers.{ComposeEmailForm, EmailPreviewForm}
 import models.EmailRequest.{createEmailRequest, updateEmailRequest}
 import models.file_upload.UploadedFile
-import models.{EmailRequest, OutgoingEmail, User}
+import models.{DevelopersEmailQuery, EmailRequest, OutgoingEmail, User}
 import uk.gov.hmrc.http.HttpReads.Implicits._
 import uk.gov.hmrc.http.{HeaderCarrier, HttpClient, HttpErrorFunctions, UpstreamErrorResponse}
 import utils.ApplicationLogger
@@ -35,13 +35,13 @@ class GatekeeperEmailConnector @Inject()(http: HttpClient, config: EmailConnecto
 
   lazy val serviceUrl = config.emailBaseUrl
 
-  def saveEmail(composeEmailForm: ComposeEmailForm, emailUUID: String, userInfo: List[User])(implicit hc: HeaderCarrier): Future[OutgoingEmail] = {
-    postSaveEmail(createEmailRequest(composeEmailForm, userInfo), emailUUID)
+  def saveEmail(composeEmailForm: ComposeEmailForm, emailUUID: String, userSelectionQuery: DevelopersEmailQuery)(implicit hc: HeaderCarrier): Future[OutgoingEmail] = {
+    postSaveEmail(createEmailRequest(composeEmailForm, userSelectionQuery), emailUUID)
   }
 
-  def updateEmail(composeEmailForm: ComposeEmailForm, emailUUID: String, users: List[User], attachmentDetails: Option[Seq[UploadedFile]] = None)
+  def updateEmail(composeEmailForm: ComposeEmailForm, emailUUID: String, userSelectionQuery: Option[DevelopersEmailQuery], attachmentDetails: Option[Seq[UploadedFile]] = None)
                  (implicit hc: HeaderCarrier): Future[OutgoingEmail] = {
-    postUpdateEmail(updateEmailRequest(composeEmailForm, users, attachmentDetails), emailUUID)
+    postUpdateEmail(updateEmailRequest(composeEmailForm, userSelectionQuery, attachmentDetails), emailUUID)
   }
 
   def fetchEmail(emailUUID: String)(implicit hc: HeaderCarrier): Future[OutgoingEmail] = {
