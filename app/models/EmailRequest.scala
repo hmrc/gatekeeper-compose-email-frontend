@@ -22,7 +22,7 @@ import play.api.libs.json.{Json, OFormat}
 
 case class EmailData(emailSubject: String, emailBody: String)
 
-case class EmailRequest(to: List[User],
+case class EmailRequest(to: List[RegisteredUser],
                         templateId: String,
                         emailData: EmailData,
                         force: Boolean = false,
@@ -33,7 +33,7 @@ case class EmailRequest(to: List[User],
 
 object EmailRequest {
   implicit val emailDataFmt = Json.format[EmailData]
-  implicit val userFmt = Json.format[User]
+  implicit val userFmt = Json.format[RegisteredUser]
   implicit val format: OFormat[UploadCargo] = Json.format[UploadCargo]
   implicit val attachmentDetailsFormat: OFormat[UploadedFile] = Json.format[UploadedFile]
   implicit val sendEmailRequestFmt = Json.format[EmailRequest]

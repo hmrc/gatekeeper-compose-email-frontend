@@ -20,6 +20,6 @@ import play.api.libs.json.Json
 
 
 object JsonFormatters {
-  implicit val formatUser = Json.format[User]
+  implicit val formatUser = Json.format[RegisteredUser]
 
 }

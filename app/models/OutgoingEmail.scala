@@ -24,7 +24,7 @@ case class OutgoingEmail(emailUUID: String, recipientTitle: String, attachmentDe
                          status: String, composedBy: String, approvedBy: Option[String], userSelectionQuery: DevelopersEmailQuery)
 
 object OutgoingEmail {
-  implicit val userFmt: OFormat[User] = Json.format[User]
+  implicit val userFmt: OFormat[RegisteredUser] = Json.format[RegisteredUser]
   implicit val format: OFormat[UploadCargo] = Json.format[UploadCargo]
   implicit val attachmentDetailsFormat: OFormat[UploadedFile] = Json.format[UploadedFile]
   implicit val emailFmt: OFormat[OutgoingEmail] = Json.format[OutgoingEmail]

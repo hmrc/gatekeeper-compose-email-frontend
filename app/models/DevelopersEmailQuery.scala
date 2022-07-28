@@ -50,16 +50,18 @@ case class RegisteredUser(
                            verified: Boolean) extends User {
 }
 
+case class EmailOverride(email: List[RegisteredUser], isOverride: Boolean = false)
 case class DevelopersEmailQuery(topic: Option[String] = None,
                                 apis: Option[Seq[String]] = None,
                                 apiCategories: Option[Seq[APICategory]] = None,
                                 privateapimatch: Boolean = false,
                                 apiVersionFilter: Option[String] = None,
                                 allUsers: Boolean = false,
-                                emailsForSomeCases: Option[List[RegisteredUser]] = None)
-
+                                emailsForSomeCases: Option[EmailOverride] = None)
 
 object DevelopersEmailQuery {
+  implicit val registeredUserFormatter = Json.format[RegisteredUser]
+  implicit val emailOverrideFormatter = Json.format[EmailOverride]
   implicit val formatDevelopersEmailQuery = Json.format[DevelopersEmailQuery]
 }
 
