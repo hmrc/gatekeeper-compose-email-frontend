@@ -126,7 +126,7 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
         val fetchEmail: Future[OutgoingEmail] = emailService.fetchEmail(emailUUID)
         val userSelectionMap: Map[String, String] = Json.parse(userSelection).as[Map[String, String]]
         fetchEmail.flatMap { emailFetched =>
-          val outgoingEmail = emailService.updateEmail(form, emailUUID, emailFetched.userSelectionQuery, emailFetched.attachmentDetails)
+          val outgoingEmail = emailService.updateEmail(form, emailUUID, Some(emailFetched.userSelectionQuery), emailFetched.attachmentDetails)
           outgoingEmail.map { email =>
             if (form.attachFiles) {
               Redirect(controllers.routes.FileUploadController.start(emailUUID, false, true))

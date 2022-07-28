@@ -32,12 +32,32 @@ object APICategoryDetails{
   implicit val formatApiCategory = Json.format[APICategoryDetails]
 }
 
+trait User {
+  def email: String
+  def firstName: String
+  def lastName: String
+}
+
+object User {
+  def asSortField(lastName: String, firstName: String): String = s"${lastName.trim().toLowerCase()} ${firstName.trim().toLowerCase()}"
+
+}
+
+case class RegisteredUser(
+                           email: String,
+                           firstName: String,
+                           lastName: String,
+                           verified: Boolean) extends User {
+}
+
 case class DevelopersEmailQuery(topic: Option[String] = None,
                                 apis: Option[Seq[String]] = None,
-                                apiCategories: Option[Seq[APICategoryDetails]] = None,
+                                apiCategories: Option[Seq[APICategory]] = None,
                                 privateapimatch: Boolean = false,
                                 apiVersionFilter: Option[String] = None,
-                                allUsers: Boolean = false)
+                                allUsers: Boolean = false,
+                                emailsForSomeCases: Option[List[RegisteredUser]] = None)
+
 
 object DevelopersEmailQuery {
   implicit val formatDevelopersEmailQuery = Json.format[DevelopersEmailQuery]
