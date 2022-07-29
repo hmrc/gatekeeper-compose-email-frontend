@@ -23,7 +23,7 @@ import com.github.tomakehurst.wiremock.core.WireMockConfiguration._
 import common.AsyncHmrcSpec
 import config.EmailConnectorConfig
 import controllers.{ComposeEmailForm, EmailPreviewForm}
-import models.User
+import models.{DevelopersEmailQuery, RegisteredUser, User}
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.http.Status.{NOT_FOUND, OK}
@@ -75,13 +75,15 @@ class GatekeeperEmailConnectorSpec extends AsyncHmrcSpec with BeforeAndAfterEach
     lazy val underTest = new GatekeeperEmailConnector(httpClient, fakeEmailConnectorConfig)
     val composeEmailForm: ComposeEmailForm = ComposeEmailForm(subject, emailBody, true)
     val emailPreviewForm: EmailPreviewForm = EmailPreviewForm(emailUUID, composeEmailForm)
-    val users = List(User("example@example.com", "first name", "last name", true),
-      User("example2@example2.com", "first name2", "last name2", true))
+    val users = List(RegisteredUser("example@example.com", "first name", "last name", true),
+      RegisteredUser("example2@example2.com", "first name2", "last name2", true))
+    val userSelectionQuery = new DevelopersEmailQuery(Some("topic-dev"), None, None, false, Some("apiVersionFilter"), false, None)
+
   }
 
   trait WorkingHttp {
     self: Setup =>
-
+    val selectionQuery = """{"topic":"topic-dev", "privateapimatch": false, "apiVersionFilter": "apiVersionFilter", "allUsers": false}""".stripMargin
     val outgoingEmail =
       s"""
          |  {
@@ -94,7 +96,8 @@ class GatekeeperEmailConnectorSpec extends AsyncHmrcSpec with BeforeAndAfterEach
          |    "subject": "",
          |    "status": "",
          |    "composedBy": "auto-emailer",
-         |    "approvedBy": "auto-emailer"
+         |    "approvedBy": "auto-emailer",
+         |    "userSelectionQuery": $selectionQuery
          |  }
       """.stripMargin
 
@@ -139,7 +142,7 @@ class GatekeeperEmailConnectorSpec extends AsyncHmrcSpec with BeforeAndAfterEach
     }
 
     "save gatekeeper email" in new Setup with WorkingHttp {
-      await(underTest.saveEmail(composeEmailForm, emailUUID, users))
+      await(underTest.saveEmail(composeEmailForm, emailUUID, userSelectionQuery))
 
       wireMockVerify(1, postRequestedFor(
         urlEqualTo(emailSaveServicePath))
@@ -148,12 +151,12 @@ class GatekeeperEmailConnectorSpec extends AsyncHmrcSpec with BeforeAndAfterEach
 
     "fail to save gatekeeper email" in new Setup with FailingHttp {
       intercept[UpstreamErrorResponse] {
-        await(underTest.saveEmail(composeEmailForm, emailUUID, users))
+        await(underTest.saveEmail(composeEmailForm, emailUUID, userSelectionQuery))
       }
     }
 
     "update gatekeeper email" in new Setup with WorkingHttp {
-      await(underTest.updateEmail(composeEmailForm, emailUUID, users))
+      await(underTest.updateEmail(composeEmailForm, emailUUID, Some(userSelectionQuery)))
 
       wireMockVerify(1, postRequestedFor(
         urlEqualTo(emailUpdateServicePath))
@@ -162,7 +165,7 @@ class GatekeeperEmailConnectorSpec extends AsyncHmrcSpec with BeforeAndAfterEach
 
     "fail to update gatekeeper email" in new Setup with FailingHttp {
       intercept[UpstreamErrorResponse] {
-        await(underTest.updateEmail(composeEmailForm, emailUUID, users))
+        await(underTest.updateEmail(composeEmailForm, emailUUID, Some(userSelectionQuery)))
       }
     }
 

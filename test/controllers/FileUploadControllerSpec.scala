@@ -40,7 +40,7 @@ import scala.concurrent.Future.successful
 class FileUploadControllerSpec extends ControllerBaseSpec with Matchers with MockitoSugar with ArgumentMatchersSugar {
 
   trait Setup extends ControllerSetupBase {
-    val su = List(User("sawd", "efef", "eff", true))
+    val su = List(RegisteredUser("sawd", "efef", "eff", true))
     val emailUUID = UUID.randomUUID().toString
     lazy val mockGatekeeperEmailService = mock[ComposeEmailService]
     val csrfToken: (String, String) = "csrfToken" -> app.injector.instanceOf[TokenProvider].generateToken

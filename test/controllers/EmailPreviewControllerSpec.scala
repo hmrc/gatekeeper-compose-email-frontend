@@ -56,6 +56,7 @@ class EmailPreviewControllerSpec extends ControllerBaseSpec with Matchers {
       mockGatekeeperEmailConnector
     )
     implicit val hc: HeaderCarrier = HeaderCarrier()
+    val selectionQuery = """{"topic":"topic-dev", "privateapimatch": false, "apiVersionFilter": "apiVersionFilter", "allUsers": false}""".stripMargin
 
     val outgoingEmail =
       s"""
@@ -69,7 +70,8 @@ class EmailPreviewControllerSpec extends ControllerBaseSpec with Matchers {
          |    "subject": "emailSubject",
          |    "status": "IN_PROGRESS",
          |    "composedBy": "auto-emailer",
-         |    "approvedBy": "auto-emailer"
+         |    "approvedBy": "auto-emailer",
+         |    "userSelectionQuery": $selectionQuery
          |  }
       """.stripMargin
 

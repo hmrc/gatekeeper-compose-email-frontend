@@ -19,7 +19,7 @@ package connectors
 import common.AsyncHmrcSpec
 import config.AppConfig
 import models.file_upload.UploadDocumentsWrapper
-import models.{OutgoingEmail, User}
+import models.{OutgoingEmail, RegisteredUser, User}
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.libs.json.Json
@@ -35,6 +35,8 @@ class UploadDocumentsConnectorSpec extends AsyncHmrcSpec with BeforeAndAfterEach
   val subject = "Email subject"
   val emailUUID = "email-uuid"
   val emailBody = "Body to be used in the email template"
+  val selectionQuery = """{"topic":"topic-dev", "privateapimatch": false, "apiVersionFilter": "apiVersionFilter", "allUsers": false}""".stripMargin
+
   val outgoingEmail =
     s"""
        |  {
@@ -47,7 +49,8 @@ class UploadDocumentsConnectorSpec extends AsyncHmrcSpec with BeforeAndAfterEach
        |    "subject": "",
        |    "status": "",
        |    "composedBy": "auto-emailer",
-       |    "approvedBy": "auto-emailer"
+       |    "approvedBy": "auto-emailer",
+       |    "userSelectionQuery": $selectionQuery
        |  }
       """.stripMargin
   val mockComposeEmailConnector: GatekeeperEmailConnector = mock[GatekeeperEmailConnector]
@@ -81,8 +84,8 @@ class UploadDocumentsConnectorSpec extends AsyncHmrcSpec with BeforeAndAfterEach
     }
     lazy val underTestFailure = new UploadDocumentsConnectorFailure
 
-    val users = List(User("example@example.com", "first name", "last name", true),
-      User("example2@example2.com", "first name2", "last name2", true))
+    val users = List(RegisteredUser("example@example.com", "first name", "last name", true),
+      RegisteredUser("example2@example2.com", "first name2", "last name2", true))
 
 
   }

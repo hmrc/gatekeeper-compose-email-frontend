@@ -20,7 +20,7 @@ import common.ControllerBaseSpec
 import connectors.{AuthConnector, GatekeeperEmailConnector}
 import controllers.{ComposeEmailController, ComposeEmailForm, RemoveUploadedFileFormProvider}
 import models.file_upload.UploadedFile
-import models.{OutgoingEmail, User}
+import models.{DevelopersEmailQuery, OutgoingEmail, RegisteredUser, User}
 import org.mockito.MockitoSugar
 import org.scalatest.GivenWhenThen
 import org.scalatest.matchers.should.Matchers
@@ -61,20 +61,21 @@ object ComposeEmailControllerSpecHelpers  extends ControllerBaseSpec with Matche
   lazy val deleteEmail = app.injector.instanceOf[RemoveEmailView]
   lazy val formProvider = app.injector.instanceOf[RemoveUploadedFileFormProvider]
   lazy val httpClient = mock[HttpClient]
-  val su = List(User("sawd", "efef", "eff", true))
+  val su = List(RegisteredUser("sawd", "efef", "eff", true))
+  val userSelectionQuery = new DevelopersEmailQuery(None, None, None, false, None, false, None)
 
   class ComposeEmailServiceTest extends ComposeEmailService(mock[GatekeeperEmailConnector]){
-    override def saveEmail(composeEmailForm: ComposeEmailForm, emailUUID: String,  userInfo: List[User])(implicit hc: HeaderCarrier): Future[OutgoingEmail] =
+    override def saveEmail(composeEmailForm: ComposeEmailForm, emailUUID: String,  userSelectionQuery: DevelopersEmailQuery)(implicit hc: HeaderCarrier): Future[OutgoingEmail] =
       Future.successful(OutgoingEmail("srinivasalu.munagala@digital.hmrc.gov.uk",
-        "Hello", su, None,  "*test email body*", "", "", "", "", None))
+        "Hello", None,  "*test email body*", "", "", "", "", None, userSelectionQuery))
     override def fetchEmail(emailUUID: String)(implicit hc: HeaderCarrier): Future[OutgoingEmail] = {
       Future.successful(OutgoingEmail("srinivasalu.munagala@digital.hmrc.gov.uk",
-        "Hello", su, None,  "*test email body*", "", "", "", "", None))
+        "Hello", None,  "*test email body*", "", "", "", "", None, userSelectionQuery))
     }
-    override def updateEmail(composeEmailForm: ComposeEmailForm, emailUUID: String, users: List[User],
+    override def updateEmail(composeEmailForm: ComposeEmailForm, emailUUID: String, userSelectionQuery: Option[DevelopersEmailQuery],
                              attachmentDetails: Option[Seq[UploadedFile]])(implicit hc: HeaderCarrier): Future[OutgoingEmail] = {
       Future.successful(OutgoingEmail("srinivasalu.munagala@digital.hmrc.gov.uk",
-        "Hello", su, None,  "*test email body*", "", "", "", "", None))
+        "Hello", None,  "*test email body*", "", "", "", "", None, userSelectionQuery.get))
     }
 
     override def deleteEmail(emailUUID: String)(implicit hc: HeaderCarrier): Future[Boolean] = Future.successful(true)
