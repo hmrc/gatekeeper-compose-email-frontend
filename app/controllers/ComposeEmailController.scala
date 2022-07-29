@@ -63,42 +63,34 @@ class ComposeEmailController @Inject()(mcc: MessagesControllerComponents,
 
     try {
       val body: Option[Map[String, Seq[String]]] = request.body.asInstanceOf[AnyContentAsFormUrlEncoded].asFormUrlEncoded
-
-//        case Some(recipients) => try {
-//          Json.parse(recipients.head).validate[List[User]] match {
-//            case JsSuccess(value: Seq[User], _) =>
-              body.map(elems => elems.get("user-selection")).head match {
-                case Some(userSelectedData) => Json.parse(userSelectedData.head).validate[Map[String, String]] match {
-                  case JsSuccess(userSelection: Map[String, String], _) =>
-                    body.map(elems => elems.get("user-selection-query")).head match {
-                      case Some(userSelectionQuery) =>
-                        Json.parse(userSelectionQuery.head).validate[DevelopersEmailQuery] match {
-                          case JsSuccess(value: DevelopersEmailQuery, _) =>
-                            persistEmailDetails(value, Json.toJson(userSelection).toString())
-                        }
-                    }
+      body.map(elems => elems.get("user-selection")).head match {
+        case Some(userSelectedData) => Json.parse(userSelectedData.head).validate[Map[String, String]] match {
+          case JsSuccess(userSelection: Map[String, String], _) =>
+            body.map(elems => elems.get("user-selection-query")).head match {
+              case Some(userSelectionQuery) => try {
+                Json.parse(userSelectionQuery.head).validate[DevelopersEmailQuery] match {
+                  case JsSuccess(value: DevelopersEmailQuery, _) =>
+                    persistEmailDetails(value, Json.toJson(userSelection).toString())
                   case JsError(errors) => Future.successful(BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD,
-                    s"""Request payload does not contain gatekeeper user selected options: ${errors.mkString(", ")}""")))
+                    s"""Request payload does not contain gatekeeper user selected query data: ${errors.mkString(", ")}""")))
                 }
-//              }
-//            case JsError(errors) => Future.successful(BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD,
-//              s"""Request payload does not contain gatekeeper users: ${errors.mkString(", ")}""")))
-//          }
-//        } catch {
-//          case NonFatal(e) => {
-//            logger.error("Email recipients not valid JSON", e)
-//            Future.successful(BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, s"Request payload does not appear to be JSON: ${e.getMessage}"))
-//            )
-//          }
-//        }
-//        case None => Future.successful(BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, s"Request payload does not contain any email recipients")))
-//      }
-//    } catch {
-//      case _: Throwable => {
-//        logger.error("Error")
-//        Future.successful(BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, "Request payload was not a URL encoded form")))
-//
+              } catch {
+                case NonFatal(e) => {
+                  logger.error("Email recipients not valid JSON", e)
+                  Future.successful(BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, s"Request payload does not appear to be JSON: ${e.getMessage}"))
+                  )
+                }
+              }
+            }
+        }
+        case None => Future.successful(BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD,
+          s"Request payload does not contain gatekeeper user selected options")))
       }
+    } catch {
+        case _: Throwable => {
+          logger.error("Error")
+          Future.successful(BadRequest(JsErrorResponse(ErrorCode.INVALID_REQUEST_PAYLOAD, "Request payload was not a URL encoded form")))
+        }
     }
   }
 

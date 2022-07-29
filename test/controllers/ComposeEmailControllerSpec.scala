@@ -90,39 +90,37 @@ class ComposeEmailControllerSpec extends ControllerBaseSpec with Matchers with M
       contentAsString(result).contains("Compose email") shouldBe true
     }
 
-    "handle a form which contains the recipients attribute but its value is not valid JSON" in new Setup {
-      val composeEmailRecipients = "dummy"
+    "handle a form which contains the selection query but its value is not valid JSON" in new Setup {
       val userSelectionData =
         """{"API":"Agent Authorisation","Topic":"Business and policy"}""".stripMargin
-      val selectionQuery = """{"topic":"topic-dev", "privateapimatch": false, "apiVersionFilter": "apiVersionFilter", "allUsers": false}""".stripMargin
+      val selectionQuery = """{topic:topic-dev, "apiVersionFilter": "apiVersionFilter"}""".stripMargin
       givenTheGKUserIsAuthorisedAndIsANormalUser()
       val fakeRequest = FakeRequest("POST", "/email")
         .withSession(csrfToken, authToken, userToken)
-        .withFormUrlEncodedBody("email-recipients" -> composeEmailRecipients, "user-selection" -> userSelectionData, "user-selection-query" -> selectionQuery )
+        .withFormUrlEncodedBody("user-selection" -> userSelectionData, "user-selection-query" -> selectionQuery)
         .withCSRFToken
       val result = controller.initialiseEmail()(fakeRequest)
       status(result) shouldBe BAD_REQUEST
       (contentAsJson(result) \ "code").as[String] shouldBe "INVALID_REQUEST_PAYLOAD"
-      (contentAsJson(result) \ "message").as[String] should startWith("Request payload does not appear to be JSON: Unrecognized token")
+      (contentAsJson(result) \ "message").as[String] should startWith("Request payload does not appear to be JSON")
     }
 
-    "handle a form which contains the recipients attribute which contains valid JSON but which does not represent user entities" in new Setup {
-      val composeEmailRecipients = """[{"key":"value"}]"""
+    "handle a form which contains selection query which contains valid JSON but which does not have mandatory attributes" in new Setup {
       val userSelectionData =
         """{"API":"Agent Authorisation","Topic":"Business and policy"}""".stripMargin
-      val selectionQuery = """{"topic":"topic-dev", "privateapimatch": false, "apiVersionFilter": "apiVersionFilter", "allUsers": false}""".stripMargin
+      val selectionQuery = """{"topic":"topic-dev", "apiVersionFilter": "apiVersionFilter"}""".stripMargin
       givenTheGKUserIsAuthorisedAndIsANormalUser()
       val fakeRequest = FakeRequest("POST", "/email")
         .withSession(csrfToken, authToken, userToken)
-        .withFormUrlEncodedBody("email-recipients" -> composeEmailRecipients, "user-selection" -> userSelectionData, "user-selection-query" -> selectionQuery )
+        .withFormUrlEncodedBody("user-selection" -> userSelectionData, "user-selection-query" -> selectionQuery)
         .withCSRFToken
       val result = controller.initialiseEmail()(fakeRequest)
       status(result) shouldBe BAD_REQUEST
       (contentAsJson(result) \ "code").as[String] shouldBe "INVALID_REQUEST_PAYLOAD"
-      (contentAsJson(result) \ "message").as[String] should startWith("Request payload does not contain gatekeeper users")
+      (contentAsJson(result) \ "message").as[String] should startWith("Request payload does not contain gatekeeper user selected query data")
     }
 
-    "handle a request payload which doesn't contain the expected recipients attribute" in new Setup {
+    "handle a request payload which doesn't contain the expected user selected options" in new Setup {
       givenTheGKUserIsAuthorisedAndIsANormalUser()
       val fakeRequest = FakeRequest("POST", "/email")
         .withSession(csrfToken, authToken, userToken)
@@ -131,8 +129,7 @@ class ComposeEmailControllerSpec extends ControllerBaseSpec with Matchers with M
       val result = controller.initialiseEmail()(fakeRequest)
       status(result) shouldBe BAD_REQUEST
       (contentAsJson(result) \ "code").as[String] shouldBe "INVALID_REQUEST_PAYLOAD"
-      (contentAsJson(result) \ "message").as[String] should startWith("Request payload does not contain any email recipients")
-
+      (contentAsJson(result) \ "message").as[String] should startWith("Request payload does not contain gatekeeper user selected options")
     }
 
     "handle a request payload which doesn't contain a form" in new Setup {

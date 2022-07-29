@@ -57,6 +57,7 @@ class FileUploadControllerSpec extends ControllerBaseSpec with Matchers with Moc
     val composeEmailForm: ComposeEmailForm = ComposeEmailForm("dfasd", "asdfasf", true)
     val composeEmail: ComposeEmail = fakeApplication.injector.instanceOf[ComposeEmail]
     val emailSentConfirmation: EmailSentConfirmation = fakeApplication.injector.instanceOf[EmailSentConfirmation]
+    val selectionQuery = """{"topic":"topic-dev", "privateapimatch": false, "apiVersionFilter": "apiVersionFilter", "allUsers": false}""".stripMargin
 
     val controller = new FileUploadController(mcc: MessagesControllerComponents,
                                               forbiddenView,
@@ -78,7 +79,8 @@ class FileUploadControllerSpec extends ControllerBaseSpec with Matchers with Moc
          |    "subject": "emailSubject",
          |    "status": "INPROGRESS",
          |    "composedBy": "auto-emailer",
-         |    "approvedBy": "auto-emailer"
+         |    "approvedBy": "auto-emailer",
+         |    "userSelectionQuery": $selectionQuery
          |  }
       """.stripMargin
 
